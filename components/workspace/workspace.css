@@ -1,0 +1,97 @@
+.desk {
+  height: 100%;
+  padding: 1.75rem;
+  background-color: #e7e0d2;
+  background-image:
+    radial-gradient(rgba(48, 36, 24, 0.045) 0.7px, transparent 0.7px);
+  background-size: 3px 3px;
+}
+
+.paper {
+  display: flex;
+  min-height: calc(100vh - 3.5rem);
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  background: #fffcf6;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 1px 1px rgba(48, 36, 24, 0.05),
+    0 18px 40px rgba(48, 36, 24, 0.1);
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease;
+}
+
+.paper:hover,
+.paper.is-over {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 8px 16px rgba(48, 36, 24, 0.08),
+    0 24px 48px rgba(48, 36, 24, 0.12);
+}
+
+.paper.is-busy {
+  pointer-events: none;
+  opacity: 0.78;
+}
+
+.paper-rule {
+  width: 3.5rem;
+  height: 1px;
+  margin-bottom: 1.15rem;
+  background: rgba(48, 36, 24, 0.18);
+}
+
+.paper-copy {
+  margin: 0;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  color: #44403c;
+}
+
+.paper-error {
+  margin: 0.85rem 0 0;
+  font-size: 0.75rem;
+  color: #78716c;
+}
+
+.page-stack {
+  height: 100%;
+  overflow-y: auto;
+  padding: 1.75rem 1.5rem 3rem;
+}
+
+.page-sheet {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 1.75rem;
+  background: #fffcf6;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 10px 28px rgba(48, 36, 24, 0.12);
+}
+
+.page-sheet img {
+  display: block;
+  max-width: 100%;
+  background: #fffcf6;
+}
+
+@media (max-width: 640px) {
+  .desk {
+    padding: 0.75rem;
+  }
+
+  .paper {
+    min-height: calc(100dvh - 10.5rem);
+  }
+
+  .page-stack {
+    padding: 0.75rem 0.5rem 2rem;
+  }
+}

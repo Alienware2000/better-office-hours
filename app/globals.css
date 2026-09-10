@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+html,
+body {
+  min-height: 100%;
+  background: #f4efe4;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}

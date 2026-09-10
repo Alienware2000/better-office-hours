@@ -7,7 +7,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as { text?: string };
+  const body = (await req.json()) as { text?: string; previousText?: string };
   const text = body.text?.trim();
   if (!text) {
     return Response.json({ error: "Missing text" }, { status: 400 });
@@ -25,6 +25,14 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         text,
         model_id: ELEVENLABS_TTS_MODEL,
+        previous_text: body.previousText?.trim() || undefined,
+        voice_settings: {
+          stability: 0.42,
+          similarity_boost: 0.75,
+          style: 0.12,
+          use_speaker_boost: true,
+          speed: 0.98,
+        },
       }),
     },
   );

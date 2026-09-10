@@ -1,10 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { SessionEvent } from "@/lib/agent/events";
+import { detectMode } from "@/lib/agent/intent";
 import { parseAgentTurn, takeSpeechChunks, type ChatMessage } from "@/lib/agent/tags";
-import { CHIPS, GREETING, type OrbState } from "./constants";
+import { getLivePage } from "@/lib/pdf/live-page";
+import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
+import { CHIPS, pickGreeting, type OrbState } from "./constants";
 
 type Health = { grok: boolean; elevenlabs: boolean };
+
+// PROMPT.md asks for two or three sentences under about seventy words. Capping
+// at two cut the tutor's closing question, which is the whole point of a turn.
+const MAX_SENTENCES = 3;
+const MAX_WORDS = 70;
 
 async function readSseText(
   response: Response,
@@ -47,14 +56,30 @@ export function useVoiceLoop() {
   const [level, setLevel] = useState(0);
   const [health, setHealth] = useState<Health | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [paused, setPaused] = useState(true);
+  const [layout, setLayout] = useState<LayoutState>("orb_only");
+  const [pointer, setPointer] = useState<AgentTurn["pointer"]>();
+  const [highlight, setHighlight] = useState<AgentTurn["highlight"]>();
+  const [turns, setTurns] = useState<Turn[]>([]);
 
+  const speechQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const greetingRef = useRef(pickGreeting());
   const historyRef = useRef<ChatMessage[]>([
-    { role: "assistant", content: GREETING },
+    { role: "assistant", content: greetingRef.current },
   ]);
   const abortRef = useRef<AbortController | null>(null);
+  const turnAbortRef = useRef<AbortController | null>(null);
+  const playbackEpochRef = useRef(0);
+  const playbackStartedAtRef = useRef(0);
+  const playbackEndedAtRef = useRef(0);
   const playingRef = useRef(false);
   const recordingRef = useRef(false);
   const stateRef = useRef<OrbState>("idle");
+  const pausedRef = useRef(true);
+  const hasStartedRef = useRef(false);
+  const discardRecordingRef = useRef<() => void>(() => {});
+  const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
+  const claimTabRef = useRef<() => void>(() => {});
 
   const setOrb = useCallback((next: OrbState) => {
     stateRef.current = next;
@@ -62,100 +87,249 @@ export function useVoiceLoop() {
   }, []);
 
   const stopPlayback = useCallback(() => {
+    playbackEpochRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = new AbortController();
     playingRef.current = false;
+    playbackEndedAtRef.current = performance.now();
   }, []);
 
   const speak = useCallback(
-    async (text: string) => {
-      if (!text.trim()) return;
+    async (text: string, previousText?: string, epoch = playbackEpochRef.current) => {
+      if (!text.trim() || epoch !== playbackEpochRef.current) return;
       const controller = abortRef.current ?? new AbortController();
       abortRef.current = controller;
       playingRef.current = true;
+      playbackStartedAtRef.current = performance.now();
+      setInputEnabledRef.current(false);
       setOrb("speaking");
 
-      const response = await fetch("/api/agent/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-        signal: controller.signal,
-      });
-      if (!response.ok) {
-        playingRef.current = false;
-        throw new Error("Voice playback failed");
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
+      let url: string | null = null;
       try {
+        const response = await fetch("/api/agent/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, previousText }),
+          signal: controller.signal,
+        });
+        if (epoch !== playbackEpochRef.current) return;
+        if (!response.ok) throw new Error("Voice playback failed");
+
+        url = URL.createObjectURL(await response.blob());
+        const audio = new Audio(url);
         await new Promise<void>((resolve, reject) => {
+          const finish = () => {
+            controller.signal.removeEventListener("abort", cancel);
+            resolve();
+          };
           const cancel = () => {
             audio.pause();
-            resolve();
+            finish();
           };
           if (controller.signal.aborted) {
             cancel();
             return;
           }
           controller.signal.addEventListener("abort", cancel, { once: true });
-          audio.onended = () => resolve();
+          audio.onended = finish;
           audio.onerror = () => reject(new Error("Audio failed"));
           void audio.play().catch(reject);
         });
+      } catch (error) {
+        if (controller.signal.aborted || (error as Error).name === "AbortError") return;
+        throw error;
       } finally {
-        URL.revokeObjectURL(url);
+        if (url) URL.revokeObjectURL(url);
         playingRef.current = false;
+        playbackEndedAtRef.current = performance.now();
+        window.setTimeout(() => {
+          if (
+            !pausedRef.current &&
+            !playingRef.current &&
+            epoch === playbackEpochRef.current
+          ) {
+            setInputEnabledRef.current(true);
+          }
+        }, 450);
       }
     },
     [setOrb],
   );
 
-  const runTurn = useCallback(
-    async (userText: string) => {
-      const text = userText.trim();
-      if (!text) return;
-      stopPlayback();
-      setOrb("thinking");
-      historyRef.current = [...historyRef.current, { role: "user", content: text }];
+  // Every spoken chunk goes through one queue. The fast lane's lead-in and the
+  // reasoning lane's reply are produced concurrently, and without this they
+  // would play over each other.
+  const enqueueSpeechTask = useCallback((task: () => Promise<void>) => {
+    const next = speechQueueRef.current.then(task, task);
+    speechQueueRef.current = next.then(
+      () => {},
+      () => {},
+    );
+    return next;
+  }, []);
 
+  const applyTurn = useCallback((turn: AgentTurn) => {
+    if (turn.mode === "pset" || turn.mode === "concept") setLayout(turn.mode);
+    if (turn.pointer) setPointer(turn.pointer);
+    if (turn.highlight) setHighlight(turn.highlight);
+  }, []);
+
+  const addTurn = useCallback((role: Turn["role"], text: string) => {
+    setTurns((prev) => [...prev, { role, text, at: new Date().toISOString() }]);
+  }, []);
+
+  // The tutor's caption fills in as the reply streams, so the panel keeps up
+  // with the voice instead of appearing after it.
+  const reviseLastTutorTurn = useCallback((text: string) => {
+    setTurns((prev) => {
+      const last = prev.length - 1;
+      if (last < 0 || prev[last].role !== "tutor") return prev;
+      const next = [...prev];
+      next[last] = { ...next[last], text };
+      return next;
+    });
+  }, []);
+
+  // One model pass. Returns as soon as the text is in, with `spoken` resolving
+  // when its audio finishes, so the caller can start the next pass underneath
+  // the audio that is still playing.
+  const runPass = useCallback(
+    async ({
+      event,
+      deep,
+      signal,
+      playbackEpoch,
+    }: {
+      event?: SessionEvent;
+      deep: boolean;
+      signal: AbortSignal;
+      playbackEpoch: number;
+    }): Promise<{ full: string; turn: AgentTurn; spoken: Promise<void> }> => {
       const response = await fetch("/api/agent/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: historyRef.current, stream: true }),
+        body: JSON.stringify({
+          messages: historyRef.current,
+          stream: true,
+          livePage: getLivePage(),
+          event,
+          deep,
+        }),
+        signal,
       });
       if (!response.ok) throw new Error("Tutor request failed");
 
-      let spokenEmitted = 0;
-      let chain: Promise<void> = Promise.resolve();
+      let emitted = 0;
+      let saidSoFar = "";
+      let sentences = 0;
+      let words = 0;
+      let spoken: Promise<void> = Promise.resolve();
 
+      // The caps stop the next sentence rather than trimming the current one.
+      // Cutting mid-sentence lost the tutor's closing question and left the
+      // audio hanging on half a word.
+      const enqueueSpeech = (chunk: string) => {
+        if (sentences >= MAX_SENTENCES || words >= MAX_WORDS) return;
+        const trimmed = chunk.trim();
+        if (!trimmed) return;
+        const previousText = saidSoFar;
+        saidSoFar = [saidSoFar, trimmed].filter(Boolean).join(" ");
+        sentences += 1;
+        words += trimmed.split(/\s+/).length;
+        spoken = enqueueSpeechTask(() =>
+          playbackEpoch === playbackEpochRef.current
+            ? speak(trimmed, previousText, playbackEpoch)
+            : Promise.resolve(),
+        );
+      };
+
+      addTurn("tutor", "");
       const full = await readSseText(response, (raw) => {
-        const turn = parseAgentTurn(raw);
-        const next = takeSpeechChunks(turn.speech, spokenEmitted);
-        if (next.chunk) {
-          spokenEmitted = next.consumed;
-          chain = chain.then(() => speak(next.chunk));
+        const partial = parseAgentTurn(raw);
+        applyTurn(partial);
+        reviseLastTutorTurn(partial.speech);
+        // A lead-in turn is not worth speaking in pieces, and speaking it
+        // before [THINK] arrives would strand the student mid-thought.
+        if (partial.think) return;
+        let next = takeSpeechChunks(partial.speech, emitted);
+        while (next.chunk && sentences < MAX_SENTENCES) {
+          emitted = next.consumed;
+          enqueueSpeech(next.chunk);
+          next = takeSpeechChunks(partial.speech, emitted);
         }
       });
 
       const turn = parseAgentTurn(full);
-      const leftover = turn.speech.slice(spokenEmitted).trim();
-      if (leftover) chain = chain.then(() => speak(leftover));
-      await chain;
+      applyTurn(turn);
+      reviseLastTutorTurn(turn.speech);
+      const leftover = turn.speech.slice(emitted).trim();
+      if (leftover) enqueueSpeech(leftover);
+      return { full, turn, spoken };
+    },
+    [addTurn, applyTurn, enqueueSpeechTask, reviseLastTutorTurn, speak],
+  );
+
+  const runTurn = useCallback(
+    async ({ text, event }: { text?: string; event?: SessionEvent }) => {
+      const said = text?.trim() ?? "";
+      if (!said && !event) return;
+
+      // The layout follows what the student said right away. Waiting on the
+      // model's [MODE ...] tag makes the screen lag behind the conversation.
+      const intent = said ? detectMode(said) : null;
+      if (intent) setLayout(intent);
+      if (health && (!health.grok || !health.elevenlabs)) return;
+
+      stopPlayback();
+      turnAbortRef.current?.abort();
+      const turnController = new AbortController();
+      turnAbortRef.current = turnController;
+      const playbackEpoch = playbackEpochRef.current;
+      const signal = turnController.signal;
+      setOrb("thinking");
+      if (said) {
+        historyRef.current = [...historyRef.current, { role: "user", content: said }];
+        addTurn("student", said);
+      }
+
+      const lead = await runPass({ event, deep: false, signal, playbackEpoch });
       historyRef.current = [
         ...historyRef.current,
-        { role: "assistant", content: full },
+        { role: "assistant", content: lead.full },
       ];
-      if (!playingRef.current) setOrb("listening");
+
+      if (lead.turn.think) {
+        // Fired before waiting on the lead-in audio, so the reasoning wait
+        // happens underneath it rather than after it.
+        const deep = runPass({ event, deep: true, signal, playbackEpoch });
+        await lead.spoken;
+        if (playbackEpoch === playbackEpochRef.current) setOrb("thinking");
+        const result = await deep;
+        historyRef.current = [
+          ...historyRef.current,
+          { role: "assistant", content: result.full },
+        ];
+        await result.spoken;
+      } else {
+        await lead.spoken;
+      }
+
+      if (turnAbortRef.current === turnController) turnAbortRef.current = null;
+      if (!playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
     },
-    [setOrb, speak, stopPlayback],
+    [addTurn, health, runPass, setOrb, stopPlayback],
   );
 
   const sendUtterance = useCallback(
     async (text: string) => {
       try {
         setError(null);
-        await runTurn(text);
+        pausedRef.current = false;
+        hasStartedRef.current = true;
+        setPaused(false);
+        setInputEnabledRef.current(true);
+        claimTabRef.current();
+        await runTurn({ text });
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Something went wrong");
@@ -164,6 +338,58 @@ export function useVoiceLoop() {
     },
     [runTurn, setOrb],
   );
+
+  // Something happened on screen that the tutor should react to on its own.
+  const sendEvent = useCallback(
+    async (event: SessionEvent) => {
+      if (pausedRef.current) return;
+      try {
+        setError(null);
+        await runTurn({ event });
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "Something went wrong");
+        setOrb("idle");
+      }
+    },
+    [runTurn, setOrb],
+  );
+
+  const interrupt = useCallback(() => {
+    if (pausedRef.current) {
+      pausedRef.current = false;
+      setPaused(false);
+      setInputEnabledRef.current(true);
+      claimTabRef.current();
+      if (health?.grok && health.elevenlabs && !hasStartedRef.current) {
+        hasStartedRef.current = true;
+        setOrb("speaking");
+        addTurn("tutor", greetingRef.current);
+        void speakRef
+          .current(greetingRef.current)
+          .then(() => {
+            if (!pausedRef.current) setOrb("listening");
+          })
+          .catch((err) => {
+            if ((err as Error).name !== "AbortError") {
+              setError((err as Error).message);
+            }
+          });
+      } else {
+        setOrb(health?.grok && health.elevenlabs ? "listening" : "idle");
+      }
+      return;
+    }
+
+    pausedRef.current = true;
+    setPaused(true);
+    turnAbortRef.current?.abort();
+    turnAbortRef.current = null;
+    stopPlayback();
+    discardRecordingRef.current();
+    setInputEnabledRef.current(false);
+    setOrb("idle");
+  }, [addTurn, health, setOrb, stopPlayback]);
 
   const sendRef = useRef(sendUtterance);
   const speakRef = useRef(speak);
@@ -181,6 +407,58 @@ export function useVoiceLoop() {
     let lastLoud = 0;
     let startedAt = 0;
     let raf = 0;
+    const tabId = crypto.randomUUID();
+    const channel =
+      typeof BroadcastChannel === "undefined"
+        ? null
+        : new BroadcastChannel("better-office-hours-voice");
+
+    const setInputEnabled = (enabled: boolean) => {
+      stream?.getAudioTracks().forEach((track) => {
+        track.enabled = enabled;
+      });
+    };
+    setInputEnabledRef.current = setInputEnabled;
+
+    const discardRecording = () => {
+      if (recorder && recorder.state !== "inactive") {
+        recorder.ondataavailable = null;
+        recorder.onstop = null;
+        recorder.stop();
+      }
+      chunks = [];
+      recordingRef.current = false;
+    };
+    discardRecordingRef.current = discardRecording;
+
+    const claimTab = () => channel?.postMessage({ type: "claim", tabId });
+    claimTabRef.current = claimTab;
+
+    const suspendVoice = (message?: string) => {
+      pausedRef.current = true;
+      setPaused(true);
+      turnAbortRef.current?.abort();
+      turnAbortRef.current = null;
+      stopRef.current();
+      discardRecording();
+      setInputEnabled(false);
+      setOrb("idle");
+      if (message) setError(message);
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) suspendVoice();
+    };
+    const handlePageHide = () => suspendVoice();
+
+    channel?.addEventListener("message", (event) => {
+      const data = event.data as { type?: string; tabId?: string };
+      if (data.type === "claim" && data.tabId !== tabId) {
+        suspendVoice("Voice moved to the active tab.");
+      }
+    });
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pagehide", handlePageHide);
 
     const transcribe = async (blob: Blob) => {
       const form = new FormData();
@@ -215,7 +493,7 @@ export function useVoiceLoop() {
     };
 
     const startRecorder = () => {
-      if (!stream || recordingRef.current) return;
+      if (!stream || recordingRef.current || pausedRef.current) return;
       chunks = [];
       const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
@@ -241,7 +519,16 @@ export function useVoiceLoop() {
         return;
       }
 
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
+      });
+      setInputEnabled(!pausedRef.current);
+      claimTab();
       audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
@@ -251,46 +538,56 @@ export function useVoiceLoop() {
 
       const loop = () => {
         if (cancelled) return;
+        if (pausedRef.current) {
+          setLevel(0);
+          raf = requestAnimationFrame(loop);
+          return;
+        }
         analyser.getFloatTimeDomainData(data);
         let sum = 0;
         for (const sample of data) sum += sample * sample;
         const rms = Math.sqrt(sum / data.length);
         setLevel(rms);
-        const loud = rms > 0.04;
+        const loud = rms > 0.045;
         const now = performance.now();
         if (loud) lastLoud = now;
 
-        if (playingRef.current && loud && rms > 0.07) {
-          stopRef.current();
-          startRecorder();
-        } else if (
-          !playingRef.current &&
-          stateRef.current !== "thinking" &&
-          loud &&
-          !recordingRef.current
-        ) {
-          startRecorder();
-        } else if (
-          recordingRef.current &&
-          now - lastLoud > 850 &&
-          now - startedAt > 450
-        ) {
-          void stopRecorder();
+        if (!playingRef.current) {
+          if (
+            stateRef.current !== "thinking" &&
+            loud &&
+            !recordingRef.current &&
+            now - playbackEndedAtRef.current > 450
+          ) {
+            startRecorder();
+          } else if (
+            recordingRef.current &&
+            now - lastLoud > 850 &&
+            now - startedAt > 450
+          ) {
+            void stopRecorder();
+          }
         }
 
         raf = requestAnimationFrame(loop);
       };
       raf = requestAnimationFrame(loop);
 
-      setOrb("speaking");
-      try {
-        await speakRef.current(GREETING);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Could not speak");
+      if (pausedRef.current) {
+        setOrb("idle");
+      } else {
+        hasStartedRef.current = true;
+        setOrb("speaking");
+        addTurn("tutor", greetingRef.current);
+        try {
+          await speakRef.current(greetingRef.current);
+        } catch (err) {
+          if (!cancelled) {
+            setError(err instanceof Error ? err.message : "Could not speak");
+          }
         }
+        if (!cancelled && !playingRef.current) setOrb("listening");
       }
-      if (!cancelled && !playingRef.current) setOrb("listening");
     };
 
     void boot().catch((err: unknown) => {
@@ -308,12 +605,33 @@ export function useVoiceLoop() {
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", handlePageHide);
+      channel?.close();
+      turnAbortRef.current?.abort();
       stopRef.current();
       stream?.getTracks().forEach((track) => track.stop());
       void audioContext?.close();
-      if (recorder && recorder.state !== "inactive") recorder.stop();
+      discardRecording();
+      discardRecordingRef.current = () => {};
+      setInputEnabledRef.current = () => {};
+      claimTabRef.current = () => {};
     };
-  }, [setOrb]);
+  }, [addTurn, setOrb]);
 
-  return { state, level, health, error, sendUtterance, chips: CHIPS };
+  return {
+    state,
+    level,
+    health,
+    error,
+    paused,
+    sendUtterance,
+    sendEvent,
+    interrupt,
+    turns,
+    chips: CHIPS,
+    layout,
+    pointer,
+    highlight,
+  };
 }

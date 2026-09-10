@@ -1,4 +1,6 @@
-import { streamGrok } from "@/lib/agent/grok";
+import { asSessionEvent } from "@/lib/agent/events";
+import { GROK_DEEP_MODEL, GROK_MODEL, streamGrok } from "@/lib/agent/grok";
+import { setLivePage, type LivePage } from "@/lib/pdf/live-page";
 import type { ChatMessage } from "@/lib/agent/tags";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +19,27 @@ function asMessages(body: unknown): ChatMessage[] {
   });
 }
 
+function asLivePage(body: unknown): LivePage | null {
+  if (!body || typeof body !== "object" || !("livePage" in body)) return null;
+  const live = (body as { livePage?: unknown }).livePage;
+  if (!live || typeof live !== "object") return null;
+  const page = live as Partial<LivePage>;
+  if (typeof page.psetId !== "string" || typeof page.imageUrl !== "string") {
+    return null;
+  }
+  return {
+    psetId: page.psetId,
+    title: typeof page.title === "string" ? page.title : "",
+    page: typeof page.page === "number" ? page.page : 0,
+    pages: typeof page.pages === "number" ? page.pages : 1,
+    imageUrl: page.imageUrl,
+    text: typeof page.text === "string" ? page.text : "",
+    questionRegions: Array.isArray(page.questionRegions)
+      ? page.questionRegions
+      : [],
+  };
+}
+
 export async function POST(req: Request) {
   let body: unknown = {};
   try {
@@ -26,6 +49,13 @@ export async function POST(req: Request) {
   }
 
   const history = asMessages(body);
+  const event = asSessionEvent(
+    body && typeof body === "object" ? (body as { event?: unknown }).event : null,
+  );
+  const deep: boolean =
+    !!body && typeof body === "object" && (body as { deep?: unknown }).deep === true;
+  setLivePage(asLivePage(body));
+  const model = deep ? GROK_DEEP_MODEL : GROK_MODEL;
   const id = "chatcmpl-boh";
   const created = Math.floor(Date.now() / 1000);
   const encoder = new TextEncoder();
@@ -36,12 +66,12 @@ export async function POST(req: Request) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
       };
       try {
-        for await (const content of streamGrok(history)) {
+        for await (const content of streamGrok(history, event, deep)) {
           send({
             id,
             object: "chat.completion.chunk",
             created,
-            model: "grok-4.6",
+            model,
             choices: [{ index: 0, delta: { content }, finish_reason: null }],
           });
         }
@@ -49,7 +79,7 @@ export async function POST(req: Request) {
           id,
           object: "chat.completion.chunk",
           created,
-          model: "grok-4.6",
+          model,
           choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
         });
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));

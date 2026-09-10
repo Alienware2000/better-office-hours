@@ -216,6 +216,7 @@ export type AgentTurn = {
   };
   mode?: "pset" | "concept";
   recap?: boolean;
+  think?: boolean;
 };
 
 export type Session = {

@@ -228,6 +228,7 @@ Inline tag grammar the model uses:
 [ANIM {...AnimationSpec JSON...}]  |  [ANIM_PROGRAM {...AnimationProgram JSON...}]  |  [ANIM focus=id]  |  [ANIM resume]
 [MODE concept]  |  [MODE pset]
 [RECAP]         // signals the session close sequence
+[THINK]         // hand this turn to the reasoning lane, see 3.5
 ```
 
 Parsed into:
@@ -240,6 +241,7 @@ type AgentTurn = {
   board?: { open?: boolean; commands: DrawCommand[]; animation?: AnimationSpec | AnimationProgram; animControl?: { focus?: string; resume?: boolean } };
   mode?: "pset" | "concept";
   recap?: boolean;
+  think?: boolean;                       // the fast lane is deferring to the reasoning lane
 };
 ```
 
@@ -255,6 +257,13 @@ Timing rule: tags are dispatched in the order they appear as the speech streams,
 4. Calls Grok with PROMPT.md as the system prompt plus a per-turn context block.
 5. Streams the reply; tags are passed through so the client parser can dispatch them.
 
+Two lanes, one endpoint. `POST` takes `deep: boolean`.
+
+- Fast lane, `deep` absent. A non-reasoning model, about 0.6s to the first word. Every turn starts here so the student always hears something immediately.
+- Reasoning lane, `deep: true`. `grok-4.6` at low reasoning effort, about 7s. Used when being wrong would cost the student: checking their working, diagnosing a misconception, choosing the next hint rung.
+
+The fast lane decides. When a turn needs real reasoning it says one short line telling the student it is looking, emits `[THINK]`, and stops. The client speaks that line and immediately issues the `deep: true` request, so the reasoning wait runs underneath the lead-in audio instead of after it. The reasoning reply is the substantive turn and both replies land in history in order. Latency measured against the real prompt: non-reasoning 0.5s, `grok-4.6` low effort 7.4s, `grok-4.6` default 26s. A reasoning model must never run the fast lane.
+
 Per-turn context block shape:
 
 ```
@@ -269,7 +278,13 @@ Per-turn context block shape:
 <retrieved>{chunks with document titles}</retrieved>
 <reference_do_not_reveal>{solution chunks}</reference_do_not_reveal>
 <student_drew>{true|false}</student_drew>
+<voice>{anti-repetition note, includes the tutor's own recent openings}</voice>
+<when_to_think>{fast lane only: when to emit [THINK]}</when_to_think>
+<deep_turn>{reasoning lane only: continue from the lead-in}</deep_turn>
+<event>{a workspace event the tutor should react to unprompted, such as the pset finishing rendering}</event>
 ```
+
+Events are sent by the client as an allowlisted `kind` (`lib/agent/events.ts`), never as prose, so the client cannot inject tutor instructions.
 
 ### 3.6 Session and recap (recap lane)
 

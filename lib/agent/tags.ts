@@ -67,6 +67,10 @@ function applyTag(turn: AgentTurn, name: string, body: string) {
     turn.recap = true;
     return;
   }
+  if (name === "THINK") {
+    turn.think = true;
+    return;
+  }
   if (name === "BOARD") {
     turn.board = turn.board ?? { commands: [] };
     if (body.trim() === "open") turn.board.open = true;
@@ -181,6 +185,7 @@ export function parseAgentTurn(raw: string): AgentTurn {
       "ANIM",
       "MODE",
       "RECAP",
+      "THINK",
     ];
     if (known.includes(name)) {
       applyTag(turn, name, body);
@@ -202,11 +207,6 @@ export function takeSpeechChunks(spoken: string, emitted: number): {
   const match = pending.match(/^([\s\S]*?[.!?])(?:\s|$)/);
   if (match && match[1].trim().split(/\s+/).length >= 2) {
     return { chunk: match[1].trim(), consumed: emitted + match[0].length };
-  }
-  const words = pending.trim().split(/\s+/);
-  if (words.length >= 8) {
-    const chunk = words.slice(0, 8).join(" ");
-    return { chunk, consumed: emitted + pending.indexOf(chunk) + chunk.length };
   }
   return { chunk: "", consumed: emitted };
 }

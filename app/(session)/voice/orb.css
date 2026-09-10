@@ -1,55 +1,114 @@
-.orb {
-  width: 7.5rem;
-  height: 7.5rem;
+.orb-control {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
   border-radius: 9999px;
-  background: #171717;
-  box-shadow: 0 18px 40px rgba(23, 23, 23, 0.18);
+  outline: none;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.orb-control:not(:disabled) {
+  cursor: pointer;
+}
+
+.orb-control:not(:disabled):focus-visible {
+  box-shadow:
+    0 0 0 4px #f4efe4,
+    0 0 0 6px rgba(28, 25, 23, 0.42);
+}
+
+.orb-control:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.orb {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: inherit;
+  background: #20201f;
+  box-shadow:
+    0 18px 42px rgba(28, 25, 23, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
   transform-origin: center;
+  transition:
+    transform 0.18s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .orb-idle {
-  animation: orb-breathe 3.2s ease-in-out infinite;
+  animation: orb-breathe 3.6s ease-in-out infinite;
 }
 
 .orb-listening {
-  transition: transform 80ms linear;
+  background: #171716;
+  box-shadow:
+    0 0 0 6px rgba(28, 25, 23, 0.07),
+    0 18px 44px rgba(28, 25, 23, 0.22);
 }
 
 .orb-thinking {
-  animation: orb-spin 7s linear infinite;
+  background: #292927;
+  animation: orb-think 1.8s ease-in-out infinite;
 }
 
 .orb-speaking {
-  animation: orb-pulse 0.7s ease-in-out infinite;
+  background: #111110;
+  animation: orb-speak 1.05s ease-in-out infinite;
 }
 
 @keyframes orb-breathe {
   0%,
   100% {
-    transform: scale(1);
-    opacity: 0.92;
+    transform: scale(0.985);
+    box-shadow: 0 16px 38px rgba(28, 25, 23, 0.16);
   }
   50% {
-    transform: scale(1.06);
-    opacity: 1;
+    transform: scale(1.02);
+    box-shadow: 0 21px 48px rgba(28, 25, 23, 0.22);
   }
 }
 
-@keyframes orb-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes orb-pulse {
+@keyframes orb-think {
   0%,
   100% {
-    transform: scale(1);
+    box-shadow:
+      0 0 0 0 rgba(28, 25, 23, 0.08),
+      0 18px 42px rgba(28, 25, 23, 0.18);
   }
   50% {
-    transform: scale(1.12);
+    box-shadow:
+      0 0 0 8px rgba(28, 25, 23, 0.06),
+      0 21px 48px rgba(28, 25, 23, 0.24);
+  }
+}
+
+@keyframes orb-speak {
+  0%,
+  100% {
+    transform: scale(0.99);
+    box-shadow:
+      0 0 0 5px rgba(28, 25, 23, 0.06),
+      0 18px 42px rgba(28, 25, 23, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow:
+      0 0 0 11px rgba(28, 25, 23, 0.08),
+      0 22px 52px rgba(28, 25, 23, 0.28);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-idle,
+  .orb-thinking,
+  .orb-speaking {
+    animation: none;
   }
 }
