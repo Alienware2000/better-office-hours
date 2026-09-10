@@ -4,9 +4,15 @@ import { useEffect, useRef } from "react";
 import type { Turn } from "@/lib/types";
 import { isJunkSpeech } from "./speech";
 
+// Live captions, not a chat log. Older lines drop off the screen; the model
+// still has the session until the student puts the paper away.
+const LIVE_TURNS = 4;
+
 export function Captions({ turns }: { turns: Turn[] }) {
   const endRef = useRef<HTMLDivElement>(null);
-  const spoken = turns.filter((turn) => turn.text.trim() && !isJunkSpeech(turn.text));
+  const spoken = turns
+    .filter((turn) => turn.text.trim() && !isJunkSpeech(turn.text))
+    .slice(-LIVE_TURNS);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });

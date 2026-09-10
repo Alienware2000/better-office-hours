@@ -108,6 +108,8 @@
   min-height: 0;
   flex: 1 1 auto;
   margin-top: 1.75rem;
+  user-select: none;
+  -webkit-user-select: none;
   /* Older lines fade out at the top rather than ending on a hard edge. */
   mask-image: linear-gradient(to bottom, transparent, #000 2.25rem);
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 2.25rem);
@@ -133,6 +135,12 @@
   font-size: 0.83rem;
   line-height: 1.5;
   text-wrap: pretty;
+  cursor: default;
+}
+
+/* Keep the latest exchange readable. Earlier live lines recede. */
+.captions-scroll .caption:not(:nth-last-child(-n+3)) {
+  opacity: 0.42;
 }
 
 .caption-tutor {

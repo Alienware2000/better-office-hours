@@ -23,6 +23,8 @@ export function VoiceSession() {
     interrupt,
     exitWorkspace,
     enterWorkspace,
+    putAwayPset,
+    bindDiscardPset,
     turns,
     chips,
     layout,
@@ -37,6 +39,15 @@ export function VoiceSession() {
   splitRef.current = split;
   const announcedReady = useRef<string | null>(null);
   const pendingReady = useRef<{ title: string; pages: number } | null>(null);
+
+  useEffect(() => {
+    bindDiscardPset(() => {
+      announcedReady.current = null;
+      pendingReady.current = null;
+      setPset(null);
+    });
+    return () => bindDiscardPset(() => {});
+  }, [bindDiscardPset]);
 
   const announceReady = useCallback(
     (info: { title: string; pages: number }, id: string) => {
@@ -135,6 +146,7 @@ export function VoiceSession() {
                 highlight={highlight}
                 active={split}
                 onExit={exitWorkspace}
+                onRemove={putAwayPset}
                 onPsetReady={(info) => {
                   if (!pset) return;
                   if (splitRef.current) announceReady(info, pset.id);

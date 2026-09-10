@@ -35,12 +35,14 @@ export function PdfViewer({
   active = true,
   onReady,
   onExit,
+  onRemove,
 }: {
   psetId: string;
   title: string;
   fileUrl: string;
   onReady?: (info: { title: string; pages: number }) => void;
   onExit?: () => void;
+  onRemove?: () => void;
   active?: boolean;
   pointer?: { page: number; x: number; y: number; label?: string };
   highlight?: { page: number; bbox: BBox };
@@ -264,6 +266,16 @@ export function PdfViewer({
       <div className="pdf-bar">
         {onExit ? <LeaveButton onLeave={onExit} /> : null}
         <span className="pdf-title">{title}</span>
+        {onRemove ? (
+          <button
+            type="button"
+            className="desk-button desk-remove"
+            onClick={onRemove}
+            aria-label="Remove this problem set"
+          >
+            Remove
+          </button>
+        ) : null}
         {pages.length > 1 ? (
           <>
             <button

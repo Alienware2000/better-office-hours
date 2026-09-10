@@ -16,6 +16,7 @@ export function WorkspacePane({
   active = true,
   onPsetReady,
   onExit,
+  onRemove,
 }: {
   // Held by the session rather than here, so closing the workspace and coming
   // back does not lose the student's upload.
@@ -28,6 +29,7 @@ export function WorkspacePane({
   active?: boolean;
   onPsetReady?: (info: { title: string; pages: number }) => void;
   onExit?: () => void;
+  onRemove?: () => void;
 }) {
   if (!pset) {
     return (
@@ -45,6 +47,7 @@ export function WorkspacePane({
   return (
     <div className="desk">
       <PdfViewer
+        key={pset.id}
         psetId={pset.id}
         title={pset.title}
         fileUrl={pset.fileUrl}
@@ -53,6 +56,7 @@ export function WorkspacePane({
         active={active}
         onReady={onPsetReady}
         onExit={onExit}
+        onRemove={onRemove}
       />
     </div>
   );

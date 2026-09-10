@@ -335,6 +335,10 @@
   color: #78716c;
 }
 
+.desk-remove {
+  flex: 0 0 auto;
+}
+
 .desk-leave {
   font-weight: 500;
   color: #44403c;

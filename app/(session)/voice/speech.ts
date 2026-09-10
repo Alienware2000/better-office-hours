@@ -14,3 +14,15 @@ export function isResumePsetPhrase(text: string) {
 export function isResumeConceptPhrase(text: string) {
   return /^(explain a concept|a concept|concept)[.!?]?$/i.test(text.trim());
 }
+
+// Put this paper away and go back to the drop zone. Not a notebook library.
+export function isPutAwayPsetPhrase(text: string) {
+  const said = text.toLowerCase();
+  return (
+    /\b(remove|close|put away|take away|take off)\b.*\b(pdf|pset|problem set|homework|document|file|this)\b/.test(
+      said,
+    ) ||
+    /\b(different|another|new)\b.*\b(pdf|pset|problem set|homework|assignment)\b/.test(said) ||
+    /\bwork on (something|a) different\b/.test(said)
+  );
+}

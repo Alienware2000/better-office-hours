@@ -7,7 +7,7 @@ import { parseAgentTurn, takeSpeechChunks, type ChatMessage } from "@/lib/agent/
 import { getLivePage } from "@/lib/pdf/live-page";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
 import { CHIPS, pickGreeting, type OrbState } from "./constants";
-import { isJunkSpeech, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
+import { isJunkSpeech, isPutAwayPsetPhrase, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
 
 type Health = { grok: boolean; elevenlabs: boolean };
 type WorkKind = "lobby" | "pset" | "concept";
@@ -142,6 +142,7 @@ export function useVoiceLoop() {
   const discardRecordingRef = useRef<() => void>(() => {});
   const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
   const claimTabRef = useRef<() => void>(() => {});
+  const discardPsetRef = useRef<() => void>(() => {});
 
   const setOrb = useCallback((next: OrbState) => {
     stateRef.current = next;
@@ -259,6 +260,28 @@ export function useVoiceLoop() {
     setLayout("pset");
   }, [adoptKind, setLayout]);
 
+  // One paper on the desk at a time. Putting it away is a new homework
+  // session, not a parked copy of the old one.
+  const putAwayPset = useCallback(() => {
+    stopPlayback();
+    turnAbortRef.current?.abort();
+    turnAbortRef.current = null;
+    parkedRef.current.pset = null;
+    kindRef.current = "pset";
+    historyRef.current = greetingMessages();
+    turnsRef.current = [];
+    setTurns([]);
+    setPointer(undefined);
+    setHighlight(undefined);
+    setLayout("pset");
+    discardPsetRef.current();
+    setOrb(pausedRef.current ? "idle" : "listening");
+  }, [greetingMessages, setLayout, setOrb, stopPlayback]);
+
+  const bindDiscardPset = useCallback((discard: () => void) => {
+    discardPsetRef.current = discard;
+  }, []);
+
   const addTurn = useCallback((role: Turn["role"], text: string) => {
     setTurns((prev) => {
       const next = [...prev, { role, text, at: new Date().toISOString() }];
@@ -365,6 +388,12 @@ export function useVoiceLoop() {
       if (!said && !event) return;
       if (said && isJunkSpeech(said)) return;
 
+      if (said && isPutAwayPsetPhrase(said) && layoutRef.current === "pset") {
+        putAwayPset();
+        if (!playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
+        return;
+      }
+
       // The layout follows what the student said right away. Waiting on the
       // model's [MODE ...] tag makes the screen lag behind the conversation.
       const intent = said ? detectMode(said, layoutRef.current) : null;
@@ -428,7 +457,7 @@ export function useVoiceLoop() {
       if (turnAbortRef.current === turnController) turnAbortRef.current = null;
       if (!playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
     },
-    [addTurn, adoptKind, health, runPass, setLayout, setOrb, stopPlayback],
+    [addTurn, adoptKind, health, putAwayPset, runPass, setLayout, setOrb, stopPlayback],
   );
 
   const sendUtterance = useCallback(
@@ -742,6 +771,8 @@ export function useVoiceLoop() {
     interrupt,
     exitWorkspace,
     enterWorkspace,
+    putAwayPset,
+    bindDiscardPset,
     turns,
     chips: CHIPS,
     layout,
