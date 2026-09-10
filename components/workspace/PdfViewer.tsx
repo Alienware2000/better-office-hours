@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "motion/react";
 import type { BBox, StudentAnnotation } from "@/lib/types";
 import { detectQuestionRegions, type PdfTextItem } from "@/lib/pdf/questions";
 import { setLivePage } from "@/lib/pdf/live-page";
+import { LeaveButton } from "./LeaveButton";
 import { Overlay } from "./Overlay";
+import { Pointer } from "./Pointer";
 
 const MAX_VISION_WIDTH = 1024;
 
@@ -23,20 +26,28 @@ export function PdfViewer({
   pointer,
   highlight,
   onReady,
+  onExit,
 }: {
   psetId: string;
   title: string;
   fileUrl: string;
   onReady?: (info: { title: string; pages: number }) => void;
+  onExit?: () => void;
   pointer?: { page: number; x: number; y: number; label?: string };
   highlight?: { page: number; bbox: BBox };
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PageView[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [marks, setMarks] = useState<StudentAnnotation[]>([]);
+  const [current, setCurrent] = useState(0);
+  const [laser, setLaser] = useState<{ x: number; y: number; label?: string } | null>(
+    null,
+  );
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+  const reduceMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
     let cancelled = false;
@@ -98,17 +109,8 @@ export function PdfViewer({
 
       if (cancelled) return;
       setPages(nextPages);
-      const first = nextPages[0];
-      if (first) {
-        setLivePage({
-          psetId,
-          title,
-          page: 0,
-          pages: nextPages.length,
-          imageUrl: first.visionUrl,
-          text: first.text,
-          questionRegions: first.questionRegions,
-        });
+      setCurrent(0);
+      if (nextPages[0]) {
         // Fired here rather than on upload, so that by the time the tutor
         // speaks it can actually read the page.
         onReadyRef.current?.({ title, pages: nextPages.length });
@@ -127,67 +129,164 @@ export function PdfViewer({
     };
   }, [fileUrl, psetId, title]);
 
+  // Whichever page the student is looking at is the page the tutor sees. This
+  // used to update only when the tutor pointed, so scrolling left it blind.
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host || !pages.length) return;
+    const sheets = Array.from(host.querySelectorAll<HTMLElement>("[data-page]"));
+    if (!sheets.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const best = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!best) return;
+        const index = Number((best.target as HTMLElement).dataset.page);
+        if (Number.isFinite(index)) setCurrent(index);
+      },
+      { root: host, threshold: [0.25, 0.5, 0.75] },
+    );
+
+    for (const sheet of sheets) observer.observe(sheet);
+    return () => observer.disconnect();
+  }, [pages]);
+
+  useEffect(() => {
+    const page = pages[current];
+    if (!page) return;
+    setLivePage({
+      psetId,
+      title,
+      page: current,
+      pages: pages.length,
+      imageUrl: page.visionUrl,
+      text: page.text,
+      questionRegions: page.questionRegions,
+    });
+  }, [current, pages, psetId, title]);
+
+  const goToPage = (index: number) => {
+    const clamped = Math.min(Math.max(index, 0), pages.length - 1);
+    hostRef.current
+      ?.querySelector(`[data-page="${clamped}"]`)
+      ?.scrollIntoView({ block: "start" });
+  };
+
   useEffect(() => {
     if (!pointer || !hostRef.current) return;
     const index = Math.max(0, pointer.page - 1);
-    const node = hostRef.current.querySelector(`[data-page="${index}"]`);
-    node?.scrollIntoView({ behavior: "smooth", block: "center" });
-    const page = pages[index];
-    if (page) {
-      setLivePage({
-        psetId,
-        title,
-        page: index,
-        pages: pages.length,
-        imageUrl: page.visionUrl,
-        text: page.text,
-        questionRegions: page.questionRegions,
-      });
+    hostRef.current
+      .querySelector(`[data-page="${index}"]`)
+      ?.scrollIntoView({ block: "center" });
+  }, [pointer]);
+
+  // The laser lives on the visible frame, not on a single page sheet, so it
+  // can travel between problems instead of unmounting and appearing again.
+  useEffect(() => {
+    const frame = frameRef.current;
+    const stack = hostRef.current;
+    if (!frame || !pointer) {
+      setLaser(null);
+      return;
     }
-  }, [pointer, pages, psetId, title]);
+
+    const update = () => {
+      const sheet = frame.querySelector<HTMLElement>(
+        `[data-page="${Math.max(0, pointer.page - 1)}"]`,
+      );
+      if (!sheet) return;
+      const frameBox = frame.getBoundingClientRect();
+      const sheetBox = sheet.getBoundingClientRect();
+      if (frameBox.width < 1 || frameBox.height < 1) return;
+      setLaser({
+        x: (sheetBox.left - frameBox.left + pointer.x * sheetBox.width) / frameBox.width,
+        y: (sheetBox.top - frameBox.top + pointer.y * sheetBox.height) / frameBox.height,
+        label: pointer.label,
+      });
+    };
+
+    update();
+    stack?.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(frame);
+    return () => {
+      stack?.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [pointer]);
 
   if (error) {
     return <p className="p-6 text-sm text-zinc-500">{error}</p>;
   }
 
   return (
-    <div ref={hostRef} className="page-stack">
-      {pages.map((page) => {
-        const pageNumber = page.index + 1;
-        const pagePointer =
-          pointer && pointer.page === pageNumber
-            ? { x: pointer.x, y: pointer.y, label: pointer.label }
-            : undefined;
-        const pageHighlight =
-          highlight && highlight.page === pageNumber ? highlight.bbox : undefined;
+    <div className="desk-body">
+      <div className="pdf-bar">
+        {onExit ? <LeaveButton onLeave={onExit} /> : null}
+        <span className="pdf-title">{title}</span>
+        <span className="pdf-hint">Drag to mark</span>
+        {pages.length > 1 ? (
+          <>
+            <button
+              type="button"
+              className="desk-button desk-step"
+              onClick={() => goToPage(current - 1)}
+              disabled={current === 0}
+              aria-label="Previous page"
+            >
+              Prev
+            </button>
+            <span className="pdf-pages">
+              {current + 1} / {pages.length}
+            </span>
+            <button
+              type="button"
+              className="desk-button desk-step"
+              onClick={() => goToPage(current + 1)}
+              disabled={current >= pages.length - 1}
+              aria-label="Next page"
+            >
+              Next
+            </button>
+          </>
+        ) : null}
+      </div>
+      <div ref={frameRef} className="page-frame">
+        <div ref={hostRef} className="page-stack">
+          {pages.map((page) => {
+            const pageNumber = page.index + 1;
+            const pageHighlight =
+              highlight && highlight.page === pageNumber ? highlight.bbox : undefined;
 
-        return (
-          <div
-            key={page.index}
-            data-page={page.index}
-            className="page-sheet"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={page.displayUrl} alt={`Page ${pageNumber}`} />
-            <Overlay
-              pointer={pagePointer}
-              highlight={pageHighlight}
-              annotations={marks.filter((mark) => mark.page === page.index)}
-              onAnnotate={(kind, bbox) => {
-                setMarks((current) => [
-                  ...current,
-                  {
-                    page: page.index,
-                    bbox,
-                    kind,
-                    at: new Date().toISOString(),
-                  },
-                ]);
-              }}
-            />
-          </div>
-        );
-      })}
+            return (
+              <div key={page.index} data-page={page.index} className="page-sheet">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={page.displayUrl} alt={`Page ${pageNumber}`} />
+                <Overlay
+                  highlight={pageHighlight}
+                  annotations={marks.filter((mark) => mark.page === page.index)}
+                  onAnnotate={(kind, bbox) => {
+                    setMarks((existing) => [
+                      ...existing,
+                      { page: page.index, bbox, kind, at: new Date().toISOString() },
+                    ]);
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+        {laser ? (
+          <Pointer
+            x={laser.x}
+            y={laser.y}
+            label={laser.label}
+            reduceMotion={reduceMotion}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

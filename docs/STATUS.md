@@ -2,85 +2,85 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 15:47 ET
+Updated: 2026-09-10 16:25 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/workspace` (from `lane/voice`), pushed, PR open to `main`
+Branch: `lane/workspace` (tracks `origin/lane/workspace`)
+PR: https://github.com/Alienware2000/better-office-hours/pull/1 (open against `main`, mergeable)
 
 ## Now
 
-Voice safety and workspace checkpoint is ready for human review.
+David likes the look: cream, black orb, live captions. Keep that direction. Minimal, not colorful, not old.
 
-The tutor now starts paused and cannot speak or listen until the human taps the orb. Tapping the orb again aborts the LLM request, queued TTS, active audio, recorder, and mic input. Hidden tabs suspend voice, and a newly active tab takes voice control from older tabs.
+He is iterating in person at checkpoints. Do not run ahead into the whiteboard until he says the pointer, highlight, and Leave feel right on a real PDF.
 
-Human review passed for the revised transition and PDF upload/rendering. Waiting on: review the voice safety pass, then ask about a visible PDF question and confirm the tutor pointer/highlight lands correctly. Drag on the PDF to confirm circle or underline input.
+Laser pointer, marker highlight, Leave (and Escape), page Prev/Next, and the pset held by `VoiceSession` are committed on this branch. Next: keep iterating on workspace feel and voice. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
 
-Do not start the whiteboard until that is approved.
+Dev server: `http://localhost:3100` may already be up. Keys live in `.env.local` (gitignored). Rotate them before deploy: they were pasted into an old chat, and the ElevenLabs key was a one-day key.
 
-## Done
+## What to try next (human)
 
-- Spec, repo, Next.js scaffold, types, voice loop.
-- Workspace: PDF upload to `.data/psets`, PDF.js viewer, easing pointer, highlight ring, drag annotations.
-- Homework chip (or `[MODE pset]`) splits the layout. Current page image is sent to Grok so POINT tags can land.
-- Student marks stay on the page locally. They are not yet attached to the next model turn.
-- Transition revision after repeated human feedback: removed the competing hand-written CSS transitions. Motion now performs a spring shared-layout move for the orb while the workspace enters independently.
-- Setup text no longer overlaps the orb, and missing API keys do not replace the friendly setup message with a raw server error.
-- Responsive baseline: tablet uses a 58/42 split so the agent panel does not overflow. Widths at 640px and below stack the agent strip above the workspace. Dedicated mobile design remains a later pass.
-- Human verified a real PHYS 180 Homework 1 PDF uploads and renders in the workspace.
-- Voice feedback-loop safety pass: no automatic greeting or listening on page load, no mic input while tutor audio plays, 450ms post-audio cooldown, hidden-tab suspension, and cross-tab voice handoff.
-- Orb restored to a black minimal treatment. It is the single pause/resume control and exposes quiet idle, listening, thinking, and speaking states.
-- TTS uses ElevenLabs Flash with sentence-level continuity and a warmer conversational voice. Spoken turns are capped at two sentence chunks and 70 words.
-- `npm run build` passes. An isolated preview stayed silent on startup with no TTS requests.
-- Fixed the tutor opening by naming "Problem Set 3" with nothing uploaded. `lib/agent/context.ts` had a hardcoded demo course and pset; it now reports only what is loaded, and the Homework chip with no PDF speaks a fixed line instead of calling the model.
-- Two model lanes, human approved. The fast non-reasoning model runs every turn; when the student shows work it says one short line, emits `[THINK]`, and the client immediately issues a `deep: true` request to `grok-4.6` at low reasoning effort. Measured: handoff decision 0.8s, reasoning reply 9 to 12s, and the reasoning fetch starts before the lead-in audio plays so most of that wait is covered. Verified the reasoning lane diagnoses a wrong attempt, points at the page, asks one question, and refuses to hand over the answer. `[THINK]` is a new shared tag, so `lib/types.ts` and ARCHITECTURE.md sections 3.4 and 3.5 changed together.
-- Live captions in the agent panel, filling in as the reply streams. They live in `app/(session)/voice/Captions.tsx` rather than `components/transcript/` so the shell lane keeps that directory.
-- The layout now follows speech. Saying "my physics homework" opens the pset workspace with no chip tap, via `lib/agent/intent.ts`.
-- The tutor speaks on its own when the PDF finishes rendering, naming something actually on the page and asking which problem to start with. DESIGN.md section 4 already required this ("once loaded, the tutor starts"); it was simply missing.
-- Opening line is now a brief warm self-introduction, one of four variants per session, still fixed text so the first word is instant.
-- Phrasing variety: the tutor had opened every session with "Got it, physics homework". `buildVoiceNote` now bans its stock openers and its own recent openings, and temperature moved to 0.85.
-- Fixed a 26s wait before the first spoken word. The spoken turn moved from `grok-4.6` to `grok-4.20-0309-non-reasoning`, measured at 0.62s to first token and 1.0s total through `/api/agent/llm`. Both models read the page image, so the pointer is unaffected. Human approved the switch.
+1. Reload `http://localhost:3100`. Tap the orb to start. Say homework (or tap the chip). **Leave** or Escape should return to the orb without the browser back button. The PDF, if uploaded, should still be there when you come back.
+2. Drop a real pset. Confirm the tutor speaks on its own once the page is readable.
+3. Ask about a visible problem. Confirm the laser glides instead of jumping, and the highlight reads as a marker, not a box. Drag to circle or underline.
+4. Show wrong working and listen for "let me look" then a careful follow-up. There will be a few seconds of quiet after the lead-in. Say whether that feels like a TA reading or a hang.
 
-## Next
+## After that approval
 
-1. Human voice review on `http://localhost:3100`: confirm silent startup, tap to start, tap to stop, no self-triggered reply, fast first word, no invented assignment, the tutor speaking on its own after the PDF renders, the lead-in and reasoning handoff, captions, and preferred voice.
-2. Human review of upload + pointer.
-3. After approval: `lane/whiteboard` strokes.
-4. Teammate: shell UI polish, auth, transcript; context ingest. `lib/db/schema.sql` still missing. Branch off `main` once this PR merges, because `main` had no voice loop or workspace before it.
+`lane/whiteboard`: tldraw strokes that animate in as the tutor names them, then generated animation from the tutor's own spec. Never cut. Nothing on the board is scripted for the demo.
 
-Also open: `docs/PROMPT.md` still tells the tutor it has the syllabus, lecture notes, past psets, and exam reviews, none of which exist until the context lane lands. The per-turn `<no_context_yet>` block counteracts it, but the prompt is edited by humans, so a human should decide the wording. It is also the source of the "Got it" opener, via "confirm what you understood".
+## Later, not Friday
 
-Rotate `XAI_API_KEY` and `ELEVENLABS_API_KEY` before anything deploys. Both were pasted into a chat and the ElevenLabs one was issued as a one-day key.
+Transcript export, for professors who will eventually shape the tutor's priors. Already in `docs/DESIGN.md` section 13. The live captions are the seed.
+
+Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback at 640px, usable everywhere.
+
+## Do not
+
+- Start the whiteboard until David approves this workspace pass.
+- Edit `docs/PROMPT.md` unless he asks. It still claims the tutor has a syllabus and lecture notes, which is false until the context lane exists. It is also the source of the "Got it" tic ("confirm what you understood"). Propose a diff if needed.
+- Silently edit `lib/types.ts`. `[THINK]` already landed with ARCHITECTURE.md 3.4 and 3.5.
+- Put a reasoning model on the spoken (fast) turn. Measured: non-reasoning 0.6s, `grok-4.6` default 26s.
+- Restore CSS transform choreography for the orb, or a gradient-stroked laser path.
+- Add chat boxes or command buttons for talking to the tutor. Voice is the only input. Mouse is for pointing, drawing, and navigation (Leave, pages).
+- Commit secrets.
+
+## Done (this branch)
+
+- Spec, scaffold, types, own voice loop (ElevenLabs STT / Grok / ElevenLabs TTS). Not ConvAI yet; localhost cannot receive ElevenLabs server callbacks.
+- Voice starts paused. Orb tap starts, orb tap stops and cancels queued speech. Hidden tab and second tab suspend voice. Mic off while the tutor speaks. Acoustic barge-in removed because it heard the speakers and answered itself.
+- Two model lanes. Fast: `grok-4.20-0309-non-reasoning`. Reasoning: `grok-4.6` at low effort when the fast lane emits `[THINK]`. Lead-in audio covers most of the wait.
+- Honest context: no hardcoded "Problem Set 3". Layout follows speech (`lib/agent/intent.ts`). Tutor speaks when the PDF is ready (`pset_ready` event).
+- PDF workspace: upload, PDF.js, laser pointer, marker highlight, student marks (local only), live captions.
+- Leave / Escape to leave the workspace without ending the conversation.
 
 ## Lanes
 
 | Lane | Owner | Branch | State |
 |---|---|---|---|
-| voice | David | `lane/voice` | first pass on GitHub |
-| workspace | David | `lane/workspace` | pushed, PR open, waiting on human |
-| whiteboard | David | not started | next after this |
-| context | Teammate | not started | types ready |
+| voice | David | `lane/voice` | first pass on GitHub; later voice work is on `lane/workspace` |
+| workspace | David | `lane/workspace` | PR #1 open; laser, marker, Leave committed |
+| whiteboard | David | not started | next after human approval |
+| context | Teammate | not started | types ready; `lib/db/schema.sql` missing |
 | recap | Teammate | not started | |
-| shell | Teammate | not started | VoiceSession still composes the split layout |
+| shell | Teammate | not started | VoiceSession still composes the split |
 
 ## Run
 
 ```bash
-cp .env.example .env.local
-# fill XAI_API_KEY and ELEVENLABS_API_KEY
-npm install
-npm run dev
+cd /Users/davidantwi/Dev/boh
+# .env.local should already have XAI_API_KEY and ELEVENLABS_API_KEY
+npm run dev -- -p 3100
 ```
 
-Open http://localhost:3100 for the current isolated preview. Tap the orb to start voice. Tap Homework and drop a PDF.
+Open http://localhost:3100. Allow the mic. Tap the orb.
 
-## How to stop a session
-
-Before you end, update this file: timestamp, who, what changed, what the next person or agent should do, blockers. Update `docs/NOTES.md` under your lane. Commit both with the slice.
+Checks without a mic: `node scripts/check-turns.mjs` and `node scripts/check-lanes.mjs` against that server.
 
 ## Blockers
 
-Pointer quality depends on Grok seeing the page image. Without API keys you can still open the split and drop a PDF, but it will not point.
+Pointer quality depends on Grok seeing the page image.
 
-The reasoning lane leaves roughly 5 to 8s of quiet after the lead-in line. That is the honest cost of real reasoning and needs a human ear on whether it feels like a TA reading your work or like a hang.
+The reasoning lane still leaves about 5 to 8s of quiet after the lead-in.
 
-True simultaneous acoustic barge-in is disabled in the homemade RMS loop because speaker echo can create runaway tutor turns. Tap the orb to interrupt. Proper hands-free barge-in should use the ElevenLabs Conversational AI SDK echo and turn handling.
+Hands-free barge-in is off until ElevenLabs Conversational AI SDK turn handling. Tap the orb to interrupt.

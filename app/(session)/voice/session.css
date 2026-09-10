@@ -52,6 +52,12 @@
   box-shadow: -18px 0 44px rgba(68, 64, 60, 0.045);
 }
 
+.agent-tools {
+  position: absolute;
+  top: 0.85rem;
+  right: 1rem;
+}
+
 .orb-frame {
   flex: 0 0 auto;
   border-radius: 9999px;
@@ -220,6 +226,11 @@
 
   .agent-stage .orb-status {
     margin: 0;
+  }
+
+  .agent-tools {
+    position: static;
+    margin-right: auto;
   }
 
   /* Stacked on a phone the agent strip is only tall enough for the orb. */

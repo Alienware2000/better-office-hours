@@ -1,7 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { WorkspacePane } from "@/components/workspace/WorkspacePane";
+import { LeaveButton } from "@/components/workspace/LeaveButton";
+import {
+  WorkspacePane,
+  type LoadedPset,
+} from "@/components/workspace/WorkspacePane";
 import { Captions } from "./Captions";
 import { Orb } from "./Orb";
 import type { OrbState } from "./constants";
@@ -17,14 +22,26 @@ export function VoiceSession() {
     sendUtterance,
     sendEvent,
     interrupt,
+    exitWorkspace,
     turns,
     chips,
     layout,
     pointer,
     highlight,
   } = useVoiceLoop();
+  const [pset, setPset] = useState<LoadedPset | null>(null);
   const split = layout === "pset";
   const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!split) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") exitWorkspace();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [exitWorkspace, split]);
+
   const layoutTransition = reduceMotion
     ? { duration: 0 }
     : { type: "spring" as const, stiffness: 210, damping: 27, mass: 0.85 };
@@ -96,8 +113,11 @@ export function VoiceSession() {
                 transition={layoutTransition}
               >
                 <WorkspacePane
+                  pset={pset}
+                  onPsetChange={setPset}
                   pointer={pointer}
                   highlight={highlight}
+                  onExit={exitWorkspace}
                   onPsetReady={(info) =>
                     void sendEvent({
                       kind: "pset_ready",
@@ -109,6 +129,9 @@ export function VoiceSession() {
               </motion.section>
 
               <section className="agent-stage">
+                <div className="agent-tools">
+                  <LeaveButton onLeave={exitWorkspace} />
+                </div>
                 <motion.div
                   layoutId="tutor-orb"
                   className="orb-frame orb-frame-workspace"

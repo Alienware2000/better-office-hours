@@ -193,3 +193,5 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 ## 13. Roadmap (README only)
 
 Professor console to edit the tutor prompt and upload materials. Lecture recording transcription. Live screen share for coding courses. iPad handwriting. Spaced review reminders across sessions. Cross-course memory.
+
+Transcript export. The session transcript is already captured for the recap, so exporting it is small. It pairs with the professor console: a professor who can shape the tutor's priors for their class also wants to see where their students actually got stuck, and an exported transcript is the artifact that carries that. Out of scope for Friday, worth a line in the README.

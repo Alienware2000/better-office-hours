@@ -1,28 +1,41 @@
 "use client";
 
-import { useState } from "react";
 import type { BBox } from "@/lib/types";
 import { DropZone } from "./DropZone";
+import { LeaveButton } from "./LeaveButton";
 import { PdfViewer } from "./PdfViewer";
 import "./workspace.css";
 
+export type LoadedPset = { id: string; title: string; fileUrl: string };
+
 export function WorkspacePane({
+  pset,
+  onPsetChange,
   pointer,
   highlight,
   onPsetReady,
+  onExit,
 }: {
+  // Held by the session rather than here, so closing the workspace and coming
+  // back does not lose the student's upload.
+  pset: LoadedPset | null;
+  onPsetChange: (pset: LoadedPset) => void;
   pointer?: { page: number; x: number; y: number; label?: string };
   highlight?: { page: number; bbox: BBox };
   onPsetReady?: (info: { title: string; pages: number }) => void;
+  onExit?: () => void;
 }) {
-  const [pset, setPset] = useState<{
-    id: string;
-    title: string;
-    fileUrl: string;
-  } | null>(null);
-
   if (!pset) {
-    return <DropZone onUploaded={setPset} />;
+    return (
+      <div className="desk">
+        {onExit ? (
+          <div className="pdf-bar">
+            <LeaveButton onLeave={onExit} />
+          </div>
+        ) : null}
+        <DropZone onUploaded={onPsetChange} />
+      </div>
+    );
   }
 
   return (
@@ -34,6 +47,7 @@ export function WorkspacePane({
         pointer={pointer}
         highlight={highlight}
         onReady={onPsetReady}
+        onExit={onExit}
       />
     </div>
   );

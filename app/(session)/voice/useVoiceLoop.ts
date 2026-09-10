@@ -174,6 +174,14 @@ export function useVoiceLoop() {
     if (turn.highlight) setHighlight(turn.highlight);
   }, []);
 
+  // Leaving the workspace is a view change, not a conversation event. The
+  // tutor keeps its history and stays listening.
+  const exitWorkspace = useCallback(() => {
+    setLayout("orb_only");
+    setPointer(undefined);
+    setHighlight(undefined);
+  }, []);
+
   const addTurn = useCallback((role: Turn["role"], text: string) => {
     setTurns((prev) => [...prev, { role, text, at: new Date().toISOString() }]);
   }, []);
@@ -628,6 +636,7 @@ export function useVoiceLoop() {
     sendUtterance,
     sendEvent,
     interrupt,
+    exitWorkspace,
     turns,
     chips: CHIPS,
     layout,

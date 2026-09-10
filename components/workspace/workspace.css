@@ -1,5 +1,7 @@
 .desk {
+  display: flex;
   height: 100%;
+  flex-direction: column;
   padding: 1.75rem;
   background-color: #e7e0d2;
   background-image:
@@ -9,7 +11,10 @@
 
 .paper {
   display: flex;
-  min-height: calc(100vh - 3.5rem);
+  /* Fills whatever the desk leaves after its toolbar. A viewport-height
+     minimum here pushed the sheet off the bottom of the screen. */
+  flex: 1 1 auto;
+  min-height: 0;
   cursor: pointer;
   flex-direction: column;
   align-items: center;
@@ -53,16 +58,42 @@
   color: #44403c;
 }
 
+.paper-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: #a8a29e;
+}
+
 .paper-error {
   margin: 0.85rem 0 0;
   font-size: 0.75rem;
   color: #78716c;
 }
 
+.page-frame {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
 .page-stack {
-  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow-y: auto;
-  padding: 1.75rem 1.5rem 3rem;
+  scroll-behavior: smooth;
+  padding: 0.5rem 1.5rem 3rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-stack {
+    scroll-behavior: auto;
+  }
+
+  .marker-ink {
+    animation: none;
+  }
 }
 
 .page-sheet {
@@ -82,13 +113,183 @@
   background: #fffcf6;
 }
 
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+
+.marker {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.marker-ink {
+  fill: rgba(247, 197, 96, 0.55);
+  mix-blend-mode: multiply;
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: marker-sweep 0.48s cubic-bezier(0.32, 0.72, 0.35, 1) both;
+}
+
+@keyframes marker-sweep {
+  from {
+    transform: scaleX(0.04);
+    opacity: 0.4;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.mark {
+  position: absolute;
+  pointer-events: none;
+  border-color: rgba(41, 37, 36, 0.82);
+}
+
+.mark-circle {
+  border: 2px solid rgba(41, 37, 36, 0.8);
+  border-radius: 50%;
+}
+
+.mark-underline {
+  border-bottom: 2px solid rgba(41, 37, 36, 0.8);
+  border-radius: 2px;
+}
+
+.laser {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.laser-svg {
+  display: block;
+  overflow: visible;
+}
+
+.laser-head {
+  fill: #c45c26;
+}
+
+.laser-glow {
+  fill: rgba(196, 92, 38, 0.16);
+}
+
+.laser-head {
+  filter: drop-shadow(0 0 3px rgba(196, 92, 38, 0.5));
+}
+
+.laser-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: 12rem;
+  border-radius: 4px;
+  background: rgba(255, 252, 246, 0.94);
+  box-shadow: 0 2px 8px rgba(48, 36, 24, 0.16);
+  padding: 0.15rem 0.4rem;
+  font-size: 0.66rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: #44403c;
+}
+
+.pdf-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.25rem 0.85rem;
+}
+
+.pdf-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #78716c;
+}
+
+.pdf-hint {
+  flex: 0 0 auto;
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  color: #b0a89e;
+}
+
+.desk-leave {
+  font-weight: 500;
+  color: #44403c;
+}
+
+.desk-leave-mark {
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.pdf-pages {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: #78716c;
+}
+
+.desk-button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid rgba(48, 36, 24, 0.14);
+  border-radius: 9999px;
+  background: rgba(255, 252, 246, 0.82);
+  padding: 0.28rem 0.62rem;
+  font-size: 0.7rem;
+  color: #57534e;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.desk-button:hover:not(:disabled) {
+  border-color: rgba(48, 36, 24, 0.3);
+  background: #fffcf6;
+  color: #1c1917;
+}
+
+.desk-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.desk-step {
+  padding: 0.28rem 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
 @media (max-width: 640px) {
   .desk {
     padding: 0.75rem;
   }
 
   .paper {
-    min-height: calc(100dvh - 10.5rem);
+    min-height: 12rem;
   }
 
   .page-stack {

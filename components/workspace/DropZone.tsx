@@ -44,34 +44,33 @@ export function DropZone({
   );
 
   return (
-    <div className="desk">
-      <label
-        className={["paper", busy ? "is-busy" : "", over ? "is-over" : ""]
-          .filter(Boolean)
-          .join(" ")}
-        onDragOver={(event) => {
-          event.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setOver(false);
-          void send(event.dataTransfer.files[0]);
-        }}
-      >
-        <input
-          type="file"
-          accept="application/pdf,.pdf"
-          className="hidden"
-          onChange={(event) => void send(event.target.files?.[0])}
-        />
-        <span className="paper-rule" />
-        <p className="paper-copy">
-          {busy ? "Opening the problem set." : "Drop the pset PDF here."}
-        </p>
-        {error ? <p className="paper-error">{error}</p> : null}
-      </label>
-    </div>
+    <label
+      className={["paper", busy ? "is-busy" : "", over ? "is-over" : ""]
+        .filter(Boolean)
+        .join(" ")}
+      onDragOver={(event) => {
+        event.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setOver(false);
+        void send(event.dataTransfer.files[0]);
+      }}
+    >
+      <input
+        type="file"
+        accept="application/pdf,.pdf"
+        className="hidden"
+        onChange={(event) => void send(event.target.files?.[0])}
+      />
+      <span className="paper-rule" />
+      <p className="paper-copy">
+        {busy ? "Opening the problem set." : "Drop the pset PDF here"}
+      </p>
+      {busy ? null : <p className="paper-hint">or click to choose a file</p>}
+      {error ? <p className="paper-error">{error}</p> : null}
+    </label>
   );
 }
