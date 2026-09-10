@@ -1,0 +1,349 @@
+# Architecture and Interface Contracts
+
+Read DESIGN.md first. This doc defines the system shape and the contracts between lanes so that agents on two machines can build in parallel without talking.
+
+## 1. System shape
+
+```
+Browser (Next.js app)
+  ├─ Workspace pane: PDF.js + overlay (pointer, highlights, student annotations)
+  ├─ Agent pane: Orb + Transcript + Whiteboard (tldraw)
+  └─ Voice client: ElevenLabs Conversational AI SDK (mic in, audio out, barge-in)
+            │
+            ▼
+Next.js API routes
+  ├─ /api/agent/llm        custom LLM endpoint the ElevenLabs agent calls each turn
+  │                         builds context (retrieval + current page image + whiteboard state)
+  │                         calls Grok, parses tool tags, returns speech text + UI commands
+  ├─ /api/ingest           receives course pack files from the Grok Bot or fallbacks
+  ├─ /api/pset/upload      pset PDF upload, page rasterization, text extraction
+  ├─ /api/session/*        session state, transcript, recap
+  └─ /api/retrieve         chunk retrieval (pgvector)
+            │
+            ▼
+Supabase (Postgres + pgvector + storage)
+Grok API (api.x.ai/v1, grok-4.6)
+Grok Bot (runs outside the app, posts to /api/ingest)
+```
+
+## 2. Lanes and ownership
+
+Each lane is a branch off `main` named `lane/<name>`. Lanes touch only their own directories unless a contract change is agreed in this doc first.
+
+| Lane | Owner | Directories |
+|---|---|---|
+| voice | David | `app/(session)/voice/*`, `app/api/agent/*`, `lib/agent/*` |
+| workspace | David | `components/workspace/*`, `lib/pdf/*`, `app/api/pset/*` |
+| whiteboard | David | `components/whiteboard/*`, `components/scenes/*`, `lib/whiteboard/*` |
+| context | Teammate | `app/api/ingest/*`, `app/api/retrieve/*`, `lib/context/*`, `grokbot/*` |
+| recap | Teammate | `app/api/session/*`, `lib/session/*`, `components/recap/*` |
+| shell | Teammate | `app/(auth)/*`, `app/layout.tsx`, `components/orb/*`, `components/transcript/*`, `README.md` |
+
+Shared and frozen after tonight: `lib/types.ts` (all contracts below live here), `lib/db/schema.sql`, `.env.example`.
+
+## 3. Contracts
+
+All of these are TypeScript types in `lib/types.ts`. Change them only by editing this doc and the file in the same PR.
+
+### 3.0 Student profile (context lane produces, shell and voice lanes read)
+
+```ts
+type StudentProfile = {
+  userId: string;
+  name: string;
+  email: string;
+  term: string;                 // "Fall 2026"
+  courses: EnrolledCourse[];
+  source: "grokbot" | "canvas_api" | "manual";
+  refreshedAt: string;
+};
+
+type EnrolledCourse = {
+  courseId: string;             // matches CoursePack.courseId
+  courseName: string;
+  code: string;                 // "PHYS 180"
+  instructor?: string;
+  meetingTimes?: string;
+  assignments: Assignment[];
+  packStatus: "none" | "collecting" | "ready";
+};
+
+type Assignment = {
+  id: string;
+  title: string;                // "Problem Set 3"
+  dueAt?: string;
+  kind: "pset" | "exam" | "reading" | "other";
+  fileStoragePath?: string;     // set if the bot collected the file
+};
+```
+
+Ingest: `POST /api/ingest/profile` with the same bearer token, JSON body of `StudentProfile` minus `userId` (resolved from the email). The Grok Bot posts this first, then the course packs.
+
+### 3.1 Course pack (context lane produces, everyone reads)
+
+```ts
+type CoursePack = {
+  courseId: string;            // "phys180-fall2024"
+  courseName: string;          // "PHYS 180: University Physics"
+  term: string;
+  source: "grokbot" | "canvas_api" | "manual";
+  documents: CourseDocument[];
+  policies: {                  // extracted by Grok from the syllabus at ingest time
+    collaboration: string;
+    aiUse: string;
+    late: string;
+  };
+};
+
+type CourseDocument = {
+  id: string;
+  kind: "syllabus" | "lecture" | "pset" | "solution" | "exam_review" | "other";
+  title: string;               // "Lecture 4: Projectile Motion"
+  order?: number;              // lecture or pset number
+  storagePath: string;
+  chunks: Chunk[];
+};
+
+type Chunk = {
+  id: string;
+  documentId: string;
+  text: string;
+  page?: number;
+  embedding: number[];
+  isSolution: boolean;         // solution chunks are never surfaced to the student
+};
+```
+
+Ingest endpoint: `POST /api/ingest` with `Authorization: Bearer <INGEST_TOKEN>`, multipart form with `courseId`, `courseName`, `term`, `source`, and files with a `kind` hint in the field name (`lecture_04.pdf`, `syllabus.pdf`, `pset_03.pdf`, `solution_03.pdf`). Response `{ ok: true, documentIds: string[] }`.
+
+### 3.2 Pset and workspace (workspace lane)
+
+```ts
+type Pset = {
+  id: string;
+  courseId: string;
+  title: string;
+  dueAt?: string;
+  pages: PsetPage[];
+  fullText: string;
+};
+
+type PsetPage = {
+  index: number;               // 0-based
+  width: number;               // in PDF points
+  height: number;
+  imageUrl: string;            // rasterized PNG for vision calls
+  text: string;
+  questionRegions: { label: string; bbox: BBox }[]; // "1", "2a", detected at upload
+};
+
+type BBox = { x: number; y: number; w: number; h: number }; // normalized 0..1 relative to page
+```
+
+The overlay renders on top of the PDF canvas and accepts `PointerCommand` and `HighlightCommand` (3.4). Student annotations emit `StudentAnnotation`:
+
+```ts
+type StudentAnnotation = {
+  page: number;
+  bbox: BBox;
+  kind: "circle" | "underline" | "scribble";
+  at: string;                  // ISO time
+};
+```
+
+### 3.3 Whiteboard (whiteboard lane)
+
+The tutor draws through a small command set that the whiteboard lane maps onto tldraw shapes with animated stroke-in.
+
+```ts
+type DrawCommand =
+  | { op: "clear" }
+  | { op: "axes"; id: string; origin: Pt; xLabel?: string; yLabel?: string }
+  | { op: "arrow"; id: string; from: Pt; to: Pt; label?: string; color?: Color }
+  | { op: "line"; id: string; from: Pt; to: Pt; dashed?: boolean; color?: Color }
+  | { op: "curve"; id: string; points: Pt[]; label?: string; color?: Color }   // trajectories
+  | { op: "circle"; id: string; center: Pt; r: number; label?: string }
+  | { op: "text"; id: string; at: Pt; text: string; size?: "s" | "m" }        // labels only, max 6 words
+  | { op: "highlight"; id: string }                                            // pulse an existing shape
+  | { op: "remove"; id: string };
+
+type Pt = { x: number; y: number };   // normalized 0..1 of the board
+type Color = "ink" | "accent" | "muted" | "warn";
+```
+
+Generated animation is a layer on the same board surface. The tutor composes it per turn; nothing is pre-scripted.
+
+Tier 1, declarative spec (primary). Shapes with keyframed properties on a timeline. The whiteboard lane implements a small runtime that interpolates keyframes and exposes `play`, `pause`, `seek(t)`, and a scrubber.
+
+```ts
+type AnimationSpec = {
+  id: string;
+  duration: number;                       // seconds
+  shapes: AnimShape[];
+  camera?: { keyframes: Keyframe<{ x: number; y: number; zoom: number }>[] };
+};
+
+type AnimShape =
+  | { kind: "arrow"; id: string; keyframes: Keyframe<{ from: Pt | Follow; to: Pt | Follow; opacity?: number; color?: Color }>[]; label?: string }
+  | { kind: "dot";   id: string; keyframes: Keyframe<{ at: Pt | Follow; r?: number; opacity?: number }>[]; label?: string }
+  | { kind: "path";  id: string; points: Pt[]; keyframes: Keyframe<{ drawn: number; opacity?: number }>[]; label?: string }   // drawn 0..1
+  | { kind: "text";  id: string; text: string; keyframes: Keyframe<{ at: Pt; opacity?: number }>[] }
+  | { kind: "axes";  id: string; origin: Pt; xLabel?: string; yLabel?: string; keyframes?: Keyframe<{ opacity?: number }>[] }
+  | { kind: "bar";   id: string; keyframes: Keyframe<{ at: Pt; w: number; h: number; opacity?: number }>[]; label?: string };
+
+type Keyframe<T> = { t: number; ease?: "linear" | "inOut" | "out" } & T;   // t in seconds
+type Follow = { follow: { pathId: string; offset?: Pt } };                // ride along a path so the model need not compute every point
+```
+
+Tier 2, programmatic (only when the spec cannot express it). The model emits a JS function body against a tiny API (`ctx.arrow`, `ctx.dot`, `ctx.path`, `ctx.text`, `ctx.slider(name, min, max)`, `ctx.onFrame(fn)`) that runs in a sandboxed iframe with no network. Timeout 50ms per frame; on error the board shows nothing and the tutor falls back to strokes.
+
+```ts
+type AnimationProgram = { id: string; source: string; sliders?: { name: string; min: number; max: number; value: number }[] };
+```
+
+Fallback fixture: `components/scenes/projectile.tsx` is a hand-written scene used to test the runtime and as a demo-only fallback. It is not referenced by the prompt.
+
+Playback pauses on barge-in and resumes on `[ANIM resume]`. Both tiers support `focus` highlighting of a named shape while the tutor narrates.
+
+Student drawing on the board emits:
+
+```ts
+type BoardSnapshot = {
+  imageUrl: string;            // PNG of current board, sent to the model on the next turn
+  studentShapesSince: string;  // ISO time of last snapshot; lets the model know the student drew
+};
+```
+
+### 3.4 Agent turn (voice lane produces, workspace and whiteboard lanes consume)
+
+Each model turn returns speech plus UI commands. The model emits tags inline; the voice lane strips them before TTS and dispatches them.
+
+Inline tag grammar the model uses:
+
+```
+[POINT page=1 x=0.42 y=0.31 label="launch angle"]
+[HIGHLIGHT page=1 x=0.40 y=0.28 w=0.20 h=0.06]
+[BOARD open]
+[DRAW {...DrawCommand JSON...}]
+[ANIM {...AnimationSpec JSON...}]  |  [ANIM_PROGRAM {...AnimationProgram JSON...}]  |  [ANIM focus=id]  |  [ANIM resume]
+[MODE concept]  |  [MODE pset]
+[RECAP]         // signals the session close sequence
+```
+
+Parsed into:
+
+```ts
+type AgentTurn = {
+  speech: string;                        // text with tags removed, sent to TTS
+  pointer?: { page: number; x: number; y: number; label?: string };
+  highlight?: { page: number; bbox: BBox };
+  board?: { open?: boolean; commands: DrawCommand[]; animation?: AnimationSpec | AnimationProgram; animControl?: { focus?: string; resume?: boolean } };
+  mode?: "pset" | "concept";
+  recap?: boolean;
+};
+```
+
+Timing rule: tags are dispatched in the order they appear as the speech streams, so the pointer moves as the tutor says "look here" and strokes land as it names them.
+
+### 3.5 LLM endpoint contract (voice lane)
+
+`POST /api/agent/llm` is registered as the ElevenLabs agent's custom LLM. It receives the conversation so far and must respond in the OpenAI chat completions streaming format. Internally it:
+
+1. Loads session state (course, pset, current page, mode, hint rung per question, misconceptions seen).
+2. Retrieves top chunks for the latest student utterance (`/api/retrieve`), excluding `isSolution` chunks from anything returned to the student while allowing them in a hidden "reference" block.
+3. Attaches the current pset page image and the latest board snapshot as image inputs.
+4. Calls Grok with PROMPT.md as the system prompt plus a per-turn context block.
+5. Streams the reply; tags are passed through so the client parser can dispatch them.
+
+Per-turn context block shape:
+
+```
+<course>{courseName}, {term}</course>
+<policies>{collaboration}; {aiUse}</policies>
+<student>{name}; courses: {course codes}</student>
+<pset>{title}, due {dueAt}, on page {page} of {pages}</pset>
+<last_recap>{stuckOn}; {reviewNext}</last_recap>
+<mode>{mode}</mode>
+<hint_state>question={q} rung={0..4} attempts_since_last_hint={n}</hint_state>
+<misconceptions_seen>{list}</misconceptions_seen>
+<retrieved>{chunks with document titles}</retrieved>
+<reference_do_not_reveal>{solution chunks}</reference_do_not_reveal>
+<student_drew>{true|false}</student_drew>
+```
+
+### 3.6 Session and recap (recap lane)
+
+```ts
+type Session = {
+  id: string;
+  userId: string;
+  courseId: string;
+  psetId?: string;
+  mode: "pset" | "concept";
+  startedAt: string;
+  endedAt?: string;
+  transcript: Turn[];
+  hintState: Record<string, { rung: number; attempts: number }>;
+  misconceptionsSeen: string[];
+  stylePreset: "more_hints" | "balanced" | "fewer_hints";
+  recap?: Recap;
+};
+
+type Turn = { role: "student" | "tutor"; text: string; at: string };
+
+type Recap = {
+  stuckOn: string;             // one sentence
+  unlockedBy: string;          // one sentence
+  reviewNext: { documentTitle: string; where: string };  // "Lecture 4", "slides 10 to 14"
+  studentSummary: string;      // what the student said in their own words
+  spokenText: string;          // what the tutor said aloud
+};
+```
+
+Recap flow: model emits `[RECAP]`, the voice lane asks the student to summarize, the model produces the spoken recap and a JSON block, the recap lane stores it and renders the card. Next session, the LLM endpoint includes `lastRecap` in the context block so the orb can open with a retrieval check.
+
+### 3.7 Intent and layout state (shell lane)
+
+The app has three layout states: `orb_only` (after sign-in), `pset`, and `concept`. The orb-only state renders the orb, the greeting, and three chips ("Homework", "Explain a concept", "Something else"). A chip tap injects its label as a student utterance. The LLM endpoint returns `[MODE pset]` or `[MODE concept]` once intent is clear; the shell animates the transition. State type:
+
+```ts
+type LayoutState = "orb_only" | "pset" | "concept";
+```
+
+### 3.8 Auth and test account (shell lane)
+
+Google OAuth via NextAuth. Allowlist `@yale.edu` plus a judge account `judge@betterofficehours.app` with password login enabled only for that account, preloaded with PHYS 180 and pset 3. Credentials in the README.
+
+## 4. Environment
+
+```
+XAI_API_KEY=
+ELEVENLABS_API_KEY=
+ELEVENLABS_AGENT_ID=
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+INGEST_TOKEN=
+NEXTAUTH_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+```
+
+`.env.example` is committed. Real keys are never committed. Vercel deploys `main`.
+
+## 5. Latency budget per turn
+
+- Student stops speaking to first tutor word: target 1.0s, hard ceiling 2.0s.
+- ElevenLabs turn detection: ~300ms. Retrieval: ~150ms. Grok first token with one page image and one board image: ~600ms. TTS first byte: ~200ms.
+- Send page images at 1024px wide max. Send the board snapshot only when `studentShapesSince` is newer than the last turn.
+- Pre-warm: on session start, run one retrieval and one Grok call for the pset overview so the greeting is instant.
+
+## 6. Failure modes and fallbacks
+
+- ElevenLabs custom LLM will not accept images in the format we need: switch to ElevenLabs STT plus TTS around our own loop (`lib/agent/loop.ts`). Same contracts.
+- Grok Bot cannot get through Duo: use the Canvas token fallback (`scripts/canvas-pull.ts`), then manual upload.
+- Pointer coordinates drift: fall back to highlighting the whole detected question region.
+- tldraw animation is flaky: draw shapes instantly and animate only the pointer.
+
+## 7. Grok Bot task spec
+
+Bot name: Course Pack Collector. Task text lives in `grokbot/TASK.md`. Two phases. Phase 1: read the Canvas dashboard and each course's Assignments page, POST a `StudentProfile` to `/api/ingest/profile`. Phase 2: for each course (or the one named), collect syllabus, lectures, psets, solutions, exam reviews, name files by kind and number, POST to `/api/ingest`. Report what was collected and anything it could not access. Rehearse once with Duo before recording the README GIF.

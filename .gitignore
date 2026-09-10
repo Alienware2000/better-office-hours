@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# next
+.next/
+out/
+
+# env (keep the example)
+.env
+.env.local
+.env.*.local
+
+# os / tooling
+.DS_Store
+.vercel
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# leftover from opening the wrong folder
+Untitled/
