@@ -3,7 +3,7 @@
 Each lane keeps a few lines here: what works, what is stubbed, what other lanes need to know.
 
 ## voice
-Not started. Next after the home-page checkpoint is approved.
+On `lane/voice`. Own loop: ElevenLabs STT, Grok (`grok-4.6` via `/api/agent/llm`), ElevenLabs TTS. Greeting is a fixed first line so it starts immediately. Barge-in via mic RMS. Chips inject as utterances. Tag parser lives in `lib/agent/tags.ts`; UI commands are not dispatched yet. ConvAI custom LLM not wired (localhost cannot receive ElevenLabs server callbacks). Home page mounts `VoiceSession` so this can be tested; shell can take that composition later. Needs `.env.local` with `XAI_API_KEY` and `ELEVENLABS_API_KEY`.
 
 ## workspace
 Not started.

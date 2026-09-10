@@ -1,0 +1,55 @@
+.orb {
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: 9999px;
+  background: #171717;
+  box-shadow: 0 18px 40px rgba(23, 23, 23, 0.18);
+  transform-origin: center;
+}
+
+.orb-idle {
+  animation: orb-breathe 3.2s ease-in-out infinite;
+}
+
+.orb-listening {
+  transition: transform 80ms linear;
+}
+
+.orb-thinking {
+  animation: orb-spin 7s linear infinite;
+}
+
+.orb-speaking {
+  animation: orb-pulse 0.7s ease-in-out infinite;
+}
+
+@keyframes orb-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes orb-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orb-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}

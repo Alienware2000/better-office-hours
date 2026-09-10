@@ -2,59 +2,56 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 03:00 ET
+Updated: 2026-09-10 03:29 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `main`
+Branch: `lane/voice`
 
 ## Now
 
-Checkpoint 2 is ready for human review: Next.js scaffold on `main`.
+Voice loop first pass is approved and landing on `lane/voice`. Next slice is the PDF workspace pointer, not UI polish.
 
-Waiting on: David runs `npm run dev`, opens http://localhost:3000, confirms a cream page that says "Better Office Hours". Do not start voice until that is approved.
+Do not restyle the orb in this lane. Shell owns `components/orb`. Pointer work is `lane/workspace`.
 
 ## Done
 
-- Product spec in `docs/` (DESIGN, ARCHITECTURE, PROMPT, PEDAGOGY, DEMO).
-- Public GitHub repo with the spec.
-- Next.js 16 App Router + TypeScript + Tailwind 4. `npm run build` succeeds.
-- Home page is a placeholder only. No orb, no auth, no voice.
-- Shared TypeScript contracts in `lib/types.ts`.
+- Spec, public repo, Next.js scaffold, `lib/types.ts`.
+- Voice lane: Grok via `/api/agent/llm`, ElevenLabs STT/TTS, orb with four states, opening greeting, chips, barge-in, tag parser (tags stripped before speech; pointer/board not dispatched yet).
+- Local loop is STT -> Grok -> TTS so it works on localhost. ElevenLabs Conversational AI custom LLM is not wired yet (needs a public URL).
+- Human notes: layout is a good start; UI should look better later.
 
 ## Next
 
-1. Human review of the home page (this checkpoint).
-2. After approval: `lane/voice` for the orb greeting and voice loop.
-3. Teammate in parallel (after this lands on `main`): shell (orb UI, auth) and context (ingest), using `lib/types.ts`. Do not invent new contract shapes.
-4. Still missing from the "freeze tonight" list: `lib/db/schema.sql`.
+1. `lane/workspace`: pset PDF upload, pointer, highlight.
+2. Then whiteboard strokes.
+3. Teammate in parallel: shell (auth, orb visual, transcript) and context ingest. `lib/db/schema.sql` still missing.
 
 ## Lanes
 
 | Lane | Owner | Branch | State |
 |---|---|---|---|
-| shell (scaffold only) | shared on main | `main` | placeholder home page |
-| voice | David | not started | next after review |
-| workspace | David | not started | |
+| voice | David | `lane/voice` | first pass approved |
+| workspace | David | not started | next |
 | whiteboard | David | not started | |
-| context | Teammate | not started | types are ready to consume |
+| context | Teammate | not started | types ready |
 | recap | Teammate | not started | |
-| shell (auth, orb, transcript) | Teammate | not started | `app/layout.tsx` is currently the Next default layout |
+| shell | Teammate | not started | home page currently mounts VoiceSession; orb visual is a placeholder |
 
 ## Run
 
 ```bash
+cp .env.example .env.local
+# fill XAI_API_KEY and ELEVENLABS_API_KEY
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Expected: cream background, centered "Better Office Hours". Nothing else.
-
-Env keys are listed in `.env.example`. None are required for this checkpoint.
+Open http://localhost:3000 (or 3001 if 3000 is taken). Allow the microphone.
 
 ## How to stop a session
 
-Before you end, update this file: timestamp, who, what changed, what the next human or agent should do, and any blockers. Update `docs/NOTES.md` under your lane. Commit both with the slice.
+Before you end, update this file: timestamp, who, what changed, what the next person or agent should do, blockers. Update `docs/NOTES.md` under your lane. Commit both with the slice.
 
 ## Blockers
 
-None.
+Voice will not speak until `.env.local` has both keys.
