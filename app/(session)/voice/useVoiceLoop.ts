@@ -7,8 +7,11 @@ import { parseAgentTurn, takeSpeechChunks, type ChatMessage } from "@/lib/agent/
 import { getLivePage } from "@/lib/pdf/live-page";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
 import { CHIPS, pickGreeting, type OrbState } from "./constants";
+import { isJunkSpeech, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
 
 type Health = { grok: boolean; elevenlabs: boolean };
+type WorkKind = "lobby" | "pset" | "concept";
+type WorkSnapshot = { history: ChatMessage[]; turns: Turn[] };
 
 // PROMPT.md asks for two or three sentences under about seventy words. Capping
 // at two cut the tutor's closing question, which is the whole point of a turn.
@@ -67,6 +70,12 @@ export function useVoiceLoop() {
   const historyRef = useRef<ChatMessage[]>([
     { role: "assistant", content: greetingRef.current },
   ]);
+  const kindRef = useRef<WorkKind>("lobby");
+  const turnsRef = useRef<Turn[]>([]);
+  const parkedRef = useRef<{ pset: WorkSnapshot | null; concept: WorkSnapshot | null }>({
+    pset: null,
+    concept: null,
+  });
   const abortRef = useRef<AbortController | null>(null);
   const turnAbortRef = useRef<AbortController | null>(null);
   const playbackEpochRef = useRef(0);
@@ -81,6 +90,54 @@ export function useVoiceLoop() {
     layoutRef.current = next;
     setLayoutState(next);
   }, []);
+
+  const greetingMessages = useCallback(
+    (): ChatMessage[] => [{ role: "assistant", content: greetingRef.current }],
+    [],
+  );
+
+  // Leave parks the current piece of work. The lobby is a fresh waiting room,
+  // not a continuation of the homework chat. Sitting back down restores it.
+  const adoptKind = useCallback(
+    (next: WorkKind, restore: boolean) => {
+      const prev = kindRef.current;
+      if (prev === next) return;
+
+      if (prev === "pset" || prev === "concept") {
+        parkedRef.current[prev] = {
+          history: historyRef.current,
+          turns: turnsRef.current,
+        };
+      }
+
+      kindRef.current = next;
+
+      if (next === "lobby") {
+        historyRef.current = greetingMessages();
+        turnsRef.current = [];
+        setTurns([]);
+        return;
+      }
+
+      if (restore) {
+        const parked = parkedRef.current[next];
+        if (parked) {
+          historyRef.current = parked.history;
+          turnsRef.current = parked.turns;
+          setTurns(parked.turns);
+          return;
+        }
+      }
+
+      if (prev !== "lobby") {
+        historyRef.current = greetingMessages();
+        turnsRef.current = [];
+        setTurns([]);
+      }
+    },
+    [greetingMessages],
+  );
+
   const hasStartedRef = useRef(false);
   const discardRecordingRef = useRef<() => void>(() => {});
   const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
@@ -174,30 +231,40 @@ export function useVoiceLoop() {
   }, []);
 
   const applyTurn = useCallback((turn: AgentTurn) => {
-    if (turn.mode === "pset") setLayout("pset");
+    if (turn.mode === "pset") {
+      if (kindRef.current === "lobby") adoptKind("pset", false);
+      setLayout("pset");
+    }
     // The non-reasoning model emits [MODE concept] on ordinary pset talk
     // ("what is the angle"). That used to close the desk.
     if (turn.mode === "concept" && layoutRef.current !== "pset") {
+      if (kindRef.current === "lobby") adoptKind("concept", false);
       setLayout("concept");
     }
     if (turn.pointer) setPointer(turn.pointer);
     if (turn.highlight) setHighlight(turn.highlight);
-  }, []);
+  }, [adoptKind, setLayout]);
 
-  // Leaving the workspace is a view change, not a conversation event. The
-  // tutor keeps its history and stays listening.
+  // Leaving the desk parks that work. The tutor is back in the lobby and
+  // cannot see the pset until the student sits down again.
   const exitWorkspace = useCallback(() => {
+    adoptKind("lobby", false);
     setLayout("orb_only");
     setPointer(undefined);
     setHighlight(undefined);
-  }, []);
+  }, [adoptKind, setLayout]);
 
   const enterWorkspace = useCallback(() => {
+    adoptKind("pset", true);
     setLayout("pset");
-  }, []);
+  }, [adoptKind, setLayout]);
 
   const addTurn = useCallback((role: Turn["role"], text: string) => {
-    setTurns((prev) => [...prev, { role, text, at: new Date().toISOString() }]);
+    setTurns((prev) => {
+      const next = [...prev, { role, text, at: new Date().toISOString() }];
+      turnsRef.current = next;
+      return next;
+    });
   }, []);
 
   // The tutor's caption fills in as the reply streams, so the panel keeps up
@@ -208,6 +275,7 @@ export function useVoiceLoop() {
       if (last < 0 || prev[last].role !== "tutor") return prev;
       const next = [...prev];
       next[last] = { ...next[last], text };
+      turnsRef.current = next;
       return next;
     });
   }, []);
@@ -295,11 +363,30 @@ export function useVoiceLoop() {
     async ({ text, event }: { text?: string; event?: SessionEvent }) => {
       const said = text?.trim() ?? "";
       if (!said && !event) return;
+      if (said && isJunkSpeech(said)) return;
 
       // The layout follows what the student said right away. Waiting on the
       // model's [MODE ...] tag makes the screen lag behind the conversation.
       const intent = said ? detectMode(said, layoutRef.current) : null;
-      if (intent) setLayout(intent);
+      if (intent === "pset") {
+        const was = kindRef.current;
+        const hadParked = Boolean(parkedRef.current.pset);
+        adoptKind("pset", hadParked && was !== "pset");
+        setLayout("pset");
+        if (hadParked && was !== "pset" && isResumePsetPhrase(said)) {
+          if (!playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
+          return;
+        }
+      } else if (intent === "concept") {
+        const was = kindRef.current;
+        const hadParked = Boolean(parkedRef.current.concept);
+        adoptKind("concept", hadParked && was !== "concept");
+        setLayout("concept");
+        if (hadParked && was !== "concept" && isResumeConceptPhrase(said)) {
+          if (!playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
+          return;
+        }
+      }
       if (health && (!health.grok || !health.elevenlabs)) return;
 
       stopPlayback();
@@ -341,11 +428,12 @@ export function useVoiceLoop() {
       if (turnAbortRef.current === turnController) turnAbortRef.current = null;
       if (!playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
     },
-    [addTurn, health, runPass, setOrb, stopPlayback],
+    [addTurn, adoptKind, health, runPass, setLayout, setOrb, stopPlayback],
   );
 
   const sendUtterance = useCallback(
     async (text: string) => {
+      if (isJunkSpeech(text)) return;
       try {
         setError(null);
         pausedRef.current = false;

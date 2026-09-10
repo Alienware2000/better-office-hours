@@ -121,6 +121,119 @@
   inset: 0;
   z-index: 10;
   cursor: crosshair;
+  user-select: none;
+}
+
+.overlay.is-hand {
+  pointer-events: none;
+  cursor: default;
+}
+
+.overlay.is-pen,
+.overlay.is-highlighter,
+.overlay.is-eraser {
+  touch-action: none;
+}
+
+.overlay.is-eraser {
+  cursor: cell;
+}
+
+.ink-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ink-pen,
+.ink-high {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.ink-high {
+  opacity: 0.45;
+  mix-blend-mode: multiply;
+}
+
+.pdf-tools {
+  display: flex;
+  justify-content: center;
+  padding: 0 0.25rem 0.75rem;
+}
+
+.ink-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: 1px solid rgba(48, 36, 24, 0.12);
+  border-radius: 9999px;
+  background: rgba(255, 252, 246, 0.94);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 6px 18px rgba(48, 36, 24, 0.08);
+  padding: 0.22rem 0.28rem;
+}
+
+.ink-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.08rem;
+}
+
+.ink-cluster + .ink-cluster {
+  margin-left: 0.18rem;
+  border-left: 1px solid rgba(48, 36, 24, 0.1);
+  padding-left: 0.32rem;
+}
+
+.ink-tool {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: #57534e;
+  cursor: pointer;
+}
+
+.ink-tool svg {
+  width: 1.12rem;
+  height: 1.12rem;
+}
+
+.ink-tool.is-on {
+  background: #1c1917;
+  color: #fffcf6;
+}
+
+.ink-tool:hover:not(.is-on) {
+  background: rgba(48, 36, 24, 0.06);
+  color: #1c1917;
+}
+
+.ink-swatch {
+  width: 1.12rem;
+  height: 1.12rem;
+  margin: 0 0.16rem;
+  border: 2px solid rgba(255, 252, 246, 0.9);
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px rgba(48, 36, 24, 0.18);
+  cursor: pointer;
+}
+
+.ink-swatch.is-on {
+  box-shadow:
+    0 0 0 1px rgba(48, 36, 24, 0.18),
+    0 0 0 3px #fffcf6,
+    0 0 0 4.5px #1c1917;
 }
 
 .marker {
@@ -220,13 +333,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #78716c;
-}
-
-.pdf-hint {
-  flex: 0 0 auto;
-  font-size: 0.66rem;
-  letter-spacing: 0.02em;
-  color: #b0a89e;
 }
 
 .desk-leave {

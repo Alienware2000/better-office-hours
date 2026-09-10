@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 16:45 ET
+Updated: 2026-09-10 17:10 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/workspace` (tracks `origin/lane/workspace`)
@@ -12,26 +12,27 @@ PR: https://github.com/Alienware2000/better-office-hours/pull/1 (open against `m
 
 David likes the look: cream, black orb, live captions. Keep that direction. Minimal, not colorful, not old.
 
-He is iterating in person at checkpoints. Do not start the whiteboard until he says the pointer, highlight, and Leave feel right on a real PDF.
+He is iterating in person at checkpoints. Do not start the whiteboard until he says the pointer, highlight, Leave, ink bar, and session parking feel right on a real PDF.
 
-Laser / marker / Leave landed in `64fd0de`. This pass parks the desk so Leave does not remount the PDF, restores it from the Homework chip without a new turn, keeps "what is" from closing the pset, paints student marks onto the page the tutor sees, and stops the welcome overlay from eating desk clicks. Dev server: `http://localhost:3100`. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
-
-Dev server: `http://localhost:3100` may already be up. Keys live in `.env.local` (gitignored). Rotate them before deploy: they were pasted into an old chat, and the ElevenLabs key was a one-day key.
+This pass adds a GoodNotes-style ink bar on the PDF (hand, pen, highlighter, eraser, three colors), parks homework as its own session so Leave returns to a clean lobby, and drops junk STT like `[background noise]`. The parked desk still keeps the PDF and marks, but it no longer publishes that page to Grok. Dev server: `http://localhost:3100`. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
 
 ## What to try next (human)
 
-1. Reload `http://localhost:3100`. Tap the orb to start. Say homework (or tap the chip). **Leave** or Escape should return to the orb without the browser back button. The PDF, if uploaded, should still be there when you come back.
-2. Drop a real pset. Confirm the tutor speaks on its own once the page is readable.
-3. Ask about a visible problem. Confirm the laser glides instead of jumping, and the highlight reads as a marker, not a box. Drag to circle or underline.
-4. Show wrong working and listen for "let me look" then a careful follow-up. There will be a few seconds of quiet after the lead-in. Say whether that feels like a TA reading or a hang.
+1. Reload `http://localhost:3100`. Tap the orb. Say homework. Confirm the second bar: hand, pen, highlighter, eraser, black / rust / gold.
+2. Drop a PDF. Write on it, highlight, erase. Ask about a marked region and see whether the tutor notices.
+3. **Leave**, then talk from the orb (or tap Explain a concept). The tutor should not still be asking for the pset, and the old captions should not be on screen.
+4. Tap **Homework** (or say homework). The desk, marks, and that homework transcript should come back. The PDF should not reload from scratch.
+5. Ask about a visible problem. Confirm the laser still glides and the tutor highlight still reads as a marker.
 
 ## After that approval
 
-`lane/whiteboard`: tldraw strokes that animate in as the tutor names them, then generated animation from the tutor's own spec. Never cut. Nothing on the board is scripted for the demo.
+`lane/whiteboard`: tldraw strokes that animate in as the tutor names them, then generated animation from the tutor's own spec. Never cut. Nothing on the board is scripted for the demo. Match the ink bar's drawing feel, not a new tool language.
 
 ## Later, not Friday
 
 Transcript export, for professors who will eventually shape the tutor's priors. Already in `docs/DESIGN.md` section 13. The live captions are the seed.
+
+A visible list of past sessions. Today there is only lobby / this homework / this concept, parked in memory, not a history sidebar.
 
 Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback at 640px, usable everywhere.
 
@@ -39,10 +40,10 @@ Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback
 
 - Start the whiteboard until David approves this workspace pass.
 - Edit `docs/PROMPT.md` unless he asks. It still claims the tutor has a syllabus and lecture notes, which is false until the context lane exists. It is also the source of the "Got it" tic ("confirm what you understood"). Propose a diff if needed.
-- Silently edit `lib/types.ts`. `[THINK]` already landed with ARCHITECTURE.md 3.4 and 3.5.
+- Silently edit `lib/types.ts`. `[THINK]` already landed with ARCHITECTURE.md 3.4 and 3.5. Student ink is workspace-local; do not replace `StudentAnnotation` in this slice.
 - Put a reasoning model on the spoken (fast) turn. Measured: non-reasoning 0.6s, `grok-4.6` default 26s.
 - Restore CSS transform choreography for the orb, or a gradient-stroked laser path.
-- Add chat boxes or command buttons for talking to the tutor. Voice is the only input. Mouse is for pointing, drawing, and navigation (Leave, pages).
+- Add chat boxes or command buttons for talking to the tutor. Voice is the only input. Mouse is for pointing, drawing, paging, and Leave.
 - Commit secrets.
 
 ## Done (this branch)
@@ -51,15 +52,15 @@ Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback
 - Voice starts paused. Orb tap starts, orb tap stops and cancels queued speech. Hidden tab and second tab suspend voice. Mic off while the tutor speaks. Acoustic barge-in removed because it heard the speakers and answered itself.
 - Two model lanes. Fast: `grok-4.20-0309-non-reasoning`. Reasoning: `grok-4.6` at low effort when the fast lane emits `[THINK]`. Lead-in audio covers most of the wait.
 - Honest context: no hardcoded "Problem Set 3". Layout follows speech (`lib/agent/intent.ts`). Tutor speaks when the PDF is ready (`pset_ready` event).
-- PDF workspace: upload, PDF.js, laser pointer, marker highlight, student marks (burned into the page image so the tutor can see them), live captions.
-- Leave / Escape parks the desk. Homework chip restores it without a new spoken turn. Marks and page stay.
+- PDF workspace: upload, PDF.js, laser pointer, marker highlight, student ink (pen / highlighter / eraser), live captions.
+- Leave / Escape parks the desk and the homework session. Lobby talk is a clean history. Homework chip restores the parked session without a new spoken turn. Marks and page stay. Parked viewer does not keep the pset in Grok's view.
 
 ## Lanes
 
 | Lane | Owner | Branch | State |
 |---|---|---|---|
 | voice | David | `lane/voice` | first pass on GitHub; later voice work is on `lane/workspace` |
-| workspace | David | `lane/workspace` | PR #1 open; iterating on desk feel and voice |
+| workspace | David | `lane/workspace` | PR #1 open; iterating on desk feel, ink, and sessions |
 | whiteboard | David | not started | next after human approval |
 | context | Teammate | not started | types ready; `lib/db/schema.sql` missing |
 | recap | Teammate | not started | |

@@ -39,7 +39,8 @@ If a previous session exists, the orb still opens with the same question, then a
 ### Layout after the student answers
 The empty orb screen animates into a split screen, roughly 65/35. The orb shrinks and moves to the top of the right panel.
 
-- Left, the workspace. The problem set PDF, scrollable. The tutor's pointer and highlight ring live here. The student can circle or underline on it with the mouse and the tutor sees the annotation.
+- Left, the workspace. The problem set PDF, scrollable. A compact ink bar sits under the title: hand, pen, highlighter, eraser, and three colors. The tutor's pointer and highlight live on the page. The student can write, highlight, or erase, and the tutor sees those marks.
+- Right, the agent panel. Top: the orb. Below: a live caption-style transcript of both sides. Below that: the whiteboard, collapsed until the tutor first draws, then expanded. The student can draw on it and the tutor responds.
 - Right, the agent panel. Top: the orb. Below: a live caption-style transcript of both sides. Below that: the whiteboard, collapsed until the tutor first draws, then expanded. The student can draw on it and the tutor responds.
 - A small course switcher in a corner. Nothing else.
 
@@ -60,7 +61,7 @@ Rules: an animation plays only when the tutor says what to watch for; it pauses 
 The shell is the same in every mode. Only the workspace pane changes.
 
 ### Interaction rules
-- Voice is the only way to address the agent. Mouse and trackpad are for pointing and drawing, never for commands.
+- Voice is the only way to address the agent. Mouse and trackpad are for pointing, drawing, paging, and leaving, never for talking to the tutor.
 - The orb speaks first with an open question. It names the pset and due date in its reply once the student says what they want.
 - Barge-in works. If the student talks over the tutor, it stops.
 - The tutor points before it explains.
@@ -189,6 +190,8 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 - Laptop and iPad layouts are primary for Friday. Every screen must remain usable at smaller widths with a stacked fallback. A dedicated mobile design is a later pass.
 - The spoken turn runs on `grok-4.20-0309-non-reasoning`. Measured against the real prompt: first token 0.5s for the non-reasoning model, 16s for `grok-4.6` at low reasoning effort, 26s for `grok-4.6` by default. Section 10 requires the first word inside about a second, so the reasoning models are unusable for speech. Both read the pset page image, so the pointer is unaffected. If the recap later needs deeper reasoning, run that one call on `grok-4.6` where latency does not matter.
 - The per-turn context block states only what is actually loaded. A hardcoded demo block naming PHYS 180 and "Problem Set 3" made the tutor open by naming an assignment the student never uploaded. Until the context lane is real, the block says nothing is loaded and the tutor asks for the upload.
+- Leave parks work. The orb is a lobby, not one long chat. Homework is one session (this PDF, this transcript, these marks). A concept is another. Leave puts the current session aside and returns to the lobby with a clean history, so the tutor cannot still see the pset. Sitting back down, the Homework chip, or saying homework again restores that session. Switching to "Explain a concept" does not keep the homework captions or the live page. This is not a ChatGPT-style chat sidebar. It is how office hours work: you step away from the desk, then you sit back down with the same paper.
+- Student ink on the PDF is a compact two-cluster bar (tools, then colors), in the spirit of GoodNotes / Notability / Canvas, kept to cream, black, rust, and gold. Pen, highlighter, and eraser. Marks are workspace-local and burned into the page image the tutor sees. The `StudentAnnotation` contract in `lib/types.ts` is unchanged. This is also the drawing feel the whiteboard should later match. The tldraw board itself is still not started.
 
 ## 13. Roadmap (README only)
 

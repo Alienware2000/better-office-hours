@@ -2,12 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
-import type { BBox, StudentAnnotation } from "@/lib/types";
+import type { BBox } from "@/lib/types";
 import { detectQuestionRegions, type PdfTextItem } from "@/lib/pdf/questions";
 import { setLivePage } from "@/lib/pdf/live-page";
+import { InkBar } from "./InkBar";
 import { LeaveButton } from "./LeaveButton";
 import { Overlay } from "./Overlay";
 import { Pointer } from "./Pointer";
+import {
+  paintInkOnImage,
+  type InkColor,
+  type InkStroke,
+  type InkTool,
+} from "./ink";
 
 const MAX_VISION_WIDTH = 1024;
 
@@ -25,6 +32,7 @@ export function PdfViewer({
   fileUrl,
   pointer,
   highlight,
+  active = true,
   onReady,
   onExit,
 }: {
@@ -33,6 +41,7 @@ export function PdfViewer({
   fileUrl: string;
   onReady?: (info: { title: string; pages: number }) => void;
   onExit?: () => void;
+  active?: boolean;
   pointer?: { page: number; x: number; y: number; label?: string };
   highlight?: { page: number; bbox: BBox };
 }) {
@@ -40,7 +49,9 @@ export function PdfViewer({
   const frameRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PageView[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [marks, setMarks] = useState<StudentAnnotation[]>([]);
+  const [strokes, setStrokes] = useState<InkStroke[]>([]);
+  const [tool, setTool] = useState<InkTool>("hand");
+  const [color, setColor] = useState<InkColor>("ink");
   const [current, setCurrent] = useState(0);
   const [laser, setLaser] = useState<{ x: number; y: number; label?: string } | null>(
     null,
@@ -110,6 +121,7 @@ export function PdfViewer({
       if (cancelled) return;
       setPages(nextPages);
       setCurrent(0);
+      setStrokes([]);
       if (nextPages[0]) {
         // Fired here rather than on upload, so that by the time the tutor
         // speaks it can actually read the page.
@@ -154,14 +166,19 @@ export function PdfViewer({
   }, [pages]);
 
   useEffect(() => {
+    if (!active) {
+      setLivePage(null);
+      return;
+    }
+
     const page = pages[current];
     if (!page) return;
-    const pageMarks = marks.filter((mark) => mark.page === current);
+    const pageStrokes = strokes.filter((stroke) => stroke.page === current);
     let cancelled = false;
 
     const publish = async () => {
-      const imageUrl = pageMarks.length
-        ? await paintMarks(page.visionUrl, pageMarks)
+      const imageUrl = pageStrokes.length
+        ? await paintInkOnImage(page.visionUrl, pageStrokes)
         : page.visionUrl;
       if (cancelled) return;
       setLivePage({
@@ -172,7 +189,7 @@ export function PdfViewer({
         imageUrl,
         text: page.text,
         questionRegions: page.questionRegions,
-        studentMarks: pageMarks.length,
+        studentMarks: pageStrokes.length,
       });
     };
 
@@ -180,7 +197,7 @@ export function PdfViewer({
     return () => {
       cancelled = true;
     };
-  }, [current, marks, pages, psetId, title]);
+  }, [active, current, strokes, pages, psetId, title]);
 
   const goToPage = (index: number) => {
     const clamped = Math.min(Math.max(index, 0), pages.length - 1);
@@ -247,7 +264,6 @@ export function PdfViewer({
       <div className="pdf-bar">
         {onExit ? <LeaveButton onLeave={onExit} /> : null}
         <span className="pdf-title">{title}</span>
-        <span className="pdf-hint">Drag to mark</span>
         {pages.length > 1 ? (
           <>
             <button
@@ -274,6 +290,20 @@ export function PdfViewer({
           </>
         ) : null}
       </div>
+      <div className="pdf-tools">
+        <InkBar
+          tool={tool}
+          color={color}
+          onTool={(next) => {
+            setTool(next);
+            if (next === "highlighter" && color === "ink") setColor("gold");
+          }}
+          onColor={(next) => {
+            setColor(next);
+            if (tool === "hand" || tool === "eraser") setTool("pen");
+          }}
+        />
+      </div>
       <div ref={frameRef} className="page-frame">
         <div ref={hostRef} className="page-stack">
           {pages.map((page) => {
@@ -286,13 +316,17 @@ export function PdfViewer({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={page.displayUrl} alt={`Page ${pageNumber}`} />
                 <Overlay
+                  page={page.index}
                   highlight={pageHighlight}
-                  annotations={marks.filter((mark) => mark.page === page.index)}
-                  onAnnotate={(kind, bbox) => {
-                    setMarks((existing) => [
-                      ...existing,
-                      { page: page.index, bbox, kind, at: new Date().toISOString() },
-                    ]);
+                  strokes={strokes.filter((stroke) => stroke.page === page.index)}
+                  tool={tool}
+                  color={color}
+                  onStroke={(stroke) => {
+                    setStrokes((existing) => [...existing, stroke]);
+                  }}
+                  onErase={(ids) => {
+                    const forget = new Set(ids);
+                    setStrokes((existing) => existing.filter((stroke) => !forget.has(stroke.id)));
                   }}
                 />
               </div>
@@ -310,43 +344,6 @@ export function PdfViewer({
       </div>
     </div>
   );
-}
-
-function paintMarks(imageUrl: string, marks: StudentAnnotation[]): Promise<string> {
-  return new Promise((resolve) => {
-    const image = new Image();
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = image.width;
-      canvas.height = image.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        resolve(imageUrl);
-        return;
-      }
-      ctx.drawImage(image, 0, 0);
-      ctx.strokeStyle = "rgba(28, 25, 23, 0.86)";
-      ctx.lineWidth = Math.max(2.2, image.width * 0.0045);
-      ctx.lineCap = "round";
-      for (const mark of marks) {
-        const x = mark.bbox.x * image.width;
-        const y = mark.bbox.y * image.height;
-        const w = mark.bbox.w * image.width;
-        const h = mark.bbox.h * image.height;
-        ctx.beginPath();
-        if (mark.kind === "underline") {
-          ctx.moveTo(x, y + Math.max(h, ctx.lineWidth));
-          ctx.lineTo(x + w, y + Math.max(h, ctx.lineWidth));
-        } else {
-          ctx.ellipse(x + w / 2, y + h / 2, Math.max(w / 2, 4), Math.max(h / 2, 4), 0, 0, Math.PI * 2);
-        }
-        ctx.stroke();
-      }
-      resolve(canvas.toDataURL("image/jpeg", 0.72));
-    };
-    image.onerror = () => resolve(imageUrl);
-    image.src = imageUrl;
-  });
 }
 
 function snapshot(canvas: HTMLCanvasElement): string {

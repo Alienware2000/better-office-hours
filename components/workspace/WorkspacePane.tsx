@@ -13,6 +13,7 @@ export function WorkspacePane({
   onPsetChange,
   pointer,
   highlight,
+  active = true,
   onPsetReady,
   onExit,
 }: {
@@ -22,6 +23,9 @@ export function WorkspacePane({
   onPsetChange: (pset: LoadedPset) => void;
   pointer?: { page: number; x: number; y: number; label?: string };
   highlight?: { page: number; bbox: BBox };
+  // Parked desks stay mounted so the PDF does not reload, but they must not
+  // keep publishing the page to the tutor.
+  active?: boolean;
   onPsetReady?: (info: { title: string; pages: number }) => void;
   onExit?: () => void;
 }) {
@@ -46,6 +50,7 @@ export function WorkspacePane({
         fileUrl={pset.fileUrl}
         pointer={pointer}
         highlight={highlight}
+        active={active}
         onReady={onPsetReady}
         onExit={onExit}
       />

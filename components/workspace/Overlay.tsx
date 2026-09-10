@@ -1,107 +1,152 @@
 "use client";
 
-import { useState } from "react";
-import type { BBox, StudentAnnotation } from "@/lib/types";
-
-type Draft = { kind: StudentAnnotation["kind"]; bbox: BBox };
+import { useRef, useState } from "react";
+import type { BBox } from "@/lib/types";
+import {
+  hitStroke,
+  pointsToSvg,
+  strokeWidth,
+  type InkColor,
+  type InkPoint,
+  type InkStroke,
+  type InkTool,
+  INK_HEX,
+} from "./ink";
 
 export function Overlay({
+  page,
   highlight,
-  annotations,
-  onAnnotate,
+  strokes,
+  tool,
+  color,
+  onStroke,
+  onErase,
 }: {
+  page: number;
   highlight?: BBox;
-  annotations: StudentAnnotation[];
-  onAnnotate: (kind: StudentAnnotation["kind"], bbox: BBox) => void;
+  strokes: InkStroke[];
+  tool: InkTool;
+  color: InkColor;
+  onStroke: (stroke: InkStroke) => void;
+  onErase: (ids: string[]) => void;
 }) {
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraft] = useState<InkPoint[] | null>(null);
+  const draftRef = useRef<InkPoint[]>([]);
+  const strokesRef = useRef(strokes);
+  strokesRef.current = strokes;
+  const gestureRef = useRef<{
+    pointerId: number;
+    tool: "pen" | "highlighter" | "eraser";
+    color: InkColor;
+    origin: DOMRect;
+  } | null>(null);
+
+  const eraseAt = (point: InkPoint) => {
+    const hits = strokesRef.current
+      .filter((stroke) => hitStroke(stroke, point, stroke.tool === "highlighter" ? 0.05 : 0.03))
+      .map((stroke) => stroke.id);
+    if (hits.length) onErase(hits);
+  };
+
+  const pointAt = (event: { clientX: number; clientY: number }, origin: DOMRect): InkPoint => ({
+    x: clamp01((event.clientX - origin.left) / origin.width),
+    y: clamp01((event.clientY - origin.top) / origin.height),
+  });
+
+  const endGesture = () => {
+    const gesture = gestureRef.current;
+    gestureRef.current = null;
+    const points = draftRef.current;
+    draftRef.current = [];
+    setDraft(null);
+    if (!gesture || gesture.tool === "eraser" || points.length < 2) return;
+    onStroke({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      page,
+      tool: gesture.tool,
+      color: gesture.color,
+      points,
+    });
+  };
 
   return (
     <div
-      className="overlay"
+      className={["overlay", tool === "hand" ? "is-hand" : `is-${tool}`].join(" ")}
       onPointerDown={(event) => {
-        if (event.button !== 0) return;
+        if (event.button !== 0 || tool === "hand") return;
         event.preventDefault();
-        const root = event.currentTarget;
-        const origin = root.getBoundingClientRect();
-        const x0 = (event.clientX - origin.left) / origin.width;
-        const y0 = (event.clientY - origin.top) / origin.height;
-
-        const fromEvent = (point: PointerEvent): Draft | null => {
-          const box = boxFromPoints(
-            x0,
-            y0,
-            (point.clientX - origin.left) / origin.width,
-            (point.clientY - origin.top) / origin.height,
-          );
-          return box ? { kind: markKind(box), bbox: box } : null;
-        };
-
-        const move = (next: PointerEvent) => {
-          setDraft(fromEvent(next));
-        };
-        const up = (end: PointerEvent) => {
-          window.removeEventListener("pointermove", move);
-          window.removeEventListener("pointerup", up);
-          window.removeEventListener("pointercancel", up);
+        if (gestureRef.current) {
+          gestureRef.current = null;
+          draftRef.current = [];
           setDraft(null);
-          const next = fromEvent(end);
-          if (next) onAnnotate(next.kind, next.bbox);
-        };
+        }
+        const origin = event.currentTarget.getBoundingClientRect();
+        const mark = tool === "highlighter" ? "highlighter" : tool === "eraser" ? "eraser" : "pen";
+        const pointerId = event.pointerId;
+        gestureRef.current = { pointerId, tool: mark, color, origin };
+        try {
+          event.currentTarget.setPointerCapture(pointerId);
+        } catch {
+          // Untrusted or already-released pointers still need to draw.
+        }
+        const start = pointAt(event, origin);
+        if (mark === "eraser") {
+          eraseAt(start);
+        } else {
+          draftRef.current = [start];
+          setDraft([start]);
+        }
 
-        window.addEventListener("pointermove", move);
-        window.addEventListener("pointerup", up);
-        window.addEventListener("pointercancel", up);
+        const onMove = (next: PointerEvent) => {
+          const gesture = gestureRef.current;
+          if (!gesture || next.pointerId !== gesture.pointerId) return;
+          const point = pointAt(next, gesture.origin);
+          if (gesture.tool === "eraser") {
+            eraseAt(point);
+            return;
+          }
+          draftRef.current = [...draftRef.current, point];
+          setDraft(draftRef.current);
+        };
+        const onUp = (next: PointerEvent) => {
+          if (next.pointerId !== pointerId) return;
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", onUp);
+          window.removeEventListener("pointercancel", onUp);
+          endGesture();
+        };
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp);
+        window.addEventListener("pointercancel", onUp);
       }}
     >
       {highlight ? <Marker key={boxKey(highlight)} bbox={highlight} /> : null}
 
-      {draft ? <Mark className="mark-draft" kind={draft.kind} bbox={draft.bbox} /> : null}
-
-      {annotations.map((mark, index) => (
-        <Mark key={`${mark.at}-${index}`} kind={mark.kind} bbox={mark.bbox} />
-      ))}
+      <svg className="ink-layer" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden>
+        {strokes.map((stroke) => (
+          <polyline
+            key={stroke.id}
+            className={stroke.tool === "highlighter" ? "ink-high" : "ink-pen"}
+            points={pointsToSvg(stroke.points)}
+            stroke={INK_HEX[stroke.color]}
+            strokeWidth={strokeWidth(stroke.tool)}
+          />
+        ))}
+        {draft && draft.length > 1 && (tool === "pen" || tool === "highlighter") ? (
+          <polyline
+            className={tool === "highlighter" ? "ink-high" : "ink-pen"}
+            points={pointsToSvg(draft)}
+            stroke={INK_HEX[color]}
+            strokeWidth={strokeWidth(tool)}
+          />
+        ) : null}
+      </svg>
     </div>
   );
 }
 
-function Mark({
-  kind,
-  bbox,
-  className,
-}: {
-  kind: StudentAnnotation["kind"];
-  bbox: BBox;
-  className?: string;
-}) {
-  return (
-    <span
-      className={["mark", kind === "underline" ? "mark-underline" : "mark-circle", className]
-        .filter(Boolean)
-        .join(" ")}
-      style={{
-        left: `${bbox.x * 100}%`,
-        top: `${bbox.y * 100}%`,
-        width: `${bbox.w * 100}%`,
-        height: kind === "underline" ? undefined : `${bbox.h * 100}%`,
-      }}
-    />
-  );
-}
-
-function boxFromPoints(x0: number, y0: number, x1: number, y1: number): BBox | null {
-  const bbox: BBox = {
-    x: Math.min(x0, x1),
-    y: Math.min(y0, y1),
-    w: Math.abs(x1 - x0),
-    h: Math.abs(y1 - y0),
-  };
-  if (bbox.w < 0.01 && bbox.h < 0.01) return null;
-  return bbox;
-}
-
-function markKind(bbox: BBox): StudentAnnotation["kind"] {
-  return bbox.h < 0.018 && bbox.w > 0.04 ? "underline" : "circle";
+function clamp01(value: number) {
+  return Math.min(1, Math.max(0, value));
 }
 
 function boxKey(box: BBox) {
@@ -109,9 +154,6 @@ function boxKey(box: BBox) {
 }
 
 function Marker({ bbox }: { bbox: BBox }) {
-  // A thin box is a line of text: draw a highlighter stroke along it. A tall
-  // box is a region: fill it, still with the same ink, so it does not read as
-  // a selection rectangle.
   const line = bbox.h < 0.04;
   const path = line ? strokePath() : regionPath();
 

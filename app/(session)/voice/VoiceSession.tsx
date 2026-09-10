@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { LeaveButton } from "@/components/workspace/LeaveButton";
 import {
   WorkspacePane,
   type LoadedPset,
@@ -134,6 +133,7 @@ export function VoiceSession() {
                 onPsetChange={setPset}
                 pointer={pointer}
                 highlight={highlight}
+                active={split}
                 onExit={exitWorkspace}
                 onPsetReady={(info) => {
                   if (!pset) return;
@@ -145,9 +145,6 @@ export function VoiceSession() {
 
             {split ? (
               <section className="agent-stage">
-                <div className="agent-tools">
-                  <LeaveButton onLeave={exitWorkspace} />
-                </div>
                 <motion.div
                   layoutId="tutor-orb"
                   className="orb-frame orb-frame-workspace"
