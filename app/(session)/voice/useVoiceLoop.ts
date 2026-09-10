@@ -57,7 +57,7 @@ export function useVoiceLoop() {
   const [health, setHealth] = useState<Health | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paused, setPaused] = useState(true);
-  const [layout, setLayout] = useState<LayoutState>("orb_only");
+  const [layout, setLayoutState] = useState<LayoutState>("orb_only");
   const [pointer, setPointer] = useState<AgentTurn["pointer"]>();
   const [highlight, setHighlight] = useState<AgentTurn["highlight"]>();
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -76,6 +76,11 @@ export function useVoiceLoop() {
   const recordingRef = useRef(false);
   const stateRef = useRef<OrbState>("idle");
   const pausedRef = useRef(true);
+  const layoutRef = useRef<LayoutState>("orb_only");
+  const setLayout = useCallback((next: LayoutState) => {
+    layoutRef.current = next;
+    setLayoutState(next);
+  }, []);
   const hasStartedRef = useRef(false);
   const discardRecordingRef = useRef<() => void>(() => {});
   const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
@@ -169,7 +174,12 @@ export function useVoiceLoop() {
   }, []);
 
   const applyTurn = useCallback((turn: AgentTurn) => {
-    if (turn.mode === "pset" || turn.mode === "concept") setLayout(turn.mode);
+    if (turn.mode === "pset") setLayout("pset");
+    // The non-reasoning model emits [MODE concept] on ordinary pset talk
+    // ("what is the angle"). That used to close the desk.
+    if (turn.mode === "concept" && layoutRef.current !== "pset") {
+      setLayout("concept");
+    }
     if (turn.pointer) setPointer(turn.pointer);
     if (turn.highlight) setHighlight(turn.highlight);
   }, []);
@@ -180,6 +190,10 @@ export function useVoiceLoop() {
     setLayout("orb_only");
     setPointer(undefined);
     setHighlight(undefined);
+  }, []);
+
+  const enterWorkspace = useCallback(() => {
+    setLayout("pset");
   }, []);
 
   const addTurn = useCallback((role: Turn["role"], text: string) => {
@@ -284,11 +298,13 @@ export function useVoiceLoop() {
 
       // The layout follows what the student said right away. Waiting on the
       // model's [MODE ...] tag makes the screen lag behind the conversation.
-      const intent = said ? detectMode(said) : null;
+      const intent = said ? detectMode(said, layoutRef.current) : null;
       if (intent) setLayout(intent);
       if (health && (!health.grok || !health.elevenlabs)) return;
 
       stopPlayback();
+      setPointer(undefined);
+      setHighlight(undefined);
       turnAbortRef.current?.abort();
       const turnController = new AbortController();
       turnAbortRef.current = turnController;
@@ -637,6 +653,7 @@ export function useVoiceLoop() {
     sendEvent,
     interrupt,
     exitWorkspace,
+    enterWorkspace,
     turns,
     chips: CHIPS,
     layout,

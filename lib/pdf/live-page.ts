@@ -8,6 +8,9 @@ export type LivePage = {
   imageUrl: string;
   text: string;
   questionRegions: { label: string; bbox: BBox }[];
+  // Ink the student drew on this page. Count only; the marks themselves are
+  // burned into imageUrl so the model can see them.
+  studentMarks?: number;
 };
 
 let live: LivePage | null = null;

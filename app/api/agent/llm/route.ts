@@ -37,6 +37,7 @@ function asLivePage(body: unknown): LivePage | null {
     questionRegions: Array.isArray(page.questionRegions)
       ? page.questionRegions
       : [],
+    studentMarks: typeof page.studentMarks === "number" ? page.studentMarks : 0,
   };
 }
 

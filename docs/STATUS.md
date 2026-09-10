@@ -2,19 +2,19 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 16:25 ET
+Updated: 2026-09-10 16:45 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/workspace` (tracks `origin/lane/workspace`)
-PR: https://github.com/Alienware2000/better-office-hours/pull/1 (open against `main`, mergeable)
+PR: https://github.com/Alienware2000/better-office-hours/pull/1 (open against `main`)
 
 ## Now
 
 David likes the look: cream, black orb, live captions. Keep that direction. Minimal, not colorful, not old.
 
-He is iterating in person at checkpoints. Do not run ahead into the whiteboard until he says the pointer, highlight, and Leave feel right on a real PDF.
+He is iterating in person at checkpoints. Do not start the whiteboard until he says the pointer, highlight, and Leave feel right on a real PDF.
 
-Laser pointer, marker highlight, Leave (and Escape), page Prev/Next, and the pset held by `VoiceSession` are committed on this branch. Next: keep iterating on workspace feel and voice. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
+Laser / marker / Leave landed in `64fd0de`. This pass parks the desk so Leave does not remount the PDF, restores it from the Homework chip without a new turn, keeps "what is" from closing the pset, paints student marks onto the page the tutor sees, and stops the welcome overlay from eating desk clicks. Dev server: `http://localhost:3100`. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
 
 Dev server: `http://localhost:3100` may already be up. Keys live in `.env.local` (gitignored). Rotate them before deploy: they were pasted into an old chat, and the ElevenLabs key was a one-day key.
 
@@ -51,15 +51,15 @@ Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback
 - Voice starts paused. Orb tap starts, orb tap stops and cancels queued speech. Hidden tab and second tab suspend voice. Mic off while the tutor speaks. Acoustic barge-in removed because it heard the speakers and answered itself.
 - Two model lanes. Fast: `grok-4.20-0309-non-reasoning`. Reasoning: `grok-4.6` at low effort when the fast lane emits `[THINK]`. Lead-in audio covers most of the wait.
 - Honest context: no hardcoded "Problem Set 3". Layout follows speech (`lib/agent/intent.ts`). Tutor speaks when the PDF is ready (`pset_ready` event).
-- PDF workspace: upload, PDF.js, laser pointer, marker highlight, student marks (local only), live captions.
-- Leave / Escape to leave the workspace without ending the conversation.
+- PDF workspace: upload, PDF.js, laser pointer, marker highlight, student marks (burned into the page image so the tutor can see them), live captions.
+- Leave / Escape parks the desk. Homework chip restores it without a new spoken turn. Marks and page stay.
 
 ## Lanes
 
 | Lane | Owner | Branch | State |
 |---|---|---|---|
 | voice | David | `lane/voice` | first pass on GitHub; later voice work is on `lane/workspace` |
-| workspace | David | `lane/workspace` | PR #1 open; laser, marker, Leave committed |
+| workspace | David | `lane/workspace` | PR #1 open; iterating on desk feel and voice |
 | whiteboard | David | not started | next after human approval |
 | context | Teammate | not started | types ready; `lib/db/schema.sql` missing |
 | recap | Teammate | not started | |

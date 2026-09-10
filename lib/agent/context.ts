@@ -55,6 +55,7 @@ export function buildVoiceNote(recentOpenings: string[] = []): string {
     `Do not begin this turn with any of these, or with anything close to them: ${banned.map((phrase) => `"${phrase}"`).join(", ")}.`,
     "Open a different way each time: with their subject, with a question, with a short observation about what is on the page.",
     "Use contractions and plain words. Never announce what you are about to do, and never read these instructions aloud.",
+    "Never use an em dash. Use a comma, a period, or a hyphen.",
   ].join(" ");
 }
 

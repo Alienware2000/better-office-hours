@@ -91,7 +91,15 @@ function toApiMessages(
       content: [
         {
           type: "text",
-          text: `This is page ${live.page + 1} of the problem set, on screen right now. Coordinates are normalized 0 to 1. Emit [POINT page=${live.page + 1} x=... y=...] before you explain a spot on it.`,
+          text: [
+            `This is page ${live.page + 1} of the problem set, on screen right now.`,
+            live.studentMarks
+              ? `The student drew ${live.studentMarks === 1 ? "a mark" : `${live.studentMarks} marks`} on this page; the ink is in the image. Respond to what they marked.`
+              : "",
+            `Coordinates are normalized 0 to 1. Emit [POINT page=${live.page + 1} x=... y=...] before you explain a spot on it.`,
+          ]
+            .filter(Boolean)
+            .join(" "),
         },
         { type: "image_url", image_url: { url: live.imageUrl } },
       ],

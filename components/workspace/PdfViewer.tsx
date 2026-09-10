@@ -156,19 +156,35 @@ export function PdfViewer({
   useEffect(() => {
     const page = pages[current];
     if (!page) return;
-    setLivePage({
-      psetId,
-      title,
-      page: current,
-      pages: pages.length,
-      imageUrl: page.visionUrl,
-      text: page.text,
-      questionRegions: page.questionRegions,
-    });
-  }, [current, pages, psetId, title]);
+    const pageMarks = marks.filter((mark) => mark.page === current);
+    let cancelled = false;
+
+    const publish = async () => {
+      const imageUrl = pageMarks.length
+        ? await paintMarks(page.visionUrl, pageMarks)
+        : page.visionUrl;
+      if (cancelled) return;
+      setLivePage({
+        psetId,
+        title,
+        page: current,
+        pages: pages.length,
+        imageUrl,
+        text: page.text,
+        questionRegions: page.questionRegions,
+        studentMarks: pageMarks.length,
+      });
+    };
+
+    void publish();
+    return () => {
+      cancelled = true;
+    };
+  }, [current, marks, pages, psetId, title]);
 
   const goToPage = (index: number) => {
     const clamped = Math.min(Math.max(index, 0), pages.length - 1);
+    setCurrent(clamped);
     hostRef.current
       ?.querySelector(`[data-page="${clamped}"]`)
       ?.scrollIntoView({ block: "start" });
@@ -200,11 +216,16 @@ export function PdfViewer({
       const frameBox = frame.getBoundingClientRect();
       const sheetBox = sheet.getBoundingClientRect();
       if (frameBox.width < 1 || frameBox.height < 1) return;
-      setLaser({
-        x: (sheetBox.left - frameBox.left + pointer.x * sheetBox.width) / frameBox.width,
-        y: (sheetBox.top - frameBox.top + pointer.y * sheetBox.height) / frameBox.height,
-        label: pointer.label,
-      });
+      const x =
+        (sheetBox.left - frameBox.left + pointer.x * sheetBox.width) / frameBox.width;
+      const y =
+        (sheetBox.top - frameBox.top + pointer.y * sheetBox.height) / frameBox.height;
+      // Off the visible frame: hide rather than pin a laser to the margin.
+      if (x < -0.04 || x > 1.04 || y < -0.04 || y > 1.04) {
+        setLaser(null);
+        return;
+      }
+      setLaser({ x, y, label: pointer.label });
     };
 
     update();
@@ -289,6 +310,43 @@ export function PdfViewer({
       </div>
     </div>
   );
+}
+
+function paintMarks(imageUrl: string, marks: StudentAnnotation[]): Promise<string> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(imageUrl);
+        return;
+      }
+      ctx.drawImage(image, 0, 0);
+      ctx.strokeStyle = "rgba(28, 25, 23, 0.86)";
+      ctx.lineWidth = Math.max(2.2, image.width * 0.0045);
+      ctx.lineCap = "round";
+      for (const mark of marks) {
+        const x = mark.bbox.x * image.width;
+        const y = mark.bbox.y * image.height;
+        const w = mark.bbox.w * image.width;
+        const h = mark.bbox.h * image.height;
+        ctx.beginPath();
+        if (mark.kind === "underline") {
+          ctx.moveTo(x, y + Math.max(h, ctx.lineWidth));
+          ctx.lineTo(x + w, y + Math.max(h, ctx.lineWidth));
+        } else {
+          ctx.ellipse(x + w / 2, y + h / 2, Math.max(w / 2, 4), Math.max(h / 2, 4), 0, 0, Math.PI * 2);
+        }
+        ctx.stroke();
+      }
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+    image.onerror = () => resolve(imageUrl);
+    image.src = imageUrl;
+  });
 }
 
 function snapshot(canvas: HTMLCanvasElement): string {

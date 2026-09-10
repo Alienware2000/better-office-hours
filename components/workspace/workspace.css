@@ -76,6 +76,7 @@
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .page-stack {
@@ -111,12 +112,15 @@
   display: block;
   max-width: 100%;
   background: #fffcf6;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .overlay {
   position: absolute;
   inset: 0;
   z-index: 10;
+  cursor: crosshair;
 }
 
 .marker {
@@ -160,6 +164,10 @@
   border-radius: 2px;
 }
 
+.mark-draft {
+  opacity: 0.5;
+}
+
 .laser {
   position: absolute;
   inset: 0;
@@ -174,14 +182,11 @@
 
 .laser-head {
   fill: #c45c26;
+  filter: drop-shadow(0 0 3px rgba(196, 92, 38, 0.5));
 }
 
 .laser-glow {
   fill: rgba(196, 92, 38, 0.16);
-}
-
-.laser-head {
-  filter: drop-shadow(0 0 3px rgba(196, 92, 38, 0.5));
 }
 
 .laser-label {

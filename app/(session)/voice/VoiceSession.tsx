@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { LeaveButton } from "@/components/workspace/LeaveButton";
 import {
   WorkspacePane,
@@ -23,6 +23,7 @@ export function VoiceSession() {
     sendEvent,
     interrupt,
     exitWorkspace,
+    enterWorkspace,
     turns,
     chips,
     layout,
@@ -31,7 +32,32 @@ export function VoiceSession() {
   } = useVoiceLoop();
   const [pset, setPset] = useState<LoadedPset | null>(null);
   const split = layout === "pset";
+  const deskKept = split || Boolean(pset);
   const reduceMotion = useReducedMotion();
+  const splitRef = useRef(split);
+  splitRef.current = split;
+  const announcedReady = useRef<string | null>(null);
+  const pendingReady = useRef<{ title: string; pages: number } | null>(null);
+
+  const announceReady = useCallback(
+    (info: { title: string; pages: number }, id: string) => {
+      if (announcedReady.current === id) return;
+      announcedReady.current = id;
+      void sendEvent({
+        kind: "pset_ready",
+        title: info.title,
+        pages: info.pages,
+      });
+    },
+    [sendEvent],
+  );
+
+  useEffect(() => {
+    if (!split || !pset || !pendingReady.current) return;
+    const info = pendingReady.current;
+    pendingReady.current = null;
+    announceReady(info, pset.id);
+  }, [announceReady, pset, split]);
 
   useEffect(() => {
     if (!split) return;
@@ -49,85 +75,75 @@ export function VoiceSession() {
   return (
     <main className="session-shell">
       <LayoutGroup id="session-layout">
-        <AnimatePresence initial={false} mode="popLayout">
-          {!split ? (
-            <motion.section
-              key="welcome"
-              className="welcome-stage"
-              initial={{ opacity: 1 }}
-              animate={{ opacity: 1 }}
-              exit={
-                reduceMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, transition: { duration: 0.18 } }
-              }
-            >
-              <motion.div
-                layoutId="tutor-orb"
-                className="orb-frame orb-frame-home"
-                transition={layoutTransition}
-              >
-                <Orb
-                  state={state}
-                  level={level}
-                  paused={paused}
-                  onInterrupt={interrupt}
-                />
-              </motion.div>
-              <p className="orb-status">{statusText(state, paused)}</p>
-
-              <motion.div
-                className="chip-row"
-                exit={
-                  reduceMotion
-                    ? { opacity: 0 }
-                    : { opacity: 0, y: 10, transition: { duration: 0.16 } }
-                }
-              >
-                {chips.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => void sendUtterance(chip)}
-                    className="chip"
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </motion.div>
-
-              {error ? <p className="session-note">{error}</p> : null}
-            </motion.section>
-          ) : (
+        {!split ? (
+          <motion.section key="welcome" className="welcome-stage">
             <motion.div
-              key="workspace"
-              className="workspace-layout"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: reduceMotion ? 0 : 0.18 }}
+              layoutId="tutor-orb"
+              className="orb-frame orb-frame-home"
+              transition={layoutTransition}
             >
-              <motion.section
-                className="workspace-stage"
-                initial={reduceMotion ? false : { opacity: 0, x: -28 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={layoutTransition}
-              >
-                <WorkspacePane
-                  pset={pset}
-                  onPsetChange={setPset}
-                  pointer={pointer}
-                  highlight={highlight}
-                  onExit={exitWorkspace}
-                  onPsetReady={(info) =>
-                    void sendEvent({
-                      kind: "pset_ready",
-                      title: info.title,
-                      pages: info.pages,
-                    })
-                  }
-                />
-              </motion.section>
+              <Orb
+                state={state}
+                level={level}
+                paused={paused}
+                onInterrupt={interrupt}
+              />
+            </motion.div>
+            <p className="orb-status">{statusText(state, paused)}</p>
 
+            <div className="chip-row">
+              {chips.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => {
+                    if (chip === "Homework" && pset) {
+                      enterWorkspace();
+                      return;
+                    }
+                    void sendUtterance(chip);
+                  }}
+                  className="chip"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            {error ? <p className="session-note">{error}</p> : null}
+          </motion.section>
+        ) : null}
+
+        {deskKept ? (
+          <motion.div
+            key="workspace"
+            className={["workspace-layout", split ? "" : "is-parked"].filter(Boolean).join(" ")}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: split ? 1 : 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.18 }}
+            aria-hidden={!split}
+          >
+            <motion.section
+              className="workspace-stage"
+              initial={reduceMotion ? false : { opacity: 0, x: -28 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={layoutTransition}
+            >
+              <WorkspacePane
+                pset={pset}
+                onPsetChange={setPset}
+                pointer={pointer}
+                highlight={highlight}
+                onExit={exitWorkspace}
+                onPsetReady={(info) => {
+                  if (!pset) return;
+                  if (splitRef.current) announceReady(info, pset.id);
+                  else pendingReady.current = info;
+                }}
+              />
+            </motion.section>
+
+            {split ? (
               <section className="agent-stage">
                 <div className="agent-tools">
                   <LeaveButton onLeave={exitWorkspace} />
@@ -148,9 +164,9 @@ export function VoiceSession() {
                 <Captions turns={turns} />
                 {error ? <p className="session-note workspace-note">{error}</p> : null}
               </section>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            ) : null}
+          </motion.div>
+        ) : null}
       </LayoutGroup>
     </main>
   );
