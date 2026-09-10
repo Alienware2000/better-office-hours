@@ -1,0 +1,14 @@
+---
+description: Always load live project status before writing code
+alwaysApply: true
+---
+
+# Handoff
+
+The repo is the source of truth, not chat history.
+
+1. Read `docs/STATUS.md` first. It says where we are, what is waiting on a human, and what to do next.
+2. Read `AGENTS.md` next. Follow its read order and lane rules.
+3. Do not start the next checkpoint while STATUS says we are waiting on human review.
+4. Stay in your lane (ARCHITECTURE.md section 2). Do not silently edit `lib/types.ts`.
+5. Before you stop, update `docs/STATUS.md` and your section of `docs/NOTES.md`, then commit with the slice.

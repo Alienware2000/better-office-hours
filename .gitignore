@@ -1,22 +1,48 @@
 # dependencies
-node_modules/
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# next
-.next/
-out/
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # env (keep the example)
 .env
 .env.local
 .env.*.local
+!.env.example
 
-# os / tooling
-.DS_Store
+# vercel
 .vercel
+
+# typescript
 *.tsbuildinfo
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+next-env.d.ts
 
 # leftover from opening the wrong folder
 Untitled/
+
+# local harness files
+CLAUDE.md
