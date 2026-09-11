@@ -2,13 +2,15 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 23:46 ET
-By: Voice lane
+Updated: 2026-09-11 00:00 ET
+By: Whiteboard lane
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `main`, approved voice reliability integration
-Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability. Hussein's subsequent work requires new lane PRs and David's review.
+Branch: `main`, approved empty-state integration
+Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability and PR #4 removes automatic test diagrams. Hussein's subsequent work requires new lane PRs and David's review.
 
 ## Now
+
+Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
 Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David authorized merging PR #3. Try pause/resume and Leave while a recording is processing as the remaining hardware check. This slice does not enable hands-free barge-in or establish real-device latency.
 
@@ -19,6 +21,8 @@ Fixed two entry issues: concept state previously never rendered a workspace, and
 Whiteboard state parks separately with homework and concept sessions and restores paused. Notes do not replace the homework PDF. The existing declarative animation runtime and runtime-only visual hints remain in place. No changes to the human prompt, pedagogy, or shared types. David approved this baseline for main so Hussein can branch from the working desk. Hussein owns context, recap, and shell. Read LANES.md for authorized first slices, acceptance checks, and integration boundaries. Hardware checks remain known follow-ups, not a block on those independent first PRs.
 
 ## What to do next
+
+Next proposed David voice slice: reduce gaps between spoken sentences by preparing upcoming audio while the current sentence plays, preserving one playback queue and cancellation. Measure first-audio latency and inter-sentence gaps; retain the hardware checks below. Coordinate speech and drawing timing after that. Hussein continues his isolated lanes.
 
 1. Human mic check: tap the orb, say a homework request, then leave and ask for a concept. Confirm the desk opens from speech and the response feels natural.
 2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
