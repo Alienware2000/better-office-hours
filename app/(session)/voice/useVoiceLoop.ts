@@ -65,6 +65,8 @@ export function useVoiceLoop() {
   const [highlight, setHighlight] = useState<AgentTurn["highlight"]>();
   const [turns, setTurns] = useState<Turn[]>([]);
 
+  const pendingAttachmentRef = useRef<{ id: string; at: number } | null>(null);
+  const noticedAttachmentsRef = useRef(new Set<string>());
   const speechQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [inputReady, setInputReady] = useState(false);
   const inputReadyRef = useRef(false);
@@ -108,6 +110,7 @@ export function useVoiceLoop() {
   // not a continuation of the homework chat. Sitting back down restores it.
   const adoptKind = useCallback(
     (next: WorkKind, restore: boolean) => {
+      pendingAttachmentRef.current = null;
       const prev = kindRef.current;
       if (prev === next) return;
 
@@ -207,6 +210,8 @@ export function useVoiceLoop() {
         if (controller.signal.aborted || epoch !== playbackEpochRef.current) return;
         url = URL.createObjectURL(blob);
         const audio = new Audio(url);
+        audio.playbackRate = 1.08;
+        audio.preservesPitch = true;
         await new Promise<void>((resolve, reject) => {
           const finish = () => {
             controller.signal.removeEventListener("abort", cancel);
@@ -498,6 +503,7 @@ export function useVoiceLoop() {
   const runTurn = useCallback(
     async ({ text, event }: { text?: string; event?: SessionEvent }) => {
       const said = text?.trim() ?? "";
+      if (said) pendingAttachmentRef.current = null;
       if (!said && !event) return;
       if (said && isJunkSpeech(said)) return;
 
@@ -608,10 +614,16 @@ export function useVoiceLoop() {
     return () => window.removeEventListener("boh:student-writing", onWriting);
   }, [setOrb, stopPlayback]);
 
-  // Attachments and ink are context, not invitations to take the floor. Keep
-  // the callback contract for desk readiness; live snapshots supply this data
-  // when the student next speaks. No background event starts a tutor turn.
-  const sendEvent: (event: SessionEvent) => Promise<void> = useCallback(async () => {}, []);
+  // A readiness receipt may acknowledge the screen, but never start a lesson.
+  const sendEvent: (event: SessionEvent) => Promise<void> = useCallback(async event => {
+    if (event.kind === "student_mark") return;
+    const page = getLivePage();
+    if (!page || noticedAttachmentsRef.current.has(page.psetId)) return;
+    noticedAttachmentsRef.current.add(page.psetId);
+    if (pausedRef.current || recordingRef.current || playingRef.current ||
+        turnAbortRef.current || transcriptionAbortRef.current) return;
+    pendingAttachmentRef.current = { id: page.psetId, at: performance.now() };
+  }, []);
 
   const pauseVoice = useCallback(() => {
     pausedRef.current = true;
@@ -688,6 +700,7 @@ export function useVoiceLoop() {
     let detector: Awaited<ReturnType<typeof createSpeechDetector>> | null = null;
     let speechProbability = 0;
     let probabilityAt = 0;
+    let suspendedAt: number | null = null;
     let audioContext: AudioContext | null = null;
     let recorder: MediaRecorder | null = null;
     let chunks: Blob[] = [];
@@ -820,6 +833,7 @@ export function useVoiceLoop() {
       stopRef.current();
       pauseAnimation();
       candidate = false;
+      pendingAttachmentRef.current = null;
       setRecording(true);
       setOrb("listening");
     };
@@ -913,12 +927,28 @@ export function useVoiceLoop() {
           raf = requestAnimationFrame(loop);
           return;
         }
+        if (audioContext?.state === "suspended") {
+          if (suspendedAt === null) {
+            suspendedAt = now;
+            void audioContext.resume().catch(() => {});
+          } else if (now - suspendedAt > 2000) {
+            inputReadyRef.current = false;
+            setInputReady(false);
+            suspendVoice("Microphone audio was suspended. Retry the microphone.");
+          }
+          raf = requestAnimationFrame(loop);
+          return;
+        }
+        suspendedAt = null;
         const elapsed = lastFrame ? Math.min(100, now - lastFrame) : 16;
         lastFrame = now;
         // Use speech probability, not volume, to distinguish non-speech noise.
         // The analyser now drives only the visual input meter.
         const loud = now - probabilityAt < 500 && isSpeechFrame(speechProbability, recordingRef.current && !candidate, playingRef.current);
-        if (loud) lastLoud = now;
+        // Low-confidence background sound must not keep extending a turn.
+        // Preserve quiet syllables in the recording, but only clear speech
+        // renews the endpoint timer.
+        if (loud && speechProbability >= 0.6) lastLoud = now;
         if (!recordingRef.current && !transcriptionAbortRef.current && loud &&
             (playingRef.current || now - playbackEndedAtRef.current > 300)) {
           startRecorder();
@@ -928,11 +958,29 @@ export function useVoiceLoop() {
           if (candidate) {
             if (voicedMs >= 180) takeFloor();
             else if (now - lastLoud > 120) discardRecording();
-          } else if ((now - lastLoud > 1100 && now - startedAt > 450) || now - startedAt > 90000) {
+          } else if ((now - lastLoud > 1000 && now - startedAt > 450) || now - startedAt > 90000) {
             void stopRecorder();
           }
         }
 
+        const attachment = pendingAttachmentRef.current;
+        if (attachment) {
+          const samePage = getLivePage()?.psetId === attachment.id;
+          if (!samePage || now - attachment.at > 8000 || recordingRef.current || transcriptionAbortRef.current || turnAbortRef.current) {
+            pendingAttachmentRef.current = null;
+          } else if (!playingRef.current && now - lastLoud > 1500 && now - attachment.at > 1500 && now - playbackEndedAtRef.current > 1500) {
+            pendingAttachmentRef.current = null;
+            const receipt = "I can see your PDF now.";
+            const epoch = playbackEpochRef.current;
+            void speakRef.current(receipt, undefined, epoch, undefined, () => {
+              if (epoch !== playbackEpochRef.current || pausedRef.current) return;
+              addTurn("tutor", receipt);
+              historyRef.current = [...historyRef.current, { role: "assistant", content: receipt }];
+            }).catch(err => {
+              if (epoch === playbackEpochRef.current && !pausedRef.current && (err as Error).name !== "AbortError") setError((err as Error).message);
+            });
+          }
+        }
         raf = requestAnimationFrame(loop);
       };
       raf = requestAnimationFrame(loop);

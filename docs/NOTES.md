@@ -4,6 +4,10 @@ Each lane keeps a few lines here: what works, what is stubbed, what other lanes 
 
 ## voice
 
+Current endpoint uses clear speech (probability >= 0.6) to extend a confirmed recording, while the lower gate still retains quiet syllables. Approximately 1s without clear speech submits. Suspended AudioContext retries resume and exposes microphone retry after 2s. Playback uses rate 1.08 with preservesPitch. Test with quiet voices: this is acoustic endpointing, not semantic turn detection.
+
+Readiness now permits a fixed one-time "I can see your PDF now." receipt after 1.5s of idle quiet. No LLM call, problem selection, or question is allowed for this receipt. Busy uploads stay silent; starting speech cancels the pending receipt, as do changed pages/session ownership and its 8s expiry. Existing live snapshots supply the attachment on the next actual student turn. Lifecycle harness covers these rules and suspended-input recovery.
+
 v3 integration gotcha: previous_text/next_text are rejected by the provider, despite ordinary TTS parameter documentation listing them. The earlier one-sentence smoke test missed this. Only Flash receives previous_text now. scripts/check-tts.mjs exercises the actual route with both models. Three sequential live requests passed. Keep sentence playback boundaries for interruption/history integrity until audio alignment is available; a grouping experiment was withheld after the lifecycle regression caught unplayed words in history. Tone softening is runtime-only and still needs David's listening review.
 
 Latest voice/board pass: default TTS is eleven_v3_conversational, with stability 0.5 and an explicit Flash rollback via ELEVENLABS_TTS_MODEL. The quota initially blocked synthesis; after David upgraded, direct synthesis, STT round trip, and actual browser decoding passed. Requests surface quota errors clearly. This is not ElevenAgents managed turn-taking: local VAD and batch Scribe v2 remain. No key values are stored in docs.

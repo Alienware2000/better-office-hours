@@ -13,8 +13,9 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', manualAudio = false, failTts = false } = {}) {
+async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null } = {}) {
   const effects = [], states = [], requests = [], recordings = [];
+  let audioContext;
   const stt = deferred();
   const audio = [];
   const marks = [];
@@ -56,7 +57,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false } = {}
     },
     '@/lib/agent/intent': { detectMode: () => null },
 
-    '@/lib/pdf/live-page': { getLivePage: () => null, setLivePage: noOp },
+    '@/lib/pdf/live-page': { getLivePage: () => livePage, setLivePage: noOp },
     '@/lib/whiteboard/live-board': { getLiveBoard: () => null },
     '@/lib/whiteboard/geometry': { isDrawCommand: () => true },
     '@/lib/whiteboard/store': board,
@@ -76,6 +77,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false } = {}
     MediaRecorder: Recorder,
     navigator: { mediaDevices: { getUserMedia: async () => ({ getAudioTracks: () => [track], getTracks: () => [track] }) } },
     AudioContext: class {
+      constructor() { audioContext = this; }
       state = 'running';
       createMediaStreamSource() { return { connect: noOp }; }
       createAnalyser() { return { fftSize: 2048, getFloatTimeDomainData: data => data.fill(loud && track.enabled ? 0.1 : 0) }; }
@@ -112,7 +114,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false } = {}
   const cleanups = effects.map(effect => effect());
   await settle();
   hook.interrupt(); // Activate voice without relying on a rendered health update.
-  const tick = (volume, elapsed) => { loud = volume; now += elapsed; probabilityCallback(volume ? .98 : .01); frame(); };
+  const tick = (volume, elapsed) => { loud = volume; now += elapsed; probabilityCallback(typeof volume === 'number' ? volume : volume ? .98 : .01); frame(); };
   async function record() {
     tick(true, 1000);
     for (let i = 0; i < 20; i++) tick(true, 20);
@@ -125,6 +127,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false } = {}
     assert.equal(recordings.length, 1, 'Do not record a competing turn during STT');
   }
   return { hook, states, stt, requests, record, listeners, tick, audio, marks,
+    suspendAudio: () => { audioContext.state = 'suspended'; },
     cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
 
@@ -270,3 +273,45 @@ console.log('PASS: brief-noise rejection, writing interruption, spoken-history i
   test.cleanup();
 }
 console.log('PASS: finish-tap race across automatic endpoint and playback; separate pause control.');
+
+{
+  const test = await mount();
+  test.tick(true, 1000);
+  for (let i=0;i<20;i++) test.tick(true,20);
+  for (let i=0;i<12;i++) test.tick(.45,100);
+  await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,1,'Uncertain background sound cannot renew the endpoint indefinitely');
+  test.cleanup();
+}
+{
+  const test = await mount({livePage:{psetId:'uploaded',documentKind:'pset'}});
+  await test.hook.sendEvent({kind:'pset_ready'});
+  test.tick(false,1000); await settle();
+  assert.equal(test.audio.length,0,'Upload receipt waits for quiet');
+  test.tick(false,700); await settle();
+  const spoken=test.requests.filter(r=>r.url.endsWith('/tts')).map(r=>JSON.parse(r.body).text);
+  assert.deepEqual(spoken,['I can see your PDF now.']);
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,0,'Receipt cannot start a lesson');
+  assert.equal(test.audio[0].playbackRate,1.08);
+  await test.hook.sendEvent({kind:'pset_ready'});test.tick(false,2000);await settle();
+  assert.equal(test.audio.length,1,'Same upload is acknowledged once');
+  test.cleanup();
+}
+{
+  const test = await mount({livePage:{psetId:'uploaded',documentKind:'pset'}});
+  await test.hook.sendEvent({kind:'pset_ready'});
+  test.tick(true,1000);for(let i=0;i<20;i++)test.tick(true,20);
+  test.tick(false,800);await settle();
+  assert.equal(test.audio.length,0,'Student speech cancels a pending receipt');
+  test.cleanup();
+}
+console.log('PASS: low-confidence noise endpoint, quiet one-time upload receipt, speech priority, and brisk pitch-preserving playback.');
+
+{
+  const test = await mount();
+  test.suspendAudio();test.tick(false,100);test.tick(false,2100);await settle();
+  assert.match(test.states[3],/Microphone audio was suspended/);
+  assert.equal(test.states[4],true,'Suspended input pauses instead of appearing to listen forever');
+  test.cleanup();
+}
+console.log('PASS: suspended microphone audio has a bounded recovery path.');

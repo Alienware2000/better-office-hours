@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 01:42 ET
+Updated: 2026-09-11 01:49 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,10 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Listening/upload follow-up: playback is 8% faster with pitch preserved. Confirmed recordings keep quiet syllables, but only speech probability at least 0.6 renews the approximately 1s endpoint timer. This closes the code path where uncertain background sound could keep listening open. Browser-suspended microphone audio attempts resume and exposes retry after 2s if still suspended. These are targeted fixes, not proof of the cause of every reported hang.
+
+An idle, active session acknowledges a newly rendered PDF once with "I can see your PDF now." after 1.5s of quiet. The receipt never calls the tutor model or selects a problem. It is skipped during recording, transcription, or a tutor response, cancelled by new speech or page changes, and expires after 8s. Ink remains silent context. Build, focused lint, lifecycle tests for weak noise, upload timing/duplicates/cancellation, playback speed, and suspended-audio recovery pass. A headless Chrome test also confirmed one spoken receipt after an actual PDF upload with the local detector active and mocked audio output. Real quiet speech and background vocals need another hardware stress test.
 
 Voice follow-up: reproduced v3's HTTP 400 rejection of previous_text on a second sentence. The route now omits that unsupported parameter for v3 while preserving it for Flash. Three consecutive real app requests passed with prior sentence context supplied by the client. A route regression test covers both models. Audio preparation is serialized per model pass to avoid unbounded simultaneous requests. Runtime wording allows warmth and specific acknowledgement without repeated stock openers; human PROMPT and PEDAGOGY remain unchanged. Sentence grouping was evaluated and withheld because it made interruption history less accurate. Sentence-level captions/playback remain.
 

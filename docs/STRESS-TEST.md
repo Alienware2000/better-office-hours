@@ -64,3 +64,10 @@ Compare written equations and their symbol colors across DRAW, ANIM, and the tut
 ### Visual references and next capabilities
 
 The design direction is a coordinated explanation, with stable symbol identity and deliberate reveals. References reviewed: [Desmos sliders](https://www.desmos.com/calculator/ejgsoybkjs), [Khan Academy graph/equation explanation](https://www.khanacademy.org/math/algebra-home/alg-linear-eq-func/alg-writing-slope-intercept-equations/v/graphs-using-slope-intercept-form), [3Blue1Brown's Manim demonstration](https://www.3blue1brown.com/lessons/manim-demo/), and [Manim matching equation transforms](https://docs.manim.community/en/stable/reference/manim.animation.transform_matching_parts.TransformMatchingTex.html). The present implementation adds typography, symbolic color consistency, and reveals to the existing SVG runtime. Linked parameter sliders, full mathematical typesetting, term-to-term transformations, and arbitrary image composition remain future implementation, not claimed features. Any new command contract needs an explicit shared-type review. The projectile fixture remains test-only.
+
+## Listening and upload receipt retest
+
+- Listen to the same v3 voice at the new pitch-preserving 1.08 playback rate.
+- Speak, then stop with mild background sound. A confirmed turn should end after about 1s without clear speech. Try quiet speech too; lowering false continuation must not swallow a quiet student's explanation.
+- Upload while idle: one short acknowledgement after 1.5s of quiet. Upload while speaking or while the tutor responds: no extra spoken receipt. No upload can start problem one or an unsolicited lesson.
+- A suspended microphone audio context should recover or show Retry microphone, rather than silently remaining in listening state. The automated case covers a context that fails to resume; real browser interruptions remain a device check.
