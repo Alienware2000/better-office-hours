@@ -119,7 +119,9 @@ export function interpretCommand(
     if (command.label) {
       drawables.push(midLabel(`${id}-l`, from, to, command.label, color, diagram.labelSide));
     }
-    return finish(drawables, [[from, to]], { ...command, from, to });
+    // Attached endpoints describe a displacement before composition. Keeping
+    // its sign is essential: clipping a negative y here flattens upward arrows.
+    return finish(drawables, [[from, to]], diagram.attach ? command : { ...command, from, to });
   }
 
   if (command.op === "line") {
@@ -136,7 +138,7 @@ export function interpretCommand(
       },
     ];
     if (diagram.surface) drawables.unshift(surfaceHatching(id, from, to, diagram.surface));
-    return finish(drawables, [[from, to]], { ...command, from, to });
+    return finish(drawables, [[from, to]], diagram.attach ? command : { ...command, from, to });
   }
 
   if (command.op === "curve") {

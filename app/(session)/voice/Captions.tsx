@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import type { Turn } from "@/lib/types";
 import { isJunkSpeech } from "./speech";
 
-export function Captions({ turns }: { turns: Turn[] }) {
+export function Captions({ turns, onExport }: { turns: Turn[]; onExport?: (format: 'txt' | 'json') => void }) {
   const reduced = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const following = useRef(true);
@@ -35,6 +35,7 @@ export function Captions({ turns }: { turns: Turn[] }) {
   }
 
   function exportTranscript() {
+    if (onExport) { onExport('txt'); return; }
     const text = ["Better Office Hours", "Session transcript (captions, not an audio recording)", "",
       ...spoken.map(turn => `${turn.role === "tutor" ? "Tutor" : "You"}: ${turn.text}\n`),
     ].join("\n");
@@ -52,6 +53,7 @@ export function Captions({ turns }: { turns: Turn[] }) {
       <div className="caption-tools">
         {readingHistory && <button type="button" onClick={showLatest}>Latest ↓</button>}
         <button type="button" onClick={exportTranscript} aria-label="Export session transcript">Export</button>
+        {onExport && <button type="button" onClick={() => onExport('json')} aria-label="Export session data as JSON">JSON</button>}
       </div>
       <div className="captions-scroll" ref={scrollRef} tabIndex={0} role="region" aria-label="Session transcript"
         onScroll={event => {

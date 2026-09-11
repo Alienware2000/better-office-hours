@@ -15,7 +15,7 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, startup = {} } = {}) {
+async function mount({ llmText = '', llmResponse = null, manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, startup = {} } = {}) {
   const effects = [], states = [], requests = [], recordings = [];
   const inputAudioState = { value: 'running' };
   const stt = deferred();
@@ -104,6 +104,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
       if (url.endsWith('/health')) return startup.health ?? Response.json({ grok: true, elevenlabs: true });
       if (url.endsWith('/stt')) return (sttCount++ ? sttNext : stt).promise; // Deliberately ignores abort.
       if (url.endsWith('/llm') && JSON.parse(options.body).visualRepair && repairResponse) return repairResponse;
+      if (url.endsWith('/llm') && llmResponse) return llmResponse;
       if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: typeof llmText === 'function' ? llmText(JSON.parse(options.body)) : llmText } }] })}\n\ndata: [DONE]\n\n`);
       if (url.endsWith('/tts') && !initializing && deferredTts) return deferredTts;
       if (url.endsWith('/tts')) return !initializing && failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
@@ -622,3 +623,45 @@ for (const cancel of [false, true]) {
   await speaking; test.cleanup();
 }
 console.log('PASS: delayed synthesis, buffered playback, repeated playing events, and cancellation preserve visual/narration synchronization.');
+
+// The first completed sentence must not wait for an expensive later figure.
+for (const cancel of [false, true]) {
+  let output;
+  const response = new Response(new ReadableStream({ start(controller) { output = controller; } }));
+  const test = await mount({ llmResponse: response, manualAudio: true });
+  const speaking = test.hook.sendUtterance('Explain this picture');
+  const emit = content => output.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ bohSpeechBoundary: true, choices: [{ delta: { content } }] })}\n\n`));
+  emit('[TEACH move=explain visual=diagram]\nThese arrows describe two independent directions.\n');
+  await settle();
+  assert.equal(test.audio.length, 1, 'A complete introduction plays while the next beat is still generating');
+  assert.equal(test.marks.length, 0, 'Upcoming visuals have not arrived yet');
+  if (cancel) test.hook.pauseVoice(); else test.audio[0].onended();
+  emit('[BOARD open][DRAW {"op":"arrow","id":"direction","from":{"x":0.2,"y":0.5},"to":{"x":0.7,"y":0.5}}]\nThis arrow shows the first direction.\n');
+  await settle();
+  assert.equal(test.marks.length, cancel ? 0 : 1, 'The later beat draws only at its own uncancelled audio start');
+  if (!cancel) { assert.equal(test.audio.length, 2); test.audio[1].onended(); }
+  output.close(); await speaking; test.cleanup();
+}
+console.log('PASS: completed sentence boundaries release speech before the next diagram, without duplicate speech or early/cancelled drawings.');
+
+{
+  const test = await mount({ autoStart: false, llmText: 'Yes, that comparison still applies.' });
+  const archive = { kind: 'concept', current: {
+    history: [{ role: 'user', content: 'Compare these two directions.' }, { role: 'assistant', content: 'They share the same time.' }],
+    turns: [{ role: 'student', text: 'Compare these two directions.', at: '2026-09-11T20:00:00Z' }, { role: 'tutor', text: 'They share the same time.', at: '2026-09-11T20:00:01Z' }],
+    board: { groups: [], playing: false },
+  }, parked: { pset: null, concept: null } };
+  test.hook.restoreSession(archive);
+  assert.equal(test.resourceCounts().mediaRequests, 0, 'Restore requires a fresh user action before listening');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 0, 'Restore does not speak a new greeting');
+  const copy = test.hook.captureSession();
+  copy.current.history[0].content = 'An unrelated edit';
+  assert.equal(test.hook.captureSession().current.history[0].content, archive.current.history[0].content, 'Exported snapshots do not alias live conversation memory');
+  test.hook.interrupt(); await settle();
+  await test.hook.sendUtterance('Does that still apply?');
+  const messages = JSON.parse(test.requests.find(r => r.url.endsWith('/llm')).body).messages;
+  assert.deepEqual(messages.slice(0, 2), archive.current.history, 'The next voice request receives restored student and tutor context');
+  assert.equal(messages.at(-1).content, 'Does that still apply?');
+  test.cleanup();
+}
+console.log('PASS: paused session recovery restores conversation memory for the next voice turn without restarting a greeting.');

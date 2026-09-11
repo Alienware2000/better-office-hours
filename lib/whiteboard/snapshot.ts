@@ -51,7 +51,7 @@ export function snapshotBoard(
       const opacity =
         ("opacity" in group ? Number(group.opacity) : 1) *
         (layer.camera && animation?.focus && animation.focus !== group.id
-          ? 0.4
+          ? 0.72
           : 1);
       ctx.globalAlpha = opacity;
       for (const mark of group.drawables) {

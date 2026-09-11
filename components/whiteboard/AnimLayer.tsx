@@ -28,7 +28,7 @@ export function AnimLayer({
         <g
           key={group.id}
           data-shape={group.id}
-          opacity={group.opacity * (focus && focus !== group.id ? 0.4 : 1)}
+          opacity={group.opacity * (focus && focus !== group.id ? 0.72 : 1)}
         >
           {group.drawables.map((mark) =>
             mark.kind === "text" ? (

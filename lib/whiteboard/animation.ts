@@ -331,7 +331,7 @@ function rawAnimationFrame(
       ) {
         op.group.drawables = op.group.drawables.filter(
           (m) => m.kind === "text",
-        );
+        ).map(m => m.kind === 'text' ? { ...m, labelAnchor: undefined } : m);
       }
       // Moving labels keep their model attachment and stable size. Avoid a
       // per-frame collision solver that would make them jump between sides.
@@ -345,8 +345,10 @@ function rawAnimationFrame(
     const options = (group.source as DiagramCommand | undefined)?.diagram;
     if (!options?.attach && !options?.component) return group;
     const resolved = composed[i];
+    const ends = resolved.geometry?.[0];
+    const zero = ends?.length === 2 && Math.hypot(ends[1].x - ends[0].x, ends[1].y - ends[0].y) < .003;
     return { ...resolved, drawables: resolved.drawables.map(mark => mark.kind === 'text'
-      ? { ...mark, fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color, false) ?? undefined : undefined } : mark) };
+      ? { ...mark, ...(zero ? { labelAnchor: undefined } : {}), fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color, false) ?? undefined : undefined } : mark) };
   });
   const camera = spec.camera
     ? sampleFrames(spec.camera.keyframes, t)
@@ -359,4 +361,27 @@ const emptyInk: { points: Pt[] }[] = [];
 export function animationFrame(spec: AnimationSpec, time: number, backdrop: ShapeGroup[] = emptyBackdrop, ink: { points: Pt[] }[] = emptyInk) {
   const frame = rawAnimationFrame(spec, time);
   return { ...frame, groups: layoutAnimationLabels(spec, frame.groups, t => rawAnimationFrame(spec, t), backdrop, ink) };
+}
+
+const writingObstacleCache = new WeakMap<AnimationSpec, ShapeGroup[]>();
+// New equations reserve the scene's movement, not merely its current frame.
+// This runs once per spec and does not invoke animated label layout recursively.
+export function animationWritingObstacles(spec: AnimationSpec): ShapeGroup[] {
+  const cached = writingObstacleCache.get(spec);
+  if (cached) return cached;
+  const times = [...new Set([
+    ...Array.from({ length: 25 }, (_, i) => spec.duration * i / 24),
+    ...spec.shapes.flatMap(s => s.keyframes?.map(f => f.t) ?? []),
+  ])].sort((a, b) => a - b);
+  const bounded = times.length <= 65 ? times : Array.from({ length: 65 }, (_, i) => times[Math.round(i * (times.length - 1) / 64)]);
+  const result = bounded.flatMap(time => {
+    const { groups, camera } = rawAnimationFrame(spec, time);
+    const project = (p: Pt): Pt => ({ x: .5 + (p.x - camera.x) * camera.zoom, y: .5 + (p.y - camera.y) * camera.zoom });
+    return groups.filter(g => g.opacity > .03).map(group => ({ ...group,
+      geometry: group.geometry?.map(points => points.map(project)),
+      drawables: group.drawables.map(mark => mark.kind === 'text' ? { ...mark, at: project(mark.at), fontSize: (mark.fontSize ?? .038) * camera.zoom } : mark),
+    }));
+  });
+  writingObstacleCache.set(spec, result);
+  return result;
 }

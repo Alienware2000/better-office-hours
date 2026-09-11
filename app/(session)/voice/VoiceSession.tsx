@@ -12,9 +12,17 @@ import { Captions } from "./Captions";
 import { Orb } from "./Orb";
 import type { OrbState } from "./constants";
 import { useVoiceLoop } from "./useVoiceLoop";
+import { SessionLibrary, type SessionPersistence } from './SessionLibrary';
+import type { SavedSession, SessionDiagnostic } from './saved-sessions';
+import type { PdfViewState } from '@/lib/pdf/view-state';
+import { resetBoard, subscribeBoard } from '@/lib/whiteboard/store';
 import "./session.css";
 
 export function VoiceSession() {
+  return <SessionLibrary Desk={SessionDesk} />;
+}
+
+function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport }: SessionPersistence) {
   const {
     state,
     level,
@@ -32,18 +40,64 @@ export function VoiceSession() {
     enterWorkspace,
     putAwayPset,
     bindDiscardPset,
+    bindNewSession,
+    captureSession,
+    restoreSession,
     turns,
     chips,
     layout,
     pointer,
     highlight,
   } = useVoiceLoop();
-  const [pset, setPset] = useState<LoadedPset | null>(null);
-  const [notes, setNotes] = useState<LoadedPset | null>(null);
-  const [documentViews, setDocumentViews] = useState({
-    pset: true,
-    concept: false,
-  });
+  const [pset, setPset] = useState<LoadedPset | null>(saved.pset);
+  const [notes, setNotes] = useState<LoadedPset | null>(saved.notes);
+  const [documentViews, setDocumentViews] = useState(saved.documentViews);
+  const [pdf, setPdf] = useState(saved.pdf);
+  const diagnostics = useRef<SessionDiagnostic[]>(saved.diagnostics);
+  useEffect(() => { bindSuspend(pauseVoice); }, [pauseVoice, bindSuspend]);
+  const hydrated = useRef(false);
+  const capture = useCallback((): SavedSession => ({ ...saved, voice: captureSession(), pset, notes, documentViews, pdf, diagnostics: [...diagnostics.current] }),
+    [saved, captureSession, pset, notes, documentViews, pdf]);
+  const captureRef = useRef(capture);
+  useEffect(() => { captureRef.current = capture; bindCapture(capture); }, [capture, bindCapture]);
+  useEffect(() => {
+    if (saved.voice) restoreSession(saved.voice); else resetBoard();
+    hydrated.current = true;
+  }, [saved, restoreSession]);
+  useEffect(() => {
+    bindNewSession(onNew);
+    return () => bindNewSession(null);
+  }, [bindNewSession, onNew]);
+  useEffect(() => {
+    if (hydrated.current) onSave(capture());
+  }, [capture, layout, turns, onSave]);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const flush = () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      if (hydrated.current) onSave(captureRef.current());
+    };
+    // Throttle rather than debounce: a playing animation must still get saved.
+    const schedule = () => { timer ??= setTimeout(flush, 500); };
+    const unsubscribe = subscribeBoard(schedule);
+    const record = (event: Event) => {
+      const detail = (event as CustomEvent<SessionDiagnostic>).detail;
+      diagnostics.current = [...diagnostics.current, detail];
+      schedule();
+    };
+    window.addEventListener('boh:session-diagnostic', record);
+    window.addEventListener('pagehide', flush);
+    const onHidden = () => { if (document.hidden) flush(); };
+    document.addEventListener('visibilitychange', onHidden);
+    return () => {
+      unsubscribe(); if (timer) clearTimeout(timer);
+      window.removeEventListener('boh:session-diagnostic', record);
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onHidden);
+    };
+  }, [onSave]);
+  const rememberPdf = useCallback((id: string, value: PdfViewState) => setPdf(current => ({ ...current, [id]: value })), []);
   const [notesReady, setNotesReady] = useState<{
     title: string;
     pages: number;
@@ -249,6 +303,8 @@ export function VoiceSession() {
                       active={homework}
                       onRemove={putAwayPset}
                       onPsetReady={setDeskReady}
+                      savedView={pset ? pdf[pset.id] : undefined}
+                      onViewChange={rememberPdf}
                     />
                   </div>
                   {(concept || notes) && (
@@ -272,6 +328,8 @@ export function VoiceSession() {
                         pointer={pointer}
                         highlight={highlight}
                         onPsetReady={setNotesReady}
+                        savedView={notes ? pdf[notes.id] : undefined}
+                        onViewChange={rememberPdf}
                         onRemove={() => {
                           setNotes(null);
                           setNotesReady(null);
@@ -305,7 +363,7 @@ export function VoiceSession() {
                   />
                 </motion.div>
                 <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error), inputStarting)}</p>
-                <Captions turns={turns} />
+                <Captions turns={turns} onExport={onExport} />
                 {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
                 {error ? (
                   <p className="session-note workspace-note">{error}</p>

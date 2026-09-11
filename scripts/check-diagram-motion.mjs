@@ -46,6 +46,7 @@ const staticGroups=composeDiagram(commands.map(c=>interpretCommand(c,0).group));
 assert.ok(staticGroups.every(g=>!g.unresolved));
 const vectorPoints=staticGroups[1].geometry[0],xPoints=staticGroups[2].geometry[0],yPoints=staticGroups[3].geometry[0];
 assert.deepEqual(xPoints[0],vectorPoints[0]);assert.deepEqual(yPoints[0],vectorPoints[0]);close(xPoints[1].x,vectorPoints[1].x);close(yPoints[1].y,vectorPoints[1].y);
+close(vectorPoints[1].x-vectorPoints[0].x,.22);close(vectorPoints[1].y-vectorPoints[0].y,-.2);
 const spec={id:'motion',duration:2,shapes:[
  {kind:'dot',id:'node',label:'body',keyframes:[0,1,2].map(t=>({t,at:at(t),r:.035}))},
  {kind:'arrow',id:'vector',label:'v',diagram:vector.diagram,keyframes:[0,1,2].map(t=>({t,from:{x:0,y:0},to:{x:.22,y:-.2+.2*t}}))},
@@ -64,6 +65,7 @@ for(let t=0;t<=2;t+=.125){
  const [body,v,x,y]=groups;
  const center={x:body.geometry[0][0].x-.035,y:body.geometry[0][0].y};
  for(const g of [v,x,y]){close(g.geometry[0][0].x,center.x);close(g.geometry[0][0].y,center.y);}
+ close(v.geometry[0][1].x-center.x,.22);close(v.geometry[0][1].y-center.y,-.2+.2*t);
  close(x.geometry[0][1].x,v.geometry[0][1].x);close(x.geometry[0][1].y,center.y);
  close(y.geometry[0][1].y,v.geometry[0][1].y);close(y.geometry[0][1].x,center.x);
  const labels=groups.flatMap(g=>g.drawables.filter(m=>m.kind==='text'));
@@ -86,3 +88,19 @@ const linked=annotationDrawables(mark,{...mark,at:{x:.65,y:.6}});
 assert.equal(linked[0].annotation,true);assert.equal(linked[1].text,'v_x');assert.ok(!linked[0].d.includes('Z'));
 const t0=performance.now();for(let i=0;i<100;i++)animationFrame(spec,2*i/100,backdrop,ink);
 console.log(`Cached animation sampling: ${((performance.now()-t0)/100).toFixed(2)} ms/frame (local deterministic fixture).`);
+
+store.resetBoard();
+store.loadAnimation(spec);
+const before = store.getBoardState();
+store.applyDrawCommands([{op:'text',id:'relation',at:{x:.5,y:.5},text:'a_x = 0',size:'m'}]);
+const after = store.getBoardState();
+assert.equal(after.animation.id, before.animation.id, 'A note keeps the current animation when clear space is available');
+const note = after.groups.find(g=>g.id==='relation').drawables.find(d=>d.kind==='text');
+const {crossesLabel}=load('lib/whiteboard/diagram-layout.ts');
+for(let t=0;t<=2;t+=.025) {
+  for(const g of animationFrame(spec,t).groups) for(const pts of g.geometry ?? []) {
+    for(let i=1;i<pts.length;i++) assert.ok(!crossesLabel(pts[i-1],pts[i],writingBounds(note)),`Equation overlaps motion at ${t}`);
+  }
+}
+assert.equal(after.student.length,before.student.length);
+console.log('PASS: new equations reserve the whole sampled motion and leave scene geometry intact.');

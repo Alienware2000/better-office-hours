@@ -17,14 +17,16 @@ import { transcriptionKeyterms } from "@/lib/agent/transcription-context";
 import { withRequestTimeout } from "./request-timeout";
 import { CHIPS, pickGreeting, type OrbState } from "./constants";
 import { isJunkSpeech, isPutAwayPsetPhrase, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
+import { recordSessionDiagnostic } from './session-diagnostics';
 
 type Health = { grok: boolean; elevenlabs: boolean };
-type WorkKind = "lobby" | "pset" | "concept";
-type WorkSnapshot = { history: ChatMessage[]; turns: Turn[]; board: BoardState };
+export type WorkKind = "lobby" | "pset" | "concept";
+export type WorkSnapshot = { history: ChatMessage[]; turns: Turn[]; board: BoardState };
+export type VoiceArchive = { kind: WorkKind; current: WorkSnapshot; parked: { pset: WorkSnapshot | null; concept: WorkSnapshot | null } };
 
 async function readSseText(
   response: Response,
-  onDelta: (full: string) => void,
+  onDelta: (full: string, speechBoundary: boolean) => void,
 ): Promise<string> {
   if (!response.body) throw new Error("No stream");
   const reader = response.body.getReader();
@@ -44,6 +46,7 @@ async function readSseText(
       const data = line.slice(6).trim();
       if (!data || data === "[DONE]") continue;
       const json = JSON.parse(data) as {
+        bohSpeechBoundary?: boolean;
         error?: { message?: string };
         choices?: { delta?: { content?: string } }[];
       };
@@ -51,7 +54,7 @@ async function readSseText(
       const content = json.choices?.[0]?.delta?.content;
       if (content) {
         full += content;
-        onDelta(full);
+        onDelta(full, json.bohSpeechBoundary === true);
       }
     }
   }
@@ -167,6 +170,8 @@ export function useVoiceLoop() {
   const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
   const claimTabRef = useRef<() => void>(() => {});
   const discardPsetRef = useRef<() => void>(() => {});
+  const newSessionRef = useRef<(() => void) | null>(null);
+  const bindNewSession = useCallback((start: (() => void) | null) => { newSessionRef.current = start; }, []);
 
   const setOrb = useCallback((next: OrbState) => {
     stateRef.current = next;
@@ -343,6 +348,8 @@ export function useVoiceLoop() {
   // One paper on the desk at a time. Putting it away is a new homework
   // session, not a parked copy of the old one.
   const putAwayPset = useCallback(() => {
+    // The saved-session shell archives the whole desk before starting afresh.
+    if (newSessionRef.current) { newSessionRef.current(); return; }
     stopPlayback();
     discardRecordingRef.current();
     setInputEnabledRef.current(!pausedRef.current);
@@ -427,6 +434,8 @@ export function useVoiceLoop() {
         signal,
       });
       if (!response.ok) throw new Error("Tutor request failed");
+      const request = response.headers.get('x-tutor-request');
+      recordSessionDiagnostic({ kind: 'request', request, deep });
 
       let emitted = 0;
       let beatsApplied = 0;
@@ -470,11 +479,16 @@ export function useVoiceLoop() {
             // Playback may wait on synthesis or browser buffering. Start both
             // ink and motion when the sentence is audible, not when queued.
             visuals.forEach(applyTurn);
+            if (visuals.length) {
+              const board = getBoardState();
+              recordSessionDiagnostic({ kind: 'board', request, deep, elapsedMs: Math.round(performance.now() - requestedAt), page: board.pageId, groups: board.groups.length, animation: Boolean(board.animation) });
+            }
             if (process.env.NODE_ENV !== 'production' && visuals.length) {
               const board = getBoardState();
               console.info('Tutor visual playback ' + JSON.stringify({ request: response.headers.get('x-tutor-request'), deep, beats: visuals.length, page: board.pageId, groups: board.groups?.length, animation: Boolean(board.animation), revision: board.revision }));
             }
             heard = [heard, trimmed].filter(Boolean).join(" ");
+            if (!captionStarted) recordSessionDiagnostic({ kind: 'first_audio', request, deep, elapsedMs: Math.round(performance.now() - requestedAt) });
             if (!captionStarted && process.env.NODE_ENV !== 'production') console.info('Tutor speech playback ' + JSON.stringify({ request: response.headers.get('x-tutor-request'), deep, firstAudioMs: Math.round(performance.now() - requestedAt) }));
             if (!captionStarted) { addTurn("tutor", heard); captionStarted = true; }
             else reviseLastTutorTurn(heard);
@@ -486,7 +500,7 @@ export function useVoiceLoop() {
         });
       };
 
-      const full = await readSseText(response, (raw) => {
+      const full = await readSseText(response, (raw, speechBoundary) => {
         if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
         onProgress?.();
         const partial = parseAgentTurn(raw);
@@ -508,6 +522,12 @@ export function useVoiceLoop() {
           emitted = next.consumed;
           enqueueSpeech(next.chunk);
           next = takeSpeechChunks(partial.speech, emitted);
+        }
+        // This is a completed model-authored unit, not a partial token string.
+        // Do not wait for the next expensive diagram to supply whitespace.
+        if (speechBoundary) {
+          const ready = partial.speech.slice(emitted).trim();
+          if (ready) { enqueueSpeech(ready); emitted = partial.speech.length; }
         }
       });
 
@@ -652,7 +672,9 @@ export function useVoiceLoop() {
         (turnAbortRef.current as AbortController | null)?.abort();
         turnAbortRef.current = null;
         stopPlayback();
-        setError(err instanceof Error ? err.message : "Something went wrong");
+        const message = err instanceof SyntaxError ? "The tutor's response was interrupted. Your work is still here. Please try again." : err instanceof Error ? err.message : "Something went wrong";
+        setError(message);
+        recordSessionDiagnostic({ kind: 'error', message });
         setOrb(pausedRef.current ? "idle" : "listening");
       }
     },
@@ -707,6 +729,30 @@ export function useVoiceLoop() {
     setPaused(false);
     startInputRef.current();
   }, [pauseVoice]);
+
+  const captureSession = useCallback((): VoiceArchive => structuredClone({
+    kind: kindRef.current,
+    current: { history: historyRef.current, turns: turnsRef.current, board: { ...getBoardState(), playing: false } },
+    parked: parkedRef.current,
+  }), []);
+
+  const restoreSession = useCallback((archive: VoiceArchive) => {
+    pauseVoice();
+    pendingAttachmentRef.current = null;
+    noticedAttachmentsRef.current.clear();
+    kindRef.current = archive.kind;
+    parkedRef.current = structuredClone(archive.parked);
+    historyRef.current = structuredClone(archive.current.history);
+    turnsRef.current = structuredClone(archive.current.turns);
+    setTurns(turnsRef.current);
+    restoreBoard(archive.current.board);
+    setLivePage(null);
+    setLayout(archive.kind === 'lobby' ? 'orb_only' : archive.kind);
+    setPointer(undefined);
+    setHighlight(undefined);
+    setError(null);
+    hasStartedRef.current = archive.current.turns.length > 0 || archive.kind !== 'lobby';
+  }, [pauseVoice, setLayout]);
 
   const interrupt = useCallback(() => {
     if (!inputReadyRef.current) { retryMicrophone(); return; }
@@ -1207,6 +1253,9 @@ export function useVoiceLoop() {
     enterWorkspace,
     putAwayPset,
     bindDiscardPset,
+    bindNewSession,
+    captureSession,
+    restoreSession,
     turns,
     chips: CHIPS,
     layout,

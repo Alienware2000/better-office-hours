@@ -2,7 +2,7 @@ import { layoutWriting } from "./writing";
 import { layoutDiagram } from './diagram-layout';
 import { composeDiagram } from './diagram-compose';
 import { closedBody, type BodyDot } from "./body";
-import { validateAnimation, type DiagramAnimShape } from "./animation";
+import { validateAnimation, animationWritingObstacles, type DiagramAnimShape } from "./animation";
 import { diagramOptions } from './diagram-command';
 import type { AnimationSpec, DrawCommand } from "@/lib/types";
 import type { StudentInk } from "./colors";
@@ -135,7 +135,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
     if (op.group.id === "topic" && previousTopic && words(previousTopic) !== words(op.group)) {
       next = nextPage(next);
     }
-    let laidOut = layoutWriting(op.group, next.groups, next.student);
+    let laidOut = layoutWriting(op.group, next.groups, next.student, next.animation ? animationWritingObstacles(next.animation) : []);
     if (!laidOut) {
       next = nextPage(next);
       laidOut = layoutWriting(op.group, [], []);

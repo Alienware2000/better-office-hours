@@ -33,7 +33,7 @@ export function writingBounds(mark: TextMark): Box {
 
 // Resolve writing once in board coordinates. The snapshot and rendered board
 // consume the same lines; existing writing never jumps when a new line arrives.
-export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { points: { x: number; y: number }[] }[]): ShapeGroup | null {
+export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { points: { x: number; y: number }[] }[], motion: ShapeGroup[] = []): ShapeGroup | null {
   if (group.drawables.length !== 1 || group.drawables[0].kind !== 'text') return group;
   const mark = group.drawables[0];
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
@@ -69,7 +69,21 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
     if (line) lines.push(line);
     line = '';
   }
-  const occupied: Box[] = groups.filter(g => g.id !== group.id).flatMap(g => g.drawables.filter((d): d is TextMark => d.kind === 'text').map(writingBounds));
+  const obstacles = [...groups.filter(g => g.id !== group.id), ...motion];
+  const occupied: Box[] = obstacles.flatMap(g => g.drawables.filter((d): d is TextMark => d.kind === 'text').map(writingBounds));
+  // Reserve actual geometry as well as labels. Each small segment gets its
+  // own bounds so a curved path does not unnecessarily block its entire box.
+  for (const obstacle of obstacles) {
+    for (const points of obstacle.geometry ?? []) {
+      if (!points.length) continue;
+      const pieces = obstacle.drawables.some(d => d.kind === 'fill') ? [points]
+        : points.length === 1 ? [points] : points.slice(1).map((point, i) => [points[i], point]);
+      for (const piece of pieces) occupied.push({
+        left: Math.min(...piece.map(p => p.x)) - .008, right: Math.max(...piece.map(p => p.x)) + .008,
+        top: Math.min(...piece.map(p => p.y)) - .008, bottom: Math.max(...piece.map(p => p.y)) + .008,
+      });
+    }
+  }
   for (const stroke of ink) {
     if (!stroke.points.length) continue;
     occupied.push({ left: Math.min(...stroke.points.map(p => p.x)), right: Math.max(...stroke.points.map(p => p.x)), top: Math.min(...stroke.points.map(p => p.y)), bottom: Math.max(...stroke.points.map(p => p.y)) });

@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 18:54 ET
+Updated: 2026-09-11 19:37 EDT
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, continuation of 179544c with merged origin/main
@@ -19,11 +19,15 @@ Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. D
 
 ## Now
 
-Handoff and latest human test (2026-09-11): David and Hussein reported a successful run with useful diagrams, animation, equations, and a graded-answer refusal paired with an example. David wants to keep testing and then progress the broader build. Preserve the current runtime while he tests. OpenRouter is deferred unless remaining latency/quality issues justify a comparison; do not start a provider migration now. Read [HANDOFF.md](HANDOFF.md) for the portable state, evidence, integration priorities, and next-task starter.
+Session recovery, review exports, and concrete playback/diagram fixes (2026-09-11): David explicitly requested saving separate sessions after two accidental refreshes destroyed valuable tests. The voice lane now has a browser-local Sessions drawer with automatic IndexedDB saving, rename/new/resume/delete, timestamped transcript export, and full session JSON export. Recovery restores current and parked desk histories, captions, board pages/student ink/undo, paused animation state, attachment references, and PDF ink/undo/page/zoom. Opening the library pauses voice; resuming a saved session requires a fresh microphone action and preserves conversation context. A stale tab cannot overwrite a newer save. The paper UI and drawing toolbar remain intact.
 
-David accidentally refreshed, clearing the run's in-memory transcript and board. The current tab is a fresh concept session; no matching completed-run export was found. Exact dialogue, pedagogy, equations, and rendered diagrams could not be audited. Surviving traces from the continuous interval preceding the refresh show 16 completed substantive replies: median 7.9s generation, 9.2s request-to-first-audio (range 5.4 to 14.3s), and 44 generated words (range 33 to 94). First-audio timing excludes STT/endpointing/fast routing. Eight replies declared no new visual. Animation was applied and later notes retained it on page 1; no page-follow transition was tested in this interval. Three zero-output cancellations included one at 30s; reasons are not established. Keep the positive human report separate from these mechanics/timing observations.
+Latest run: David confirmed he refreshed or left without exporting. The transcript is unrecoverable from the available data; do not claim an exact dialogue/pedagogy audit. Surviving traces from uptime 03:08 to 03:19 contain 11 completed substantive replies: median 11.8s generation, 13.3s request-to-first-audio (range 7.9 to 31.3s), and 55 generated words (26 to 68). First-audio timing excludes STT/endpointing/fast routing. One animation response had speech ready at 19.2s but first audio at 31.3s. Completed structured introductions/beats now carry a speech boundary through SSE, allowing the last complete sentence to play without waiting for the next visual chunk. Actual drawings still start with their own audible sentence. This removes a reproduced queue delay, not model reasoning time. OpenRouter remains deferred; no provider/model/microphone change.
 
-Next: preserve this baseline, capture the next test before refresh, and coordinate session recovery plus the missing recap/context/auth integration after the existing PR reviews. Current refresh recovery, durable sessions, live course retrieval, and spoken/saved recap are missing. Hussein's #6/#8/#9 remain open and untouched; #8 targets lane/context. GitHub reported conflicts on #6/#9 during read-only inspection, so recheck when their reviews are assigned. This follow-up changed documentation only; :3102 remains running. No microphone/model/runtime retuning or new provider calls.
+Screenshot-informed fixes: new equations reserve static geometry and sampled animation movement, avoiding writing across a moving body. Unfocused diagram context stays more legible. Rendered regression exposed a signed-displacement bug: attached upward vectors were clipped before composition. Relative endpoints now preserve their signs; derived zero vectors also omit misleading label leaders. The shown malformed-JSON error is replaced by a useful interrupted-response message, with safe error categories and local request/playback diagnostics in JSON exports. Its exact originating model response was not retained.
+
+Validation: isolated production build, focused lint/typecheck, saved-session/export/error, voice lifecycle, teaching/disclosure, structured lesson, motion/animation, math, workspace/ink, page-follow, and deadline checks passed. A fresh isolated browser verified real IndexedDB reload, distinct sessions, rename/export, restored conversation/board/animation, new PDF pen strokes, restored PDF page/zoom/undo, and stale-tab conflict protection. Desktop/compact results were visually inspected. Microphone and model calls were disabled in this rendering test; this is not a fresh real-model quality or latency benchmark. Full lint retains the five pre-existing PdfViewer ref-access findings. Repeatable browser regression: scripts/check-session-recovery.mjs; see HANDOFF for invocation.
+
+Limits/next: saves belong to this browser origin, not an authenticated account or another device. Clearing browser data loses them; export important tests. PDF bytes remain on the demo server and are not embedded in saves/exports. Autosave is throttled at 500ms for board updates; wait for Saved in this browser before closing. Cloud/session identity, cross-session learning summaries, import, recap, retrieval, and auth integration remain separate work. Keep Hussein's #6/#8/#9 open and untouched; #8 targets lane/context. Review PR #10, test a fresh real voice exchange, export its JSON, then progress the broader build in HANDOFF rather than repeating broad prompt changes. The :3102 dev server remains available; the isolated :3103 test server is stopped after validation. Human PROMPT/PEDAGOGY and frozen lib/types.ts are unchanged.
 
 ### Earlier implementation and validation notes
 
@@ -187,7 +191,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 1. Read HANDOFF.md. Preserve the successful voice/whiteboard baseline while David tests; exact transcript/board review needs a new captured session because the latest run was lost on refresh.
 2. Leave Hussein's PRs #6, #8, and #9 open for David's later review. PR #8 is based on lane/context, so review its dependency deliberately. No merge permission has been given for these PRs.
-3. Coordinate session recovery and the missing student-summary/spoken-recap/card flow after reviewing the existing identity/session proposals. Then connect actual course context, session isolation, and verified deployment. These cross-lane slices need coordination, not duplicate implementations.
+3. Local session recovery is implemented. Coordinate cloud identity/storage and the missing student-summary/spoken-recap/card flow after reviewing the existing proposals. Then connect actual course context, session isolation, and verified deployment. These cross-lane slices need coordination, not duplicate implementations.
 4. Keep OpenRouter as a deferred option. Planning latency, diagram semantics, and pacing still need observation; do not weaken pedagogy or microphone interruption to make a fixture pass. Canvas/Grok Bot operation still requires a separate assignment.
 
 ## Validation
@@ -247,7 +251,7 @@ cd /Users/davidantwi/.codex/worktrees/b640/boh
 npm run dev -- -p 3102
 ```
 
-Open http://localhost:3102. Allow the mic. Tap the orb. Upload a pset or start a concept. Keep the source stable during live testing and export captions before refreshing.
+Open http://localhost:3102. Allow the mic. Tap the orb. Upload a pset or start a concept. Keep the source stable during live testing. Wait for Saved in this browser before closing and export session JSON for review.
 
 Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.mjs`, `node scripts/check-lanes.mjs`.
 
