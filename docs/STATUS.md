@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 20:25 ET
+Updated: 2026-09-10 20:51 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/workspace` (tracks `origin/lane/workspace`)
@@ -10,22 +10,22 @@ PR: https://github.com/Alienware2000/better-office-hours/pull/1 (open against `m
 
 ## Now
 
-David likes the look: cream, black orb, live captions. Keep that direction. Minimal, not colorful, not old.
+David signed off on the desk pass: cream, black orb, live captions, ink, zoom with pan, Leave / Remove, and the tutor seeing the open page. "Definitely much better." Continue in a new chat.
 
-He is iterating in person at checkpoints. Do not start the whiteboard until he says the pointer, highlight, Leave, ink, zoom, Remove, and session parking feel right on a real PDF.
+Next slice is the whiteboard. Branch `lane/whiteboard` from current `lane/workspace` (or from `main` after PR #1 lands). Do not keep polishing the PDF viewer unless a new human note says a desk bug is blocking the demo.
 
-This pass: the tutor should feel like it can see the desk (assignment and problem on screen, no "please upload" after the PDF is there). Zoom should pan like a document, and the split should fit laptop and stacked widths. Dev server: `http://localhost:3100`. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
+`lane/workspace` is 5 commits ahead of `origin/lane/workspace` and not pushed. Push before another machine or a cloud agent needs this tip. Dev server: `http://localhost:3100`. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
 
-## What to try next (human)
+## What to do next (new chat)
 
-1. Reload `http://localhost:3100`. Homework, drop a pset. Confirm the paper fills the desk at 100% with no crop.
-2. If the orb still says Tap to start, tap it after the PDF is up. The tutor should name something on the page, not ask you to upload.
-3. Zoom with − / +, pinch or Ctrl-scroll. Drag with the hand tool to pan. Click the percent to fit again. Draw at 150% and confirm ink and the laser still land.
-4. Narrow the window toward stacked (640px). The bar should still fit. Leave still parks. Remove still puts the paper away.
+1. Read `docs/STATUS.md`, `AGENTS.md`, `docs/DESIGN.md` section 4 (whiteboard), `docs/ARCHITECTURE.md` section 3.3, `docs/DEMO.md` 20 to 45s, `docs/NOTES.md` workspace + whiteboard.
+2. Branch `lane/whiteboard`. Stay in `components/whiteboard/*`, `components/scenes/*`, `lib/whiteboard/*`. Wire into the agent pane from `VoiceSession` only as much as needed to mount the board. Do not silently edit `lib/types.ts`.
+3. First working slice: board collapsed until the tutor draws; `[BOARD open]` then `[DRAW ...]` strokes that animate in as the tutor names them. Match the ink bar (cream, black, rust, gold). Student can draw; the tutor sees those marks.
+4. Then generated animation from the tutor's own spec, using the student's numbers. Nothing on the board is scripted for the demo. The hand-written projectile scene is a test fixture and fallback only.
 
-## After that approval
+## After the first board drawing works
 
-`lane/whiteboard`: tldraw strokes that animate in as the tutor names them, then generated animation from the tutor's own spec. Never cut. Nothing on the board is scripted for the demo. Match the ink bar's drawing feel, not a new tool language.
+Declarative animation runtime (`play`, `pause`, `seek`). Concept mode can become the full-size board. Recap is still a teammate lane; do not skip the board to build a recap card.
 
 ## Later, not Friday
 
@@ -37,13 +37,14 @@ Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback
 
 ## Do not
 
-- Start the whiteboard until David approves this workspace pass.
+- Go back to PDF chrome unless David files a new desk bug.
 - Edit `docs/PROMPT.md` unless he asks. It still claims the tutor has a syllabus and lecture notes, which is false until the context lane exists. It is also the source of the "Got it" tic ("confirm what you understood"). Propose a diff if needed.
 - Silently edit `lib/types.ts`. `[THINK]` already landed with ARCHITECTURE.md 3.4 and 3.5. Student ink is workspace-local; do not replace `StudentAnnotation` in this slice.
 - Put a reasoning model on the spoken (fast) turn. Measured: non-reasoning 0.6s, `grok-4.6` default 26s.
 - Restore CSS transform choreography for the orb, or a gradient-stroked laser path.
 - Add chat boxes or command buttons for talking to the tutor. Voice is the only input. Mouse is for pointing, drawing, paging, zoom, Leave, and Remove.
 - Commit secrets.
+- Wire the prompt to the projectile test fixture.
 
 ## Done (this branch)
 
@@ -53,14 +54,15 @@ Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback
 - Honest context: no hardcoded "Problem Set 3". Layout follows speech (`lib/agent/intent.ts`). Tutor speaks when the PDF is ready (`pset_ready` event). That event waits until the orb is listening, and a live page tells the tutor not to ask for an upload.
 - PDF workspace: upload, PDF.js, fit-width zoom with pan, laser pointer, marker highlight, student ink, Remove to switch papers, live captions.
 - Leave / Escape parks the desk and the homework session. Remove throws that paper away. Homework chip restores a parked desk. Parked viewer does not keep the pset in Grok's view.
+- David approved the desk feel on 2026-09-10.
 
 ## Lanes
 
 | Lane | Owner | Branch | State |
 |---|---|---|---|
 | voice | David | `lane/voice` | first pass on GitHub; later voice work is on `lane/workspace` |
-| workspace | David | `lane/workspace` | PR #1 open; iterating on desk feel, ink, and sessions |
-| whiteboard | David | not started | next after human approval |
+| workspace | David | `lane/workspace` | PR #1 open; desk pass approved; 5 commits not pushed |
+| whiteboard | David | not started | **next**; branch off current workspace tip |
 | context | Teammate | not started | types ready; `lib/db/schema.sql` missing |
 | recap | Teammate | not started | |
 | shell | Teammate | not started | VoiceSession still composes the split |
