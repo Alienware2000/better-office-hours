@@ -31,10 +31,10 @@ function client() {
 
 export function wantsVisualHelp(history: ChatMessage[]) {
   const latest = history.filter(message => message.role === 'user').at(-1)?.content ?? '';
-  return /confus|can(?:not|'t|’t) (?:picture|visuali[sz]e|see)|don(?:'t|’t) (?:get|understand)|draw|diagram|animat|show me|watch/i.test(latest);
+  return /confus|can(?:not|'t|’t) (?:picture|visuali[sz]e|see)|don(?:'t|’t) (?:get|understand)|draw|diagram|animat|show me|watch|equation|formula|write|units|notation/i.test(latest);
 }
 
-const BOARD_NARRATION = `\n<board_narration>Compose one visual beat per turn. Quiet setup, say what to watch, then emit DRAW or ANIM; deliberately reveal, hold, and ask exactly one question. Use the student's given numbers to shape the diagram, never display a requested graded answer, a full solution, or computed result labels. Labels have at most six words. Use ink for structure, accent for the changing quantity, muted for guides, warn sparingly. Leave generous margins. Use tick-less axes. For motion use declarative [ANIM {...}] only, never ANIM_PROGRAM. Schema: {id,duration,shapes:[...]}, seconds under 8; kinds: axes {id,origin:{x,y},xLabel,yLabel}; arrow {id,label,keyframes:[{t,from:{x,y},to:{x,y},color,opacity}]}; dot {id,keyframes:[{t,at:{x,y},r,opacity}]}; path {id,points:[{x,y},...],keyframes:[{t,drawn,opacity}]}; text {id,text,keyframes:[{t,at:{x,y},opacity}]}; bar {id,keyframes:[{t,at:{x,y},w,h,opacity}]}. Every ANIM shape needs kind. DRAW uses op equal to the shape name (arrow, axes, line, curve, circle, text), never op draw or a kind field. Keyframes have increasing t and optional ease linear, inOut, out. Points normalized 0..1, y downward. Arrow endpoints or dot at can use {follow:{pathId,offset:{x,y}}} to ride the path's drawn progress. Include a 0.65s initial hold and a final hold. Keep the spec compact, at most five shapes. [ANIM focus=id] signals one shape; [ANIM resume] continues after interruption. Use DRAW for a static diagram; ANIM when change over time is the idea.</board_narration>`;
+const BOARD_NARRATION = `\n<board_narration>Compose one visual beat per turn. Quiet setup, say what to watch, then emit DRAW or ANIM; deliberately reveal, hold, and ask exactly one question. Use the student's given numbers to shape the diagram, never display a requested graded answer, a full solution, or computed result labels. Use the board like a shared teaching surface, not just a graph plotter: one general equation, a short symbolic setup, or a blank for the student can be the visual beat. When referring to an equation, write it with DRAW text rather than asking the student to imagine it. For example [DRAW {"op":"text","id":"relation","at":{"x":0.5,"y":0.3},"text":"F = ma","size":"m"}]. Use Unicode notation such as v₀, Δx, θ, ² and ×, not LaTeX commands. Equations must fit on one short line; place related lines with generous spacing, never a complete graded solution. Invite the student to predict or complete a small part, then wait while they write. Inspect their board image on the next turn and respond to their actual work. Labels have at most six words; equation lines at most 64 characters. Use ink for structure, accent for the changing quantity, muted for guides, warn sparingly. Leave generous margins. Use tick-less axes. For motion use declarative [ANIM {...}] only, never ANIM_PROGRAM. Schema: {id,duration,shapes:[...]}, seconds under 8; kinds: axes {id,origin:{x,y},xLabel,yLabel}; arrow {id,label,keyframes:[{t,from:{x,y},to:{x,y},color,opacity}]}; dot {id,keyframes:[{t,at:{x,y},r,opacity}]}; path {id,points:[{x,y},...],keyframes:[{t,drawn,opacity}]}; text {id,text,keyframes:[{t,at:{x,y},opacity}]}; bar {id,keyframes:[{t,at:{x,y},w,h,opacity}]}. Every ANIM shape needs kind. DRAW uses op equal to the shape name (arrow, axes, line, curve, circle, text), never op draw or a kind field. Keyframes have increasing t and optional ease linear, inOut, out. Points normalized 0..1, y downward. Arrow endpoints or dot at can use {follow:{pathId,offset:{x,y}}} to ride the path's drawn progress. Include a 0.65s initial hold and a final hold. Keep the spec compact, at most five shapes. [ANIM focus=id] signals one shape; [ANIM resume] continues after interruption. Use DRAW for a static diagram; ANIM when change over time is the idea.</board_narration>`;
 
 export function buildGrokMessages(
   history: ChatMessage[],
@@ -50,7 +50,7 @@ export function buildGrokMessages(
         `<question_regions>${live.questionRegions
           .map(
             (region) =>
-              `${region.label}@${region.bbox.x.toFixed(2)},${region.bbox.y.toFixed(2)}`,
+              `${region.label}: x=${region.bbox.x.toFixed(3)} y=${region.bbox.y.toFixed(3)} w=${region.bbox.w.toFixed(3)} h=${region.bbox.h.toFixed(3)}`,
           )
           .join("; ")}</question_regions>`,
       ].join("\n")}`
@@ -85,7 +85,7 @@ export function buildGrokMessages(
     ? `\n<deep_turn>${DEEP_TURN}</deep_turn>`
     : `\n<when_to_think>${WHEN_TO_THINK}</when_to_think>`;
   const visual = wantsVisualHelp(history)
-    ? '\n<visual_help>The student wants help picturing the idea. If it is spatial or relational, open the board now and compose one small diagram with DRAW, or ANIM for change over time. Preserve the hint ladder and prediction before explanation. Do not merely promise to draw.</visual_help>' : '';
+    ? '\n<visual_help>The student wants help picturing the idea. If a diagram, relationship, or symbolic equation helps, open the board and compose one small visual with DRAW, or ANIM for change over time. Preserve the hint ladder and prediction before explanation. Do not merely promise to draw. Use general symbolic relationships or parallel examples, not a graded solution.</visual_help>' : '';
   const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${boardNote}${BOARD_NARRATION}${visual}${voice}${eventBlock}${materialNote}${lane}`;
   return [{ role: "system", content: system }, ...rest];
 }
@@ -122,9 +122,9 @@ function toApiMessages(
             `This is the student's screen right now: page ${live.page + 1} of the ${live.documentKind === "notes" ? "supplemental notes" : "assignment"} on their desk.`,
             "You can see this page. Do not ask them to upload it or which assignment it is.",
             live.studentMarks
-              ? `The student drew ${live.studentMarks === 1 ? "a mark" : `${live.studentMarks} marks`} on this page; the ink is in the image. Respond to what they marked.`
+              ? `The student drew ${live.studentMarks === 1 ? "a mark" : `${live.studentMarks} marks`} on this page; the ink is in the image. Use these marks as context for their current request; existing ink is not a new request to speak.`
               : "",
-            `Coordinates are normalized 0 to 1. Emit [POINT page=${live.page + 1} x=... y=...] before you explain a spot on it.`,
+            `Coordinates refer to the full page image, not the browser viewport or zoom. Use supplied question regions for a problem heading; inspect the image for a specific equation. If you cannot locate it reliably, ask instead of guessing. Use HIGHLIGHT page=... x=... y=... w=... h=... for a small relevant region. Coordinates are normalized 0 to 1. Emit [POINT page=${live.page + 1} x=... y=...] before you explain a spot on it.`,
           ]
             .filter(Boolean)
             .join(" "),
@@ -144,10 +144,10 @@ function toApiMessages(
           text: [
             "This is the whiteboard right now.",
             board.studentShapesSince
-              ? "The student drew on it; their ink is in the image. Respond to what they marked."
+              ? "The student drew on it; their ink is in the image. Use these marks as context for their current request; existing ink is not a new request to speak."
               : "Your earlier strokes are in the image.",
             "Coordinates are normalized 0 to 1, origin at the top left.",
-            "Keep using [BOARD open] and [DRAW ...] when a picture helps.",
+            "Use DRAW text for short equations as well as DRAW geometry. Leave student ink intact; never clear their work without a request.",
           ].join(" "),
         },
         { type: "image_url", image_url: { url: board.imageUrl } },
@@ -162,6 +162,7 @@ export async function* streamGrok(
   history: ChatMessage[],
   event?: SessionEvent | null,
   deep = false,
+  signal?: AbortSignal,
 ): AsyncGenerator<string> {
   const grok = client();
   const stream = await grok.chat.completions.create({
@@ -175,7 +176,7 @@ export async function* streamGrok(
     stream: true,
     messages: toApiMessages(history, event, deep),
     ...(deep ? { reasoning_effort: "low" as const } : {}),
-  });
+  }, { signal });
 
   for await (const part of stream) {
     const text = part.choices[0]?.delta?.content;

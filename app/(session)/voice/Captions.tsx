@@ -16,9 +16,11 @@ export function Captions({ turns }: { turns: Turn[] }) {
     .filter((turn) => turn.text.trim() && !isJunkSpeech(turn.text))
     .slice(-LIVE_TURNS);
 
+  const lastCaption = spoken.at(-1)?.text;
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [spoken.length, spoken.at(-1)?.text]);
+    const scroller = endRef.current?.parentElement;
+    if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: reduced ? "auto" : "smooth" });
+  }, [spoken.length, lastCaption, reduced]);
 
   if (!spoken.length) return null;
 

@@ -18,6 +18,7 @@ export async function POST(req: Request) {
 
   const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
     method: "POST",
+    signal: req.signal,
     headers: { "xi-api-key": elevenLabsKey() },
     body: outbound,
   });

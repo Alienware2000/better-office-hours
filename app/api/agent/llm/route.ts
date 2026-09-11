@@ -68,13 +68,18 @@ export async function POST(req: Request) {
   const created = Math.floor(Date.now() / 1000);
   const encoder = new TextEncoder();
 
+  let cancelled = false;
+  const upstream = new AbortController();
+  const cancel = () => { cancelled = true; upstream.abort(); };
+  req.signal.addEventListener("abort", cancel, { once: true });
+  if (req.signal.aborted) cancel();
   const stream = new ReadableStream({
     async start(controller) {
       const send = (payload: unknown) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+        if (!cancelled) controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
       };
       try {
-        for await (const content of streamGrok(history, event, deep)) {
+        for await (const content of streamGrok(history, event, deep, upstream.signal)) {
           send({
             id,
             object: "chat.completion.chunk",
@@ -90,14 +95,16 @@ export async function POST(req: Request) {
           model,
           choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
         });
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        if (!cancelled) controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (error) {
         const message = error instanceof Error ? error.message : "Grok request failed";
         send({ error: { message } });
       } finally {
-        controller.close();
+        req.signal.removeEventListener("abort", cancel);
+        if (!cancelled) controller.close();
       }
     },
+    cancel,
   });
 
   return new Response(stream, {

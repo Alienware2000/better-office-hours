@@ -10,6 +10,12 @@ Keep the existing adaptive desk in `app/(session)/voice/VoiceSession.tsx`. All t
 
 Hussein can start the isolated context, recap, and shell slices in LANES.md from main. David reviews their PRs before merging. Root entry/layout, package files, environment names, and schema are shared touchpoints; do not overwrite another lane's integration to make an isolated slice run.
 
+## Student turn ownership
+
+Attachments and ink update live context without starting speech. Readiness callbacks remain for desk compatibility, but only a student utterance or initial greeting starts spoken interaction. The current voice loop waits 1.8s of quiet to submit recorded speech, or accepts an orb tap to finish. During playback, browser echo cancellation plus sustained microphone activity can interrupt. This needs real-device validation and is not semantic endpoint detection.
+
+The speech queue prepares upcoming TTS audio and plays one chunk at a time. Captions and assistant history advance at sentence start, not model token arrival. There is no silent client word/sentence cap. Completed visual tags are queued after their preceding words. Short symbolic equations use existing DRAW text, with bounded line length and shared SVG/snapshot sizing; no new shared contract is required. The speech-only normalizer expands common SI notation while the board retains written symbols. A partially interrupted sentence is not word-aligned.
+
 ## 1. System shape
 
 ```

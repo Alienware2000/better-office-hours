@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { AnimLayer } from "./AnimLayer";
 import { projectileFixture } from "@/components/scenes/projectile";
-import { boardStyle } from "@/lib/whiteboard/style";
+import { boardStyle, boardTextSize } from "@/lib/whiteboard/style";
 import type { StudentInk } from "@/lib/whiteboard/colors";
 import { STUDENT_HEX } from "@/lib/whiteboard/colors";
 import { getLiveBoard, setLiveBoard, setBoardSnapshotProvider } from "@/lib/whiteboard/live-board";
@@ -138,6 +138,7 @@ export function Whiteboard({ active = true, expanded = false }: { active?: boole
           onPointerDown={(event) => {
             if (!isOpen || event.button !== 0) return;
             pauseAnimation();
+            window.dispatchEvent(new Event("boh:student-writing"));
             event.preventDefault();
             const origin = event.currentTarget.getBoundingClientRect();
             const pointerId = event.pointerId;
@@ -207,7 +208,7 @@ export function Whiteboard({ active = true, expanded = false }: { active?: boole
                           x={mark.at.x}
                           y={mark.at.y}
                           fill={mark.color}
-                          fontSize={boardStyle.label[mark.size]}
+                          fontSize={boardTextSize(mark.text, mark.size, mark.at.x)}
                           textAnchor="middle"
                         >
                           {mark.text}

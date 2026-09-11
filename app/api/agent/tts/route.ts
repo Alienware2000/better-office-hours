@@ -1,3 +1,4 @@
+import { normalizeSpokenText } from "@/lib/agent/spoken-text";
 import {
   ELEVENLABS_TTS_MODEL,
   ELEVENLABS_VOICE_ID,
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const body = (await req.json()) as { text?: string; previousText?: string };
-  const text = body.text?.trim();
+  const text = normalizeSpokenText(body.text ?? "");
   if (!text) {
     return Response.json({ error: "Missing text" }, { status: 400 });
   }
@@ -17,6 +18,7 @@ export async function POST(req: Request) {
     `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?output_format=mp3_44100_128`,
     {
       method: "POST",
+      signal: req.signal,
       headers: {
         "xi-api-key": elevenLabsKey(),
         "Content-Type": "application/json",
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         text,
         model_id: ELEVENLABS_TTS_MODEL,
-        previous_text: body.previousText?.trim() || undefined,
+        previous_text: normalizeSpokenText(body.previousText ?? "") || undefined,
         voice_settings: {
           stability: 0.42,
           similarity_boost: 0.75,

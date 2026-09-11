@@ -18,6 +18,7 @@ export function VoiceSession() {
   const {
     state,
     level,
+    recording,
     error,
     paused,
     sendUtterance,
@@ -81,8 +82,8 @@ export function VoiceSession() {
     [sendEvent],
   );
 
-  // sendEvent no-ops while paused, so do not mark the pset announced until
-  // the student is actually listening. Otherwise the tutor never sees the page.
+  // Retain readiness bookkeeping for the desk. Readiness is silent; the
+  // current page snapshot reaches the tutor with the next student utterance.
   useEffect(() => {
     if (paused || !homework || !pset || !deskReady) return;
     announceReady(deskReady, pset.id);
@@ -111,13 +112,13 @@ export function VoiceSession() {
   }, [concept, paused, notes, notesReady, sendEvent]);
 
   useEffect(() => {
-    if (!pointer || !(concept ? notes : homework && pset)) return;
+    if ((!pointer && !highlight) || !(concept ? notes : homework && pset)) return;
     const mode = concept ? "concept" : "pset";
     const frame = requestAnimationFrame(() => setDocumentViews((current) =>
       current[mode] ? current : { ...current, [mode]: true },
     ));
     return () => cancelAnimationFrame(frame);
-  }, [pointer, concept, homework, notes, pset]);
+  }, [pointer, highlight, concept, homework, notes, pset]);
 
   const layoutTransition = reduceMotion
     ? { duration: 0 }
@@ -137,10 +138,11 @@ export function VoiceSession() {
                 state={state}
                 level={level}
                 paused={paused}
+                recording={recording}
                 onInterrupt={interrupt}
               />
             </motion.div>
-            <p className="orb-status">{statusText(state, paused)}</p>
+            <p className="orb-status">{statusText(state, paused, recording)}</p>
 
             <div className="chip-row">
               {chips.map((chip) => (
@@ -285,10 +287,11 @@ export function VoiceSession() {
                     state={state}
                     level={level}
                     paused={paused}
+                recording={recording}
                     onInterrupt={interrupt}
                   />
                 </motion.div>
-                <p className="orb-status">{statusText(state, paused)}</p>
+                <p className="orb-status">{statusText(state, paused, recording)}</p>
                 <Captions turns={turns} />
                 {documentView && <Whiteboard active={split} />}
                 {error ? (
@@ -303,8 +306,9 @@ export function VoiceSession() {
   );
 }
 
-function statusText(state: OrbState, paused: boolean): string {
+function statusText(state: OrbState, paused: boolean, recording: boolean): string {
   if (paused) return "Tap to start";
+  if (recording) return "Listening · tap when finished";
   if (state === "speaking") return "Speaking · tap to stop";
   if (state === "thinking") return "Thinking · tap to cancel";
   if (state === "listening") return "Listening";

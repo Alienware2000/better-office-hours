@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionEvent } from "@/lib/agent/events";
 import { detectMode } from "@/lib/agent/intent";
-import { parseAgentTurn, takeSpeechChunks, type ChatMessage } from "@/lib/agent/tags";
+import { parseAgentTurn, takeSpeechChunks, visualBeats, type ChatMessage } from "@/lib/agent/tags";
 import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
 import { getLiveBoard } from "@/lib/whiteboard/live-board";
 import { isDrawCommand } from "@/lib/whiteboard/geometry";
@@ -15,11 +15,6 @@ import { isJunkSpeech, isPutAwayPsetPhrase, isResumeConceptPhrase, isResumePsetP
 type Health = { grok: boolean; elevenlabs: boolean };
 type WorkKind = "lobby" | "pset" | "concept";
 type WorkSnapshot = { history: ChatMessage[]; turns: Turn[]; board: BoardState };
-
-// PROMPT.md asks for two or three sentences under about seventy words. Capping
-// at two cut the tutor's closing question, which is the whole point of a turn.
-const MAX_SENTENCES = 3;
-const MAX_WORDS = 70;
 
 async function readSseText(
   response: Response,
@@ -69,9 +64,10 @@ export function useVoiceLoop() {
   const [turns, setTurns] = useState<Turn[]>([]);
 
   const speechQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const greetingRef = useRef(pickGreeting());
+  const [greeting] = useState(pickGreeting);
+  const greetingRef = useRef(greeting);
   const historyRef = useRef<ChatMessage[]>([
-    { role: "assistant", content: greetingRef.current },
+    { role: "assistant", content: greeting },
   ]);
   const kindRef = useRef<WorkKind>("lobby");
   const turnsRef = useRef<Turn[]>([]);
@@ -150,6 +146,8 @@ export function useVoiceLoop() {
     [greetingMessages],
   );
 
+  const finishRecordingRef = useRef<() => void>(() => {});
+  const [recording, setRecording] = useState(false);
   const hasStartedRef = useRef(false);
   const discardRecordingRef = useRef<() => void>(() => {});
   const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
@@ -166,6 +164,7 @@ export function useVoiceLoop() {
     transcriptionAbortRef.current?.abort();
     transcriptionAbortRef.current = null;
     playbackEpochRef.current += 1;
+    speechQueueRef.current = Promise.resolve();
     abortRef.current?.abort();
     abortRef.current = new AbortController();
     playingRef.current = false;
@@ -173,27 +172,30 @@ export function useVoiceLoop() {
   }, []);
 
   const speak = useCallback(
-    async (text: string, previousText?: string, epoch = playbackEpochRef.current) => {
+    async (text: string, previousText?: string, epoch = playbackEpochRef.current,
+      prepared?: Promise<{ blob: Blob } | { error: unknown }>, onStart?: () => void) => {
       if (!text.trim() || epoch !== playbackEpochRef.current) return;
       const controller = abortRef.current ?? new AbortController();
       abortRef.current = controller;
-      playingRef.current = true;
-      playbackStartedAtRef.current = performance.now();
-      setInputEnabledRef.current(false);
-      setOrb("speaking");
+      setInputEnabledRef.current(!pausedRef.current);
 
       let url: string | null = null;
       try {
-        const response = await fetch("/api/agent/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, previousText }),
-          signal: controller.signal,
-        });
-        if (epoch !== playbackEpochRef.current) return;
-        if (!response.ok) throw new Error("Voice playback failed");
-
-        url = URL.createObjectURL(await response.blob());
+        let blob: Blob;
+        if (prepared) {
+          const result = await prepared;
+          if ('error' in result) throw result.error;
+          blob = result.blob;
+        } else {
+          const response = await fetch("/api/agent/tts", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text, previousText }), signal: controller.signal,
+          });
+          if (!response.ok) throw new Error("Voice playback failed");
+          blob = await response.blob();
+        }
+        if (controller.signal.aborted || epoch !== playbackEpochRef.current) return;
+        url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         await new Promise<void>((resolve, reject) => {
           const finish = () => {
@@ -209,8 +211,18 @@ export function useVoiceLoop() {
             return;
           }
           controller.signal.addEventListener("abort", cancel, { once: true });
+          audio.onplaying = () => {
+            if (controller.signal.aborted || epoch !== playbackEpochRef.current) return;
+            playingRef.current = true;
+            playbackStartedAtRef.current = performance.now();
+            setOrb("speaking");
+            onStart?.();
+          };
           audio.onended = finish;
-          audio.onerror = () => reject(new Error("Audio failed"));
+          audio.onerror = () => {
+            controller.signal.removeEventListener("abort", cancel);
+            reject(new Error("Audio failed"));
+          };
           void audio.play().catch(reject);
         });
       } catch (error) {
@@ -218,21 +230,17 @@ export function useVoiceLoop() {
         throw error;
       } finally {
         if (url) URL.revokeObjectURL(url);
-        playingRef.current = false;
-        playbackEndedAtRef.current = performance.now();
-        window.setTimeout(() => {
-          if (
-            !pausedRef.current &&
-            !playingRef.current &&
-            epoch === playbackEpochRef.current
-          ) {
-            setInputEnabledRef.current(true);
-          }
-        }, 450);
+        if (epoch === playbackEpochRef.current) {
+          playingRef.current = false;
+          playbackEndedAtRef.current = performance.now();
+          if (!pausedRef.current) setOrb(turnAbortRef.current ? "thinking" : "listening");
+        }
       }
     },
     [setOrb],
   );
+
+  const speakRef = useRef(speak);
 
   // Every spoken chunk goes through one queue. The fast lane's lead-in and the
   // reasoning lane's reply are produced concurrently, and without this they
@@ -257,8 +265,8 @@ export function useVoiceLoop() {
       if (kindRef.current === "lobby") adoptKind("concept", false);
       setLayout("concept");
     }
-    if (turn.pointer) setPointer(turn.pointer);
-    if (turn.highlight) setHighlight(turn.highlight);
+    if (turn.pointer) { setPointer(turn.pointer); setHighlight(undefined); }
+    if (turn.highlight) { setHighlight(turn.highlight); setPointer(undefined); }
     if (turn.board?.open) openBoard();
     const animation = turn.board?.animation;
     if (animation && 'shapes' in animation) {
@@ -267,10 +275,7 @@ export function useVoiceLoop() {
         animAppliedRef.current = key;
         if (loadAnimation(animation)) {
           pauseAnimation();
-          const epoch = playbackEpochRef.current;
-          void enqueueSpeechTask(async () => {
-            if (epoch === playbackEpochRef.current && getBoardState().animation?.id === animation.id && getBoardState().time === 0 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) playAnimation();
-          });
+          if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) playAnimation();
         }
       }
     }
@@ -286,7 +291,7 @@ export function useVoiceLoop() {
       boardAppliedRef.current = commands.length;
       if (fresh.length) applyDrawCommands(fresh);
     }
-  }, [adoptKind, setLayout, enqueueSpeechTask]);
+  }, [adoptKind, setLayout]);
 
   // Leaving the desk parks that work. The tutor is back in the lobby and
   // cannot see the pset until the student sits down again.
@@ -377,9 +382,12 @@ export function useVoiceLoop() {
     }): Promise<{ full: string; turn: AgentTurn; spoken: Promise<void> }> => {
       // Each model pass has its own tag stream. Reset so a deep turn after
       // [THINK] does not skip DRAW commands that share indices with the lead-in.
-      boardAppliedRef.current = 0;
-      animAppliedRef.current = "";
-      animControlRef.current = "";
+      void enqueueSpeechTask(async () => {
+        if (signal.aborted || playbackEpoch !== playbackEpochRef.current) return;
+        boardAppliedRef.current = 0;
+        animAppliedRef.current = "";
+        animControlRef.current = "";
+      });
       const response = await fetch("/api/agent/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -396,58 +404,77 @@ export function useVoiceLoop() {
       if (!response.ok) throw new Error("Tutor request failed");
 
       let emitted = 0;
+      let beatsApplied = 0;
       let saidSoFar = "";
-      let sentences = 0;
-      let words = 0;
+      let speechFailure: unknown;
+      let captionStarted = false;
+      let heard = "";
+      let historyMessage: ChatMessage | null = null;
       let spoken: Promise<void> = Promise.resolve();
 
-      // The caps stop the next sentence rather than trimming the current one.
-      // Cutting mid-sentence lost the tutor's closing question and left the
-      // audio hanging on half a word.
+      // Shortness is a tutor instruction, never a silent client-side audio cut.
       const enqueueSpeech = (chunk: string) => {
-        if (sentences >= MAX_SENTENCES || words >= MAX_WORDS) return;
         const trimmed = chunk.trim();
-        if (!trimmed) return;
+        if (!trimmed || signal.aborted || playbackEpoch !== playbackEpochRef.current) return;
         const previousText = saidSoFar;
         saidSoFar = [saidSoFar, trimmed].filter(Boolean).join(" ");
-        sentences += 1;
-        words += trimmed.split(/\s+/).length;
-        spoken = enqueueSpeechTask(() =>
-          playbackEpoch === playbackEpochRef.current
-            ? speak(trimmed, previousText, playbackEpoch)
-            : Promise.resolve(),
-        );
+        const audioSignal = abortRef.current?.signal;
+        const prepared = fetch("/api/agent/tts", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: trimmed, previousText }), signal: audioSignal,
+        }).then(async response => {
+          if (!response.ok) throw new Error("Voice playback failed");
+          return { blob: await response.blob() };
+        }).catch((error: unknown) => ({ error }));
+        spoken = enqueueSpeechTask(async () => {
+          if (playbackEpoch !== playbackEpochRef.current || signal.aborted) return;
+          if (speechFailure) throw speechFailure;
+          try { await speak(trimmed, previousText, playbackEpoch, prepared, () => {
+            heard = [heard, trimmed].filter(Boolean).join(" ");
+            if (!captionStarted) { addTurn("tutor", heard); captionStarted = true; }
+            else reviseLastTutorTurn(heard);
+            if (!historyMessage) {
+              historyMessage = { role: "assistant", content: heard };
+              historyRef.current = [...historyRef.current, historyMessage];
+            } else historyMessage.content = heard;
+          }); } catch (error) { speechFailure = error; throw error; }
+        });
       };
 
-      addTurn("tutor", "");
       const full = await readSseText(response, (raw) => {
+        if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
         const partial = parseAgentTurn(raw);
-        // Queue the words before ANIM first, so its reveal waits for narration.
-        const animAt = raw.indexOf('[ANIM ');
-        if (partial.board?.animation && animAt >= 0 && JSON.stringify(partial.board.animation) !== animAppliedRef.current) {
-          const before = parseAgentTurn(raw.slice(0, animAt)).speech;
-          const pending = before.slice(emitted).trim();
-          if (pending) { enqueueSpeech(pending); emitted = before.length; }
+        // Both static marks and animation share the speech queue. A tag waits
+        // for its preceding words rather than drawing the whole reply upfront.
+        const beats = visualBeats(raw);
+        for (const beat of beats.slice(beatsApplied)) {
+          const pending = beat.speechBefore.slice(emitted).trim();
+          if (pending) { enqueueSpeech(pending); emitted = beat.speechBefore.length; }
+          spoken = enqueueSpeechTask(async () => {
+            if (!signal.aborted && playbackEpoch === playbackEpochRef.current) applyTurn(beat.turn);
+          });
         }
-        applyTurn(partial);
-        reviseLastTutorTurn(partial.speech);
+        beatsApplied = beats.length;
+        if (partial.mode) applyTurn({ speech: "", mode: partial.mode });
         // A lead-in turn is not worth speaking in pieces, and speaking it
         // before [THINK] arrives would strand the student mid-thought.
         if (partial.think) return;
         let next = takeSpeechChunks(partial.speech, emitted);
-        while (next.chunk && sentences < MAX_SENTENCES) {
+        while (next.chunk) {
           emitted = next.consumed;
           enqueueSpeech(next.chunk);
           next = takeSpeechChunks(partial.speech, emitted);
         }
       });
 
+      if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
       const turn = parseAgentTurn(full);
-      applyTurn(turn);
-      reviseLastTutorTurn(turn.speech);
+
       const leftover = turn.speech.slice(emitted).trim();
       if (leftover) enqueueSpeech(leftover);
-      return { full, turn, spoken };
+      const finished = spoken.then(() => { if (speechFailure) throw speechFailure; });
+      void finished.catch(() => {});
+      return { full, turn, spoken: finished };
     },
     [addTurn, applyTurn, enqueueSpeechTask, reviseLastTutorTurn, speak],
   );
@@ -504,29 +531,24 @@ export function useVoiceLoop() {
       }
 
       const lead = await runPass({ event, deep: false, signal, playbackEpoch });
-      historyRef.current = [
-        ...historyRef.current,
-        { role: "assistant", content: lead.full },
-      ];
+
 
       if (lead.turn.think) {
         // Fired before waiting on the lead-in audio, so the reasoning wait
         // happens underneath it rather than after it.
         const deep = runPass({ event, deep: true, signal, playbackEpoch });
+        void deep.catch(() => {});
         await lead.spoken;
-        if (playbackEpoch === playbackEpochRef.current) setOrb("thinking");
+        if (playbackEpoch === playbackEpochRef.current && !playingRef.current) setOrb("thinking");
         const result = await deep;
-        historyRef.current = [
-          ...historyRef.current,
-          { role: "assistant", content: result.full },
-        ];
+
         await result.spoken;
       } else {
         await lead.spoken;
       }
 
       if (turnAbortRef.current === turnController) turnAbortRef.current = null;
-      if (!playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
+      if (playbackEpoch === playbackEpochRef.current && !playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
     },
     [addTurn, adoptKind, health, putAwayPset, runPass, setLayout, setOrb, stopPlayback],
   );
@@ -544,60 +566,41 @@ export function useVoiceLoop() {
         await runTurn({ text });
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
+        (turnAbortRef.current as AbortController | null)?.abort();
+        turnAbortRef.current = null;
+        stopPlayback();
         setError(err instanceof Error ? err.message : "Something went wrong");
-        setOrb("idle");
+        setOrb(pausedRef.current ? "idle" : "listening");
       }
     },
-    [runTurn, setOrb],
+    [runTurn, setOrb, stopPlayback],
   );
 
-  // Coalesce marks while the tutor is speaking. Never interrupt speech to react
-  // to ink, and discard the event if that page is put away or voice is paused.
+  // Ink changes update snapshots, not turn ownership. The next student utterance
+  // carries fresh PDF and board images, without a timer interrupting their work.
+
   useEffect(() => {
-    let pendingPage: ReturnType<typeof getLivePage> = null;
-    let pendingEpoch = playbackEpochRef.current;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const flush = () => {
-      if (!pendingPage || pausedRef.current || getLivePage() !== pendingPage || playbackEpochRef.current !== pendingEpoch) {
-        pendingPage = null;
-        return;
-      }
-      if (recordingRef.current || playingRef.current || turnAbortRef.current || stateRef.current === 'thinking') {
-        timer = setTimeout(flush, 250);
-        return;
-      }
-      pendingPage = null;
-      void runTurn({ event: { kind: 'student_mark' } }).catch(err => {
-        if ((err as Error).name !== 'AbortError') setError('Could not respond to the page mark.');
-      });
-    };
-    const onMark = () => {
-      clearTimeout(timer);
-      pendingPage = getLivePage();
-      pendingEpoch = playbackEpochRef.current;
-      flush();
-    };
-    window.addEventListener('boh:student-mark', onMark);
-    return () => { clearTimeout(timer); window.removeEventListener('boh:student-mark', onMark); };
-  }, [runTurn]);
-
-  // Something happened on screen that the tutor should react to on its own.
-  const sendEvent = useCallback(
-    async (event: SessionEvent) => {
+    const onWriting = () => {
       if (pausedRef.current) return;
-      try {
-        setError(null);
-        await runTurn({ event });
-      } catch (err) {
-        if ((err as Error).name === "AbortError") return;
-        setError(err instanceof Error ? err.message : "Something went wrong");
-        setOrb("idle");
-      }
-    },
-    [runTurn, setOrb],
-  );
+      turnAbortRef.current?.abort();
+      turnAbortRef.current = null;
+      stopPlayback();
+      setOrb("listening");
+    };
+    window.addEventListener("boh:student-writing", onWriting);
+    return () => window.removeEventListener("boh:student-writing", onWriting);
+  }, [setOrb, stopPlayback]);
+
+  // Attachments and ink are context, not invitations to take the floor. Keep
+  // the callback contract for desk readiness; live snapshots supply this data
+  // when the student next speaks. No background event starts a tutor turn.
+  const sendEvent: (event: SessionEvent) => Promise<void> = useCallback(async () => {}, []);
 
   const interrupt = useCallback(() => {
+    if (recordingRef.current && !pausedRef.current) {
+      finishRecordingRef.current();
+      return;
+    }
     if (pausedRef.current) {
       setError(null);
       pausedRef.current = false;
@@ -641,11 +644,12 @@ export function useVoiceLoop() {
   }, [addTurn, health, setOrb, stopPlayback]);
 
   const sendRef = useRef(sendUtterance);
-  const speakRef = useRef(speak);
   const stopRef = useRef(stopPlayback);
-  sendRef.current = sendUtterance;
-  speakRef.current = speak;
-  stopRef.current = stopPlayback;
+  useEffect(() => {
+    sendRef.current = sendUtterance;
+    speakRef.current = speak;
+    stopRef.current = stopPlayback;
+  }, [sendUtterance, speak, stopPlayback]);
 
   useEffect(() => {
     let cancelled = false;
@@ -655,6 +659,9 @@ export function useVoiceLoop() {
     let chunks: Blob[] = [];
     let lastLoud = 0;
     let startedAt = 0;
+    let candidate = false;
+    let voicedMs = 0;
+    let lastFrame = 0;
     let raf = 0;
     const tabId = crypto.randomUUID();
     const channel =
@@ -678,6 +685,8 @@ export function useVoiceLoop() {
       }
       chunks = [];
       recordingRef.current = false;
+      candidate = false;
+      setRecording(false);
     };
     discardRecordingRef.current = discardRecording;
 
@@ -735,9 +744,11 @@ export function useVoiceLoop() {
       });
       recorder.stop();
       recordingRef.current = false;
+      setRecording(false);
+      const meaningful = voicedMs >= 160;
       const blob = await done;
       try {
-        if (!current() || blob.size < 1200) return;
+        if (!current() || !meaningful || blob.size < 1200) return;
         const text = await transcribe(blob, controller.signal);
         // A paused tab or a different desk must never receive an old recording,
         // even when the transport completes despite cancellation.
@@ -754,7 +765,24 @@ export function useVoiceLoop() {
       }
     };
 
-    const startRecorder = () => {
+    finishRecordingRef.current = () => {
+      if (candidate || voicedMs < 160) {
+        discardRecording();
+        suspendVoice();
+      } else void stopRecorder();
+    };
+
+    const takeFloor = () => {
+      turnAbortRef.current?.abort();
+      turnAbortRef.current = null;
+      stopRef.current();
+      pauseAnimation();
+      candidate = false;
+      setRecording(true);
+      setOrb("listening");
+    };
+
+    const startRecorder = (duringPlayback = false) => {
       if (!stream || recordingRef.current || pausedRef.current) return;
       chunks = [];
       const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -764,11 +792,12 @@ export function useVoiceLoop() {
       recorder.ondataavailable = (event) => {
         if (event.data.size) chunks.push(event.data);
       };
-      pauseAnimation();
+      candidate = duringPlayback;
+      voicedMs = 0;
       recorder.start();
       recordingRef.current = true;
       startedAt = performance.now();
-      setOrb("listening");
+      if (!candidate) takeFloor();
     };
 
     const boot = async () => {
@@ -813,23 +842,23 @@ export function useVoiceLoop() {
         for (const sample of data) sum += sample * sample;
         const rms = Math.sqrt(sum / data.length);
         setLevel(rms);
-        const loud = rms > 0.045;
         const now = performance.now();
+        const elapsed = lastFrame ? Math.min(100, now - lastFrame) : 16;
+        lastFrame = now;
+        // Browser echo cancellation stays enabled during playback. Require a
+        // stronger, sustained signal to interrupt than to continue a thought.
+        const loud = rms > (playingRef.current || candidate ? 0.065 : 0.025);
         if (loud) lastLoud = now;
-
-        if (!playingRef.current) {
-          if (
-            stateRef.current !== "thinking" &&
-            loud &&
-            !recordingRef.current &&
-            now - playbackEndedAtRef.current > 450
-          ) {
-            startRecorder();
-          } else if (
-            recordingRef.current &&
-            now - lastLoud > 850 &&
-            now - startedAt > 450
-          ) {
+        if (!recordingRef.current && !transcriptionAbortRef.current && loud &&
+            (playingRef.current || now - playbackEndedAtRef.current > 300)) {
+          startRecorder(playingRef.current);
+        }
+        if (recordingRef.current) {
+          if (loud) voicedMs += elapsed;
+          if (candidate) {
+            if (voicedMs >= 180) takeFloor();
+            else if (now - lastLoud > 120) discardRecording();
+          } else if ((now - lastLoud > 1800 && now - startedAt > 450) || now - startedAt > 90000) {
             void stopRecorder();
           }
         }
@@ -881,6 +910,7 @@ export function useVoiceLoop() {
       void audioContext?.close();
       discardRecording();
       discardRecordingRef.current = () => {};
+      finishRecordingRef.current = () => {};
       setInputEnabledRef.current = () => {};
       claimTabRef.current = () => {};
     };
@@ -889,6 +919,7 @@ export function useVoiceLoop() {
   return {
     state,
     level,
+    recording,
     health,
     error,
     paused,

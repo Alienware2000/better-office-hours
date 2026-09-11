@@ -1,6 +1,6 @@
 import type { AnimationSpec } from "@/lib/types";
 import { animationFrame } from "@/lib/whiteboard/animation";
-import { boardStyle } from "@/lib/whiteboard/style";
+import { boardStyle, boardTextSize } from "@/lib/whiteboard/style";
 
 export function AnimLayer({
   spec,
@@ -31,7 +31,7 @@ export function AnimLayer({
                 x={mark.at.x}
                 y={mark.at.y}
                 fill={mark.color}
-                fontSize={boardStyle.label[mark.size]}
+                fontSize={boardTextSize(mark.text, mark.size, mark.at.x)}
                 textAnchor="middle"
               >
                 {mark.text}

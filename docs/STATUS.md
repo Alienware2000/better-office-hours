@@ -2,17 +2,21 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 00:00 ET
-By: Whiteboard lane
+Updated: 2026-09-11 00:36 ET
+By: Voice and teaching surfaces
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `main`, approved empty-state integration
+Branch: `lane/voice-stress-fixes`, from main
 Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability and PR #4 removes automatic test diagrams. Hussein's subsequent work requires new lane PRs and David's review.
 
 ## Now
 
+David and Hussein stress-tested the desk and reported premature problem selection, interruptions, missing audio, awkward SI pronunciation, repetitive wording, and weak board/pointer use. This repair is ready for a new human stress test before merge. See STRESS-TEST.md for the consolidated findings, changes, and remaining acceptance checks.
+
+Uploads and ink no longer start autonomous speech. Orb taps submit meaningful recordings or pause when idle. Student speech can interrupt playback through an echo-cancelled microphone with a sustained-signal threshold; silence endpoint is now 1.8s. All response chunks are spoken, with captions/history following sentence playback and upcoming audio prepared ahead. Unit/symbol normalization is applied only to TTS. Board equations and queued visual narration are supported; writing on the board stops speech. PDF scrolling targets the requested region using measured zoomed geometry.
+
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
-Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David authorized merging PR #3. Try pause/resume and Leave while a recording is processing as the remaining hardware check. This slice does not enable hands-free barge-in or establish real-device latency.
+Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David authorized merging PR #3. Try pause/resume and Leave while a recording is processing as the remaining hardware check. This earlier slice established delayed-input isolation; the current stress-test branch adds prototype acoustic interruption, still requiring hardware validation.
 
 One adaptive desk now handles homework, concepts, and other requests. The orb and captions keep the same position. Every desk offers Whiteboard and PDF views: homework starts at Attach pset, concepts and Something else start on the large board with Attach notes available. While viewing a PDF, tutor drawings use the smaller board alongside it. A tutor pointer switches to the attached PDF view. Supplemental notes use the existing upload, highlighting, and ink tools, with their own concept-session state and model context.
 
@@ -22,7 +26,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 ## What to do next
 
-Next proposed David voice slice: reduce gaps between spoken sentences by preparing upcoming audio while the current sentence plays, preserving one playback queue and cancellation. Measure first-audio latency and inter-sentence gaps; retain the hardware checks below. Coordinate speech and drawing timing after that. Hussein continues his isolated lanes.
+Next: David and Hussein run STRESS-TEST.md on real microphones, first with headphones and then speakers. Check interruption, quiet voices, pauses, pronunciation, equation use, and zoomed pointers. Review this branch before merging; Hussein continues his isolated lanes.
 
 1. Human mic check: tap the orb, say a homework request, then leave and ask for a concept. Confirm the desk opens from speech and the response feels natural.
 2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
@@ -32,12 +36,15 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 
 ## Validation
 
-- Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. Existing hook ref-access/immutability lint failures remain; the new harness passes lint.
+- Stress-test branch: build, voice lifecycle harness, teaching repair checks, workspace checks, and animation unit checks pass. Focused voice/runtime/whiteboard lint passes; legacy PDF viewer ref-access lint errors remain.
+- The live upload-only model probe still chose problem one despite revised wording. Automatic readiness turns are now disabled in the client. The live general-equation probe produced a DRAW text equation and one question (about 5.8s to first token in the reasoning lane). These are isolated probes, not broad model-quality validation.
+
+- Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. The current branch also fixes the earlier voice-hook ref lint failures; the harness passes lint.
 
 - `npm run build` and `npx tsc --noEmit` pass.
 - `node scripts/check-workspace.mjs` passes intent routing, separate board restoration, notes context, and notes event checks.
 - Browser verified Homework, Explain a concept, and Something else entry; full-board switching; notes PDF upload/render with annotation controls; return to Whiteboard and Leave. Actual microphone recognition still needs human testing.
-- Focused ESLint on whiteboard, scenes, runtime hints, events, and the animation check passes. Full repo lint still reports existing voice/workspace ref-access errors.
+- Focused ESLint on whiteboard, scenes, runtime hints, events, and the animation check passes. Full repo lint still reports existing PDF workspace ref-access errors.
 - `node scripts/check-anim.mjs --unit` passes validation, interpolation, holds, Follow, pause/freeze, seek, focus, replay, clear, streaming parser, and a general bar/text/camera example.
 - Live ANIM generated a valid general motion spec through `:3100`. Live DRAW behavior varies as described above.
 - Browser fixture renders; playback ends and stops; keyboard scrubbing changes the frame. Review real speech synchronization and PDF ink with a mic as a hardware follow-up.
@@ -91,6 +98,6 @@ Pointer quality depends on Grok seeing the page image.
 
 The reasoning lane still leaves about 5 to 8s of quiet after the lead-in.
 
-Hands-free barge-in is off until ElevenLabs Conversational AI SDK turn handling. Tap the orb to interrupt.
+Hands-free interruption now uses browser echo cancellation and a sustained RMS threshold. False interruptions from speaker echo and missed quiet voices remain hardware risks. The orb provides submit/pause/cancel control.
 
 PROMPT.md still does not show a JSON DRAW example; the runtime hint and shorthand parser cover it for now.

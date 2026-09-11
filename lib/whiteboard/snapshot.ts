@@ -1,5 +1,5 @@
 import { animationFrame } from "./animation";
-import { boardStyle } from "./style";
+import { boardTextSize } from "./style";
 import type { AnimationSpec, BoardSnapshot } from "@/lib/types";
 import { BOARD_CREAM, STUDENT_HEX } from "./colors";
 import type { BoardStroke } from "./store";
@@ -56,7 +56,7 @@ export function snapshotBoard(
           ctx.save();
           ctx.scale(1 / w, 1 / h);
           ctx.fillStyle = mark.color;
-          ctx.font = `${boardStyle.label[mark.size] * h}px "Source Sans 3", system-ui, sans-serif`;
+          ctx.font = `${boardTextSize(mark.text, mark.size, mark.at.x) * h}px "Source Sans 3", system-ui, sans-serif`;
           ctx.textAlign = "center";
           ctx.fillText(mark.text, mark.at.x * w, mark.at.y * h);
           ctx.restore();

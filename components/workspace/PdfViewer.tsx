@@ -1,5 +1,7 @@
 "use client";
 
+import { revealPageTarget } from "@/lib/pdf/coordinates";
+
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { BBox } from "@/lib/types";
@@ -407,12 +409,21 @@ export function PdfViewer({
   };
 
   useEffect(() => {
-    if (!pointer || !hostRef.current) return;
-    const index = Math.max(0, pointer.page - 1);
-    hostRef.current
-      .querySelector(`[data-page="${index}"]`)
-      ?.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
-  }, [pointer]);
+    const stack = hostRef.current;
+    if (!active || !stack) return;
+    const target = pointer ?? (highlight ? {
+      page: highlight.page, x: highlight.bbox.x + highlight.bbox.w / 2,
+      y: highlight.bbox.y + highlight.bbox.h / 2,
+    } : null);
+    if (!target) return;
+    const frame = requestAnimationFrame(() => {
+      const sheet = stack.querySelector<HTMLElement>(`[data-page="${Math.max(0, target.page - 1)}"]`);
+      if (!sheet) return;
+      const delta = revealPageTarget(stack.getBoundingClientRect(), sheet.getBoundingClientRect(), target);
+      if (delta.left || delta.top) stack.scrollBy({ ...delta, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pointer, highlight, active, reduceMotion]);
 
   // The laser lives on the visible frame, not on a single page sheet, so it
   // can travel between problems instead of unmounting and appearing again.

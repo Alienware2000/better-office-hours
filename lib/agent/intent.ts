@@ -41,6 +41,7 @@ export function detectMode(
 ): Extract<LayoutState, "pset" | "concept"> | null {
   const said = text.toLowerCase().replace(/’/g, "'");
   if (PSET.some((pattern) => pattern.test(said))) return "pset";
+  if (/\b(?:switch|change) (?:the )?(?:topic|subject)\b|\bsomething else\b|\btalk about\b/.test(said)) return "concept";
   if (current === "pset") {
     if (/\bexplain a concept\b/.test(said) || /\bteach me\b/.test(said) || /\blecture\b/.test(said)) {
       return "concept";

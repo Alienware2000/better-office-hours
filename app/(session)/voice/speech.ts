@@ -3,7 +3,7 @@ export function isJunkSpeech(text: string) {
   const said = text.trim();
   if (!said) return true;
   if (/^\[[^\]]+\]$/.test(said)) return true;
-  if (/background noise/i.test(said)) return true;
+  if (/^background noise[.!]?$/i.test(said)) return true;
   return false;
 }
 

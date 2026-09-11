@@ -163,7 +163,7 @@ export function interpretCommand(
             kind: "text",
             key: `${id}-t`,
             at,
-            text: label(command.text),
+            text: boardLabel(command.text),
             size: command.size === "m" ? "m" : "s",
             color,
           },

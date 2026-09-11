@@ -155,7 +155,7 @@ export function parseAgentTurn(raw: string): AgentTurn {
     let end = -1;
     let inner = "";
 
-    if (brace !== -1 && (close === -1 || brace < close)) {
+    if (/^\[(?:DRAW|ANIM|ANIM_PROGRAM)\b/.test(raw.slice(i)) && brace !== -1 && (close === -1 || brace < close)) {
       const json = readJson(raw, brace);
       if (!json) {
         // Tag JSON is still streaming; wait for the next chunk.
@@ -202,9 +202,38 @@ export function takeSpeechChunks(spoken: string, emitted: number): {
   consumed: number;
 } {
   const pending = spoken.slice(emitted);
-  const match = pending.match(/^([\s\S]*?[.!?])(?:\s|$)/);
-  if (match && match[1].trim().split(/\s+/).length >= 2) {
-    return { chunk: match[1].trim(), consumed: emitted + match[0].length };
+  const match = pending.match(/^([\s\S]*?[.!?])\s+/);
+  if (match) {
+    return { chunk: match[1].trim(), consumed: emitted + match[1].length };
   }
   return { chunk: "", consumed: emitted };
+}
+
+/** Complete visual tags and the speech preceding each, in stream order. */
+export function visualBeats(raw: string): { speechBefore: string; turn: AgentTurn }[] {
+  const beats: { speechBefore: string; turn: AgentTurn }[] = [];
+  let lastEnd = 0;
+  const starts = /\[(?:BOARD|DRAW|POINT|HIGHLIGHT|ANIM)\b/g;
+  for (const match of raw.matchAll(starts)) {
+    const start = match.index;
+    if (start < lastEnd) continue;
+    const close = raw.indexOf(']', start);
+    const brace = raw.indexOf('{', start);
+    let end = close + 1;
+    if (brace >= 0 && (close < 0 || brace < close)) {
+      const json = readJson(raw, brace);
+      if (!json || raw[json.end] !== ']') break;
+      end = json.end + 1;
+    } else if (close < 0) break;
+    // Skip tag-looking strings inside a preceding JSON tag.
+    if (beats.length && start < lastEnd) continue;
+    const turn = parseAgentTurn(raw.slice(0, end));
+    // Pointer/highlight are momentary actions. Do not replay an earlier page
+    // target when a later board tag arrives.
+    if (match[0] !== '[POINT') delete turn.pointer;
+    if (match[0] !== '[HIGHLIGHT') delete turn.highlight;
+    beats.push({ speechBefore: parseAgentTurn(raw.slice(0, start)).speech, turn });
+    lastEnd = end;
+  }
+  return beats;
 }

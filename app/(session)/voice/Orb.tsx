@@ -5,17 +5,21 @@ export function Orb({
   state,
   level,
   paused,
+  recording = false,
   onInterrupt,
 }: {
   state: OrbState;
   level: number;
   paused: boolean;
+  recording?: boolean;
   onInterrupt: () => void;
 }) {
   const scale = 1 + Math.min(0.22, level * 0.45);
   const label = paused
     ? "Start the tutor"
-    : state === "speaking" || state === "thinking"
+    : recording
+      ? "Send what I said"
+      : state === "speaking" || state === "thinking"
       ? "Stop the tutor"
       : "Pause the tutor";
 
