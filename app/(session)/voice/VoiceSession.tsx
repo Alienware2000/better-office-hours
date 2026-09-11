@@ -303,7 +303,7 @@ export function VoiceSession() {
                 </motion.div>
                 <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error))}</p>
                 <Captions turns={turns} />
-                {documentView && <Whiteboard active={split} />}
+                {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
                 {error ? (
                   <p className="session-note workspace-note">{error}</p>
                 ) : null}

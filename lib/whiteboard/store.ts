@@ -20,6 +20,8 @@ export type BoardState = {
   open: boolean;
   groups: BoardGroup[];
   student: BoardStroke[];
+  studentPast: BoardStroke[][];
+  studentFuture: BoardStroke[][];
   studentSince: string;
   pulseId: string | null;
   seq: number;
@@ -34,6 +36,7 @@ const empty = (): BoardState => ({
   open: false,
   groups: [],
   student: [],
+  studentPast: [], studentFuture: [],
   studentSince: "",
   pulseId: null,
   seq: 0,
@@ -130,32 +133,38 @@ export function markGroupShown(id: string) {
 }
 
 export function setStudentStrokes(student: BoardStroke[]) {
+  if (student === state.student) return;
   state = {
     ...state,
     student,
-    studentSince: student.length ? state.studentSince || new Date().toISOString() : "",
+    studentPast: [...state.studentPast, state.student].slice(-30), studentFuture: [],
+    studentSince: student.length ? new Date().toISOString() : "",
   };
   emit();
 }
 
 export function addStudentStroke(stroke: BoardStroke) {
-  state = {
-    ...state,
-    student: [...state.student, stroke],
-    studentSince: new Date().toISOString(),
-  };
-  emit();
+  setStudentStrokes([...state.student, stroke]);
 }
 
 export function eraseStudentStrokes(ids: string[]) {
   if (!ids.length) return;
   const skip = new Set(ids);
   const student = state.student.filter((stroke) => !skip.has(stroke.id));
-  state = {
-    ...state,
-    student,
-    studentSince: student.length ? state.studentSince : "",
-  };
+  if (student.length !== state.student.length) setStudentStrokes(student);
+}
+
+export function undoStudentInk() {
+  const student = state.studentPast.at(-1);
+  if (!student) return;
+  state = { ...state, student, studentPast: state.studentPast.slice(0, -1), studentFuture: [state.student, ...state.studentFuture].slice(0, 30), studentSince: student.length ? new Date().toISOString() : "" };
+  emit();
+}
+
+export function redoStudentInk() {
+  const student = state.studentFuture[0];
+  if (!student) return;
+  state = { ...state, student, studentPast: [...state.studentPast, state.student].slice(-30), studentFuture: state.studentFuture.slice(1), studentSince: student.length ? new Date().toISOString() : "" };
   emit();
 }
 
@@ -195,6 +204,6 @@ export function focusAnimation(id: string) {
 
 // Park each desk independently, always restoring a still frame.
 export function restoreBoard(snapshot: BoardState) {
-  state = { ...structuredClone(snapshot), playing: false };
+  state = { ...structuredClone(snapshot), studentPast: snapshot.studentPast ?? [], studentFuture: snapshot.studentFuture ?? [], playing: false };
   emit();
 }

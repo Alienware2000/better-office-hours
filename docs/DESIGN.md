@@ -203,6 +203,8 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 - Student ink on the PDF is a compact two-cluster bar (tools, then colors), in the spirit of GoodNotes / Notability / Canvas, kept to cream, black, rust, and gold. Pen, highlighter, and eraser. Marks are workspace-local and burned into the page image the tutor sees. The `StudentAnnotation` contract in `lib/types.ts` is unchanged. This is also the drawing feel the whiteboard should later match. The SVG board and declarative ANIM runtime are now implemented.
 - The PDF fits the desk at 100% on every screen. Zoom (− / percent / + in the ink bar, plus pinch or Ctrl-scroll) scales the page around the cursor or the center of the desk; the hand tool drags to pan. Click the percent to fit the page again. Pages live in that same bar. The title bar only has Leave, the filename, and Remove. Ink coordinates stay normalized to the page, so zoom does not break drawing or the laser.
 
+- Authorship is visible on the shared board: Tutor notes and Your ink, with student ink blue by default and the existing ink/rust/gold choices retained. Students can select, move, recolor, delete, and undo their marks without altering tutor notes. Drawing controls sit outside the writing area. Expansion uses the existing Whiteboard view and retains the work. PDF annotations also have undo/redo. This editing pass does not promise pressure-sensitive Pencil input or notebook pagination.
+
 ## 13. Roadmap (README only)
 
 Professor console to edit the tutor prompt and upload materials. Lecture recording transcription. Live screen share for coding courses. iPad handwriting. Spaced review reminders across sessions. Cross-course memory.

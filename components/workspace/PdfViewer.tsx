@@ -63,7 +63,11 @@ export function PdfViewer({
   const frameRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PageView[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [strokes, setStrokes] = useState<InkStroke[]>([]);
+  const [inkHistory, setInkHistory] = useState<{past: InkStroke[][]; present: InkStroke[]; future: InkStroke[][]}>({past: [], present: [], future: []});
+  const strokes = inkHistory.present;
+  const setStrokes = (update: (current: InkStroke[]) => InkStroke[]) => setInkHistory(history => ({past: [...history.past, history.present].slice(-30), present: update(history.present), future: []}));
+  const undoInk = () => { window.dispatchEvent(new Event('boh:student-writing')); setInkHistory(h => h.past.length ? {past:h.past.slice(0,-1),present:h.past.at(-1)!,future:[h.present,...h.future]} : h); };
+  const redoInk = () => { window.dispatchEvent(new Event('boh:student-writing')); setInkHistory(h => h.future.length ? {past:[...h.past,h.present],present:h.future[0],future:h.future.slice(1)} : h); };
   const publishedStrokesRef = useRef(strokes);
   const [tool, setTool] = useState<InkTool>("hand");
   const [color, setColor] = useState<InkColor>("ink");
@@ -215,7 +219,7 @@ export function PdfViewer({
       if (cancelled) return;
       setPages(nextPages);
       setCurrent(0);
-      setStrokes([]);
+      setInkHistory({past: [], present: [], future: []});
       setZoom(1);
       if (nextPages[0]) {
         // Publish before onReady so the pset_ready turn can actually see the page.
@@ -377,7 +381,7 @@ export function PdfViewer({
 
     const publish = async () => {
       const imageUrl = pageStrokes.length
-        ? await paintInkOnImage(page.visionUrl, pageStrokes)
+        ? await paintInkOnImage(page.visionUrl, pageStrokes, hostRef.current?.querySelector(`[data-page="${current}"]`)?.getBoundingClientRect().width)
         : page.visionUrl;
       if (cancelled) return;
       setLivePage({
@@ -508,6 +512,10 @@ export function PdfViewer({
             if (tool === "hand" || tool === "eraser") setTool("pen");
           }}
         >
+          <div className="ink-cluster" role="group" aria-label="Annotation history">
+            <button className="ink-tool" type="button" aria-label="Undo PDF annotation" title="Undo PDF annotation" disabled={!inkHistory.past.length} onClick={undoInk}>↶</button>
+            <button className="ink-tool" type="button" aria-label="Redo PDF annotation" title="Redo PDF annotation" disabled={!inkHistory.future.length} onClick={redoInk}>↷</button>
+          </div>
           <div className="ink-cluster" role="group" aria-label="Zoom">
             <button
               type="button"

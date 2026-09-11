@@ -3,22 +3,27 @@
 import type { StudentInk } from "@/lib/whiteboard/colors";
 import { STUDENT_HEX } from "@/lib/whiteboard/colors";
 
-export type BoardTool = "pen" | "highlighter" | "eraser";
+export type BoardTool = "select" | "pen" | "highlighter" | "eraser";
 
 export function BoardInkBar({
   tool,
   color,
   onTool,
   onColor,
+  canUndo, canRedo, onUndo, onRedo,
 }: {
   tool: BoardTool;
   color: StudentInk;
   onTool: (tool: BoardTool) => void;
   onColor: (color: StudentInk) => void;
+  canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void;
 }) {
   return (
-    <div className="ink-bar board-ink-bar" role="toolbar" aria-label="Board ink">
+    <div className="ink-bar board-ink-bar" role="toolbar" aria-label="Your board ink">
       <div className="ink-cluster">
+        <ToolButton label="Select and move your ink" pressed={tool === 'select'} onClick={() => onTool('select')}>
+          <svg viewBox="0 0 24 24" aria-hidden><path d="m6 3 12 10-6 1-3 6z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /></svg>
+        </ToolButton>
         <ToolButton label="Pen" pressed={tool === "pen"} onClick={() => onTool("pen")}>
           <PenIcon />
         </ToolButton>
@@ -38,17 +43,21 @@ export function BoardInkBar({
         </ToolButton>
       </div>
       <div className="ink-cluster" aria-label="Ink color">
-        {(["ink", "rust", "gold"] as const).map((value) => (
+        {(["blue", "ink", "rust", "gold"] as const).map((value) => (
           <button
             key={value}
             type="button"
             className={["ink-swatch", color === value ? "is-on" : ""].filter(Boolean).join(" ")}
             style={{ background: STUDENT_HEX[value] }}
-            aria-label={value === "ink" ? "Black ink" : value === "rust" ? "Rust ink" : "Gold ink"}
+            aria-label={value === "ink" ? "Black ink" : value === "blue" ? "Blue ink" : value === "rust" ? "Rust ink" : "Gold ink"}
             aria-pressed={color === value}
             onClick={() => onColor(value)}
           />
         ))}
+      </div>
+      <div className="ink-cluster">
+        <button className="ink-tool" type="button" aria-label="Undo your ink" title="Undo your ink" disabled={!canUndo} onClick={onUndo}>↶</button>
+        <button className="ink-tool" type="button" aria-label="Redo your ink" title="Redo your ink" disabled={!canRedo} onClick={onRedo}>↷</button>
       </div>
     </div>
   );
@@ -70,6 +79,7 @@ function ToolButton({
       type="button"
       className={["ink-tool", pressed ? "is-on" : ""].filter(Boolean).join(" ")}
       aria-label={label}
+      title={label}
       aria-pressed={pressed}
       onClick={onClick}
     >

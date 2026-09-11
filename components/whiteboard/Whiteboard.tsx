@@ -14,24 +14,24 @@ import {
   advanceAnimation, loadAnimation, pauseAnimation, playAnimation, seekAnimation, focusAnimation,
   addStudentStroke,
   applyDrawCommands,
-  eraseStudentStrokes,
+  setStudentStrokes, undoStudentInk, redoStudentInk,
   getBoardState,
   markGroupShown,
   openBoard,
   resetBoard,
   subscribeBoard,
-  type BoardStroke,
 } from "@/lib/whiteboard/store";
 import { BoardInkBar, type BoardTool } from "./BoardInkBar";
+import { useBoardInk } from "./useBoardInk";
+import { inkBounds, inkPath } from "@/lib/whiteboard/ink-path";
 import "./whiteboard.css";
 
-export function Whiteboard({ active = true, expanded = false }: { active?: boolean; expanded?: boolean }) {
+export function Whiteboard({ active = true, expanded = false, onExpand }: { active?: boolean; expanded?: boolean; onExpand?: () => void }) {
   const [, setTick] = useState(0);
   const [tool, setTool] = useState<BoardTool>("pen");
-  const [color, setColor] = useState<StudentInk>("ink");
-  const [draft, setDraft] = useState<{ x: number; y: number }[] | null>(null);
+  const [color, setColor] = useState<StudentInk>("blue");
   const paperRef = useRef<HTMLDivElement>(null);
-  const draftRef = useRef<{ x: number; y: number }[]>([]);
+  const ink = useBoardInk(tool, color);
   const reduceMotion = useReducedMotion() ?? false;
   const board = getBoardState();
   const isOpen = expanded || board.open;
@@ -122,74 +122,37 @@ export function Whiteboard({ active = true, expanded = false }: { active?: boole
     ? null
     : board.groups.find((group) => group.appear === "pending")?.id ?? null;
 
+  const selectedStrokes = (ink.preview ?? board.student).filter(s => ink.selected.includes(s.id));
+  const selectionBounds = selectedStrokes.length ? inkBounds(selectedStrokes.flatMap(s => s.points)) : null;
+
+  const editInk = (action: () => void) => { pauseAnimation(); window.dispatchEvent(new Event('boh:student-writing')); action(); };
+
   return (
     <motion.section
-      layout
       initial={false}
-      animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
+      animate={{ opacity: isOpen ? 1 : 0 }}
       transition={reduceMotion ? { duration: 0 } : boardStyle.motion.spring}
       className={["board-root", isOpen ? "is-open" : "", expanded ? "board-expanded" : ""].filter(Boolean).join(" ")}
       aria-hidden={!isOpen}
       aria-label="Whiteboard"
+      tabIndex={0}
+      onKeyDown={event => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); editInk(event.shiftKey ? redoStudentInk : undoStudentInk); }
+        if ((event.key === 'Delete' || event.key === 'Backspace') && selectedStrokes.length) { event.preventDefault(); editInk(() => setStudentStrokes(board.student.filter(s => !ink.selected.includes(s.id)))); ink.setSelected([]); }
+      }}
     >
       <div className="board-paper" ref={paperRef}>
-        {isOpen ? (
-          <BoardInkBar tool={tool} color={color} onTool={setTool} onColor={setColor} />
-        ) : null}
-        <div
-          className={["board-surface", tool === "eraser" ? "is-eraser" : ""].join(" ")}
-          onPointerDown={(event) => {
-            if (!isOpen || event.button !== 0) return;
-            pauseAnimation();
-            window.dispatchEvent(new Event("boh:student-writing"));
-            event.preventDefault();
-            const origin = event.currentTarget.getBoundingClientRect();
-            const pointerId = event.pointerId;
-            try {
-              event.currentTarget.setPointerCapture(pointerId);
-            } catch {
-              // Keep drawing if capture is denied.
-            }
-            const start = pointAt(event, origin);
-            if (tool === "eraser") {
-              eraseAt(start, getBoardState().student);
-            } else {
-              draftRef.current = [start];
-              setDraft([start]);
-            }
-
-            const onMove = (next: PointerEvent) => {
-              if (next.pointerId !== pointerId) return;
-              const point = pointAt(next, origin);
-              if (tool === "eraser") {
-                eraseAt(point, getBoardState().student);
-                return;
-              }
-              draftRef.current = [...draftRef.current, point];
-              setDraft(draftRef.current);
-            };
-            const onUp = (next: PointerEvent) => {
-              if (next.pointerId !== pointerId) return;
-              window.removeEventListener("pointermove", onMove);
-              window.removeEventListener("pointerup", onUp);
-              window.removeEventListener("pointercancel", onUp);
-              const points = draftRef.current;
-              draftRef.current = [];
-              setDraft(null);
-              if (tool === "eraser" || points.length < 2) return;
-              addStudentStroke({
-                id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                tool,
-                color,
-                points,
-              });
-            };
-            window.addEventListener("pointermove", onMove);
-            window.addEventListener("pointerup", onUp);
-            window.addEventListener("pointercancel", onUp);
-          }}
-        >
+        <div className="board-heading">
+          <div className="board-authors" aria-label="Board authors">
+            <span className="board-author-tutor" title="Equations and diagrams written by the tutor"><span aria-hidden>𝑓</span> Tutor notes</span>
+            <span className="board-author-you" title="Your editable pen and highlighter marks"><span aria-hidden>〰</span> Your ink</span>
+          </div>
+          {onExpand && <button className="board-expand" type="button" aria-label="Expand whiteboard" title="Expand whiteboard" onClick={onExpand}><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4M4 4l5 5m11-5-5 5M4 20l5-5m11 5-5-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg></button>}
+        </div>
+        <div className="board-canvas">
+        <div className={`board-surface is-${tool}`} {...ink.handlers}>
           <svg className="board-layer" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden>
+            <g className="board-tutor-layer"><title>Tutor notes</title>
             {board.groups.map((group) => {
               if (group.appear === "pending" && group.id !== enteringId) return null;
               const enter = group.id === enteringId;
@@ -226,27 +189,28 @@ export function Whiteboard({ active = true, expanded = false }: { active?: boole
               );
             })}
             {board.animation && <AnimLayer spec={board.animation} time={board.time} focus={board.focus} />}
-            {board.student.map((stroke) => (
-              <polyline
-                key={stroke.id}
-                className={["board-student", stroke.tool === "highlighter" ? "is-high" : "is-pen"]
-                  .filter(Boolean)
-                  .join(" ")}
-                points={stroke.points.map((point) => `${point.x},${point.y}`).join(" ")}
-                stroke={STUDENT_HEX[stroke.color]}
-              />
+            </g>
+            <g className="board-your-layer"><title>Your ink</title>
+            {(ink.preview ?? board.student).map(stroke => (
+              <path key={stroke.id} className={`board-student ${stroke.tool === 'highlighter' ? 'is-high' : 'is-pen'}`}
+                data-ink-id={stroke.id} d={inkPath(stroke.points)} stroke={STUDENT_HEX[stroke.color]}><title>Your ink</title></path>
             ))}
-            {draft && draft.length > 1 ? (
-              <polyline
-                className={["board-student", tool === "highlighter" ? "is-high" : "is-pen"].join(
-                  " ",
-                )}
-                points={draft.map((point) => `${point.x},${point.y}`).join(" ")}
-                stroke={STUDENT_HEX[color]}
-              />
-            ) : null}
+            {ink.draft && <path className={`board-student ${tool === 'highlighter' ? 'is-high' : 'is-pen'}`} d={inkPath(ink.draft)} stroke={STUDENT_HEX[color]} />}
+            </g>
+            {selectionBounds && <rect className="board-selection" x={selectionBounds.x - .014} y={selectionBounds.y - .014} width={selectionBounds.w + .028} height={selectionBounds.h + .028} rx=".008" />}
+            {ink.box && <rect className="board-selection is-box" x={ink.box.x} y={ink.box.y} width={ink.box.w} height={ink.box.h} />}
+
           </svg>
         </div>
+        </div>
+        <div className="board-selection-tools">
+          {selectionBounds ? <><span>Your ink · {selectedStrokes.length} {selectedStrokes.length === 1 ? 'stroke' : 'strokes'}</span><button type="button" onClick={() => { editInk(() => setStudentStrokes(board.student.filter(s => !ink.selected.includes(s.id)))); ink.setSelected([]); }}>Delete selected ink</button></> : <span className="board-tool-hint">{tool === 'select' ? 'Drag around your ink to select it' : tool === 'eraser' ? 'Erase your ink, tutor notes stay in place' : 'Your pen and highlighter marks stay editable'}</span>}
+        </div>
+        {isOpen && <BoardInkBar tool={tool} color={color}
+          onTool={next => { setTool(next); if (next !== 'select') ink.setSelected([]); }}
+          onColor={next => { setColor(next); if (tool === 'select' && selectedStrokes.length) editInk(() => setStudentStrokes(board.student.map(s => ink.selected.includes(s.id) ? { ...s, color: next } : s))); }}
+          canUndo={board.studentPast.length > 0} canRedo={board.studentFuture.length > 0}
+          onUndo={() => editInk(undoStudentInk)} onRedo={() => editInk(redoStudentInk)} />}
         {board.animation && <div className="board-transport">
           <button type="button" aria-label={board.playing ? "Pause animation" : "Play animation"} onClick={board.playing ? pauseAnimation : playAnimation}>{board.playing ? 'Ⅱ' : '▶'}</button>
           <input aria-label="Animation time" type="range" min={0} max={board.animation.duration} step={0.01} value={board.time} onChange={event => { pauseAnimation(); seekAnimation(Number(event.target.value)); }} />
@@ -255,33 +219,4 @@ export function Whiteboard({ active = true, expanded = false }: { active?: boole
       </div>
     </motion.section>
   );
-}
-
-function pointAt(
-  event: { clientX: number; clientY: number },
-  origin: DOMRect,
-): { x: number; y: number } {
-  return {
-    x: clamp01((event.clientX - origin.left) / origin.width),
-    y: clamp01((event.clientY - origin.top) / origin.height),
-  };
-}
-
-function clamp01(value: number) {
-  return Math.min(1, Math.max(0, value));
-}
-
-function eraseAt(point: { x: number; y: number }, strokes: BoardStroke[]) {
-  const hits = strokes
-    .filter((stroke) => hitStroke(stroke, point, stroke.tool === "highlighter" ? 0.05 : 0.03))
-    .map((stroke) => stroke.id);
-  if (hits.length) eraseStudentStrokes(hits);
-}
-
-function hitStroke(stroke: BoardStroke, point: { x: number; y: number }, radius: number) {
-  return stroke.points.some((existing) => {
-    const dx = existing.x - point.x;
-    const dy = existing.y - point.y;
-    return dx * dx + dy * dy <= radius * radius;
-  });
 }

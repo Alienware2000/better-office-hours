@@ -2,8 +2,8 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 03:18 ET
-By: David (Cursor)
+Updated: 2026-09-11 03:40 ET
+By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
 Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on this branch) and awaits review. That does **not** block Hussein.
@@ -19,6 +19,10 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Visible authorship/editing follow-up: the board labels Tutor notes and Your ink, with blue as the student default and hover emphasis for each author. Student strokes can be selected, moved, recolored, deleted, and undone/redone independently of tutor notes. History is bounded to 30 edits and follows the parked board. Board tools now live below a square drawing area, with a stable selection row and an expand control that preserves work. The teaching rail has more width and captions no longer fade under a mask.
+
+Board and PDF ink use coalesced pointer samples, animation-frame previews, and shared quadratic paths. Pointer capture/cancellation protects unfinished gestures. Erasing checks full stroke segments with a pixel-sized radius, then records the gesture as one edit; PDF annotations also have undo/redo. Browser checks passed for real drag/select/move/recolor/delete gestures, keyboard undo/redo, unchanged canvas bounds during selection, cancellation, expanded-view persistence, PDF middle-segment erasing/history, and toolbar bounds at 1200/900/700px. Production build, focused lint, and ink/voice/teaching/workspace/animation regressions are the handoff checks. Real Pencil feel and general tutor note composition still require human review; these UI changes do not establish either. No shared types or human prompt edits. Continue stress-testing PR #5 before merge.
 
 Board authorship/capture follow-up: local LiveBoard now carries a revision, tutor item IDs/text, entering/visible status, student stroke count, and a separate student-only image when ink exists. Runtime context identifies tutor-created notes explicitly and asks for updates by ID, including ownership of stale notes. A changed reserved `topic` starts a fresh tutor note; DRAW clear and topic replacement preserve student ink. Generic text IDs remain ordinary updates. Human PROMPT, PEDAGOGY, and shared lib/types.ts remain unchanged.
 
