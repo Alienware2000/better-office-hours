@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 18:23 ET
+Updated: 2026-09-11 18:54 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, continuation of 179544c with merged origin/main
@@ -12,13 +12,20 @@ Review: David explicitly approved merging his PRs #5 and #7. Hussein owns PRs #6
 
 Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. David will review them later. This merge approval covers only David's PRs #5 and #7. Do not merge, close, or recreate Hussein's existing PRs.
 
-- Branch from `origin/main`: `lane/recap` (or `lane/context` / `lane/shell`).
-- Follow `docs/LANES.md` for the first reviewable slice boundaries.
-- Open a PR to `main` for David to review. Do not merge your own PRs.
-- Stay in recap/context/shell directories. Do not wait on mic hardware checks or PR #5.
-- Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
+- Existing branches are `lane/context`, `lane/recap`, and `lane/shell`. PR #8 targets lane/context; preserve that dependency during review.
+- Follow `docs/LANES.md` for ownership and integration boundaries. First slices are already open, not tasks to recreate.
+- David reviews these PRs separately. Do not merge your own PRs or start their next checkpoint ahead of review.
+- Recap's first slice is the isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Handoff and latest human test (2026-09-11): David and Hussein reported a successful run with useful diagrams, animation, equations, and a graded-answer refusal paired with an example. David wants to keep testing and then progress the broader build. Preserve the current runtime while he tests. OpenRouter is deferred unless remaining latency/quality issues justify a comparison; do not start a provider migration now. Read [HANDOFF.md](HANDOFF.md) for the portable state, evidence, integration priorities, and next-task starter.
+
+David accidentally refreshed, clearing the run's in-memory transcript and board. The current tab is a fresh concept session; no matching completed-run export was found. Exact dialogue, pedagogy, equations, and rendered diagrams could not be audited. Surviving traces from the continuous interval preceding the refresh show 16 completed substantive replies: median 7.9s generation, 9.2s request-to-first-audio (range 5.4 to 14.3s), and 44 generated words (range 33 to 94). First-audio timing excludes STT/endpointing/fast routing. Eight replies declared no new visual. Animation was applied and later notes retained it on page 1; no page-follow transition was tested in this interval. Three zero-output cancellations included one at 30s; reasons are not established. Keep the positive human report separate from these mechanics/timing observations.
+
+Next: preserve this baseline, capture the next test before refresh, and coordinate session recovery plus the missing recap/context/auth integration after the existing PR reviews. Current refresh recovery, durable sessions, live course retrieval, and spoken/saved recap are missing. Hussein's #6/#8/#9 remain open and untouched; #8 targets lane/context. GitHub reported conflicts on #6/#9 during read-only inspection, so recheck when their reviews are assigned. This follow-up changed documentation only; :3102 remains running. No microphone/model/runtime retuning or new provider calls.
+
+### Earlier implementation and validation notes
 
 Concept teaching and diagram mechanics (2026-09-11): David's latest transcript showed repeated prerequisite questions after he said he did not understand, raw v_x/v_y labels, oversized standalone theta, and independent animated vector coordinates. Compact symbolic labels now use local MathJax at diagram size, matching their vector color. Static arrows can declare exact x/y projections with diagram.component. ANIM arrows support validated diagram.attach/component relationships, inherited from reused static IDs when references exist. Origins and projections resolve together at every frame; missing/cyclic references fail validation. A bounded, cached label plan considers the motion, backdrop, camera, and student ink; displaced labels retain subtle leader lines. SVG and snapshots use the same plan. Paper UI, toolbar, authorship, and page following remain intact.
 
@@ -28,7 +35,7 @@ Validation: clean isolated production build, focused lint/typecheck, math, diagr
 
 Limits: two real-model rounds did not establish reliable animation generation. First motion sample used unsupported colors, drawn=4, and three-point straight-segment movement; second used valid attachments but kept drawn=1 throughout, leaving the ball stationary at the path end. No runtime scene correction or third prompt retry was substituted for that failure. Second math/motion calls took 24.0s/33.1s, with first streamed content at 17.4s/21.2s. The model still asked a redundant question after explaining; a separate expert clarification took 46.8s. Graded request stayed protected but its refusal was too long. Timing includes model generation, not measured microphone-to-audio latency. Local artifacts: /tmp/boh-concept-quality*. Earlier user session also overlapped the previous cadence experiments/HMR; its fast-continue traces do not describe the final committed routing.
 
-Next: address model-generated motion semantics and benchmark task-specific model routing using these failed cases, brief expert clarifications, and graded misconceptions. David asked whether different models should handle different tasks and proposed OpenRouter. It is a candidate optional gateway for a controlled model comparison, not an implemented migration; no provider/routing change has been made. Current fast route uses grok-4.20-0309-non-reasoning, substantive turns grok-4.6 with low effort. Avoid another broad prompt-only attempt or assuming a model swap guarantees valid diagrams. Hussein PRs remain open and untouched.
+Earlier proposed follow-up, now deferred by David: benchmark task-specific model routing using these failed motion cases, brief expert clarifications, and graded misconceptions. David proposed OpenRouter as a candidate optional gateway for a controlled model comparison, not an implemented migration; no provider/routing change has been made. Current fast route uses grok-4.20-0309-non-reasoning, substantive turns grok-4.6 with low effort. Avoid another broad prompt-only attempt or assuming a model swap guarantees valid diagrams. Hussein PRs remain open and untouched.
 
 Cadence and page-following (2026-09-11): inspected David's live transcript, rendered working board, and correlated server/playback traces. Eight substantive turns used reasoning (5.9 to 16.7s generation). The reply to Yes took 7.2s; Zero took 5.9s plus a 2.1s visual repair, and two recovery requests across the session contributed to redundant board work. Repeated app-provided waiting lines and long recaps of established givens amplified the wait. The board had three pages, with the current relation and givens legible; prior diagrams and labels remained in history. The old scroll policy deliberately stopped following while reading history, and smooth-scroll events could also disable following.
 
@@ -178,10 +185,10 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 ## What to do next
 
-1. David's fresh diagram task continues the integrated voice/whiteboard baseline with the documented pedagogy and no scripted runtime scenes.
+1. Read HANDOFF.md. Preserve the successful voice/whiteboard baseline while David tests; exact transcript/board review needs a new captured session because the latest run was lost on refresh.
 2. Leave Hussein's PRs #6, #8, and #9 open for David's later review. PR #8 is based on lane/context, so review its dependency deliberately. No merge permission has been given for these PRs.
-3. Retest live drawing cadence and real-device voice when convenient. Planning latency, diagram quality, and physical correctness still need observation; do not weaken pedagogy or microphone interruption to make a fixture pass.
-4. Canvas/Grok Bot operation and live cross-lane wiring still require a separate assignment.
+3. Coordinate session recovery and the missing student-summary/spoken-recap/card flow after reviewing the existing identity/session proposals. Then connect actual course context, session isolation, and verified deployment. These cross-lane slices need coordination, not duplicate implementations.
+4. Keep OpenRouter as a deferred option. Planning latency, diagram semantics, and pacing still need observation; do not weaken pedagogy or microphone interruption to make a fixture pass. Canvas/Grok Bot operation still requires a separate assignment.
 
 ## Validation
 
@@ -224,22 +231,23 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 | Lane | Owner | Branch | State |
 |---|---|---|---|
-| voice | David | next voice branch from main | custom voice loop and delayed-input isolation included in main |
-| workspace | David | next workspace branch from main | adaptive PDF desk included in main |
-| whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
-| context | Hussein | `lane/context` from main | authorized now; first isolated slice in LANES.md; schema missing |
-| recap | Hussein | `lane/recap` from main | **start now**; isolated card slice while PR #5 awaits review |
-| shell | Hussein | `lane/shell` from main | authorized now; first auth/shell slice; preserve VoiceSession |
+| voice | David | `lane/drawing-continuity` | integrated baseline plus open PR #10; leave stable during testing |
+| workspace | David | `lane/drawing-continuity` | adaptive PDF desk included; preserve current session |
+| whiteboard | David | `lane/drawing-continuity` | drawing/math/motion/page-follow improvements in PR #10 |
+| context | Hussein | `lane/context` | isolated slice in open PR #6; separate review pending |
+| recap | Hussein | `lane/recap` | isolated card in open PR #8, targeting lane/context |
+| shell | Hussein | `lane/shell` | isolated auth shell in open PR #9; separate review pending |
 
 ## Run
 
 ```bash
-cd /Users/davidantwi/Dev/boh
+cd /Users/davidantwi/.codex/worktrees/b640/boh
 # .env.local should already have XAI_API_KEY and ELEVENLABS_API_KEY
-npm run dev -- -p 3100
+# Only start this if the existing :3102 server is no longer running.
+npm run dev -- -p 3102
 ```
 
-Open http://localhost:3100. Allow the mic. Tap the orb. Upload a pset, ask to draw components.
+Open http://localhost:3102. Allow the mic. Tap the orb. Upload a pset or start a concept. Keep the source stable during live testing and export captions before refreshing.
 
 Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.mjs`, `node scripts/check-lanes.mjs`.
 
