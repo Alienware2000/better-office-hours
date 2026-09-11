@@ -48,6 +48,14 @@ assert.equal(detectMode("Why does this work?", "pset"), null);
 assert.equal(detectMode("Explain a concept", "pset"), "concept");
 assert.equal(detectMode("I want to do homework", "concept"), "pset");
 assert.equal(detectMode("Hello"), null);
+for (const phrase of [
+  "How did you know that equation? We did not do it in lecture two",
+  "I thought we covered it in lecture one",
+  "Teach me what acceleration means",
+  "Can we talk about the initial velocity?",
+  "I do not understand this concept",
+]) assert.equal(detectMode(phrase, "pset"), null, phrase);
+assert.equal(detectMode("Can we switch topic?", "pset"), "concept");
 const board = load("lib/whiteboard/store.ts");
 board.applyDrawCommands([
   {

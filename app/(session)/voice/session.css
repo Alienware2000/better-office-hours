@@ -117,19 +117,19 @@
   min-height: 0;
   flex: 1 1 auto;
   margin-top: 1.75rem;
-  user-select: none;
-  -webkit-user-select: none;
-  /* Older lines fade out at the top rather than ending on a hard edge. */
-  mask-image: linear-gradient(to bottom, transparent, #000 2.25rem);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 2.25rem);
+  display: flex;
+  flex-direction: column;
 }
 
 .captions-scroll {
   display: flex;
-  height: 100%;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
-  justify-content: flex-end;
   gap: 0.85rem;
+  mask-image: linear-gradient(to bottom, transparent, #000 2.25rem);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 2.25rem);
+  overscroll-behavior: contain;
   overflow-y: auto;
   padding: 1.5rem 0.35rem 0.25rem;
   scrollbar-width: none;
@@ -329,3 +329,12 @@
 .concept-views button { padding: 0.4rem 0.75rem; border: 0; border-radius: 999px; font-size: 0.75rem; color: #78716c; cursor: pointer; background: transparent; }
 .concept-views button[aria-pressed="true"] { background: #fffcf6; color: #292621; box-shadow: 0 1px 3px #30241812; }
 .concept-views button:focus-visible { outline: 2px solid #b95832; outline-offset: 2px; }
+
+/* The first line pushes short transcripts down without making overflow unreachable. */
+.captions-scroll .caption { flex-shrink: 0; user-select: text; }
+.captions-scroll .caption:first-child { margin-top: auto; }
+.caption-tools { display: flex; justify-content: flex-end; gap: .5rem; flex-shrink: 0; }
+.caption-tools button { color: #78716c; background: transparent; border: 0; padding: .45rem .5rem; min-height: 44px; font-size: .65rem; cursor: pointer; }
+.caption-tools button:hover { color: #1c1917; }
+.caption-tools button:focus-visible, .captions-scroll:focus-visible { outline: 2px solid #b95832; outline-offset: 2px; }
+.captions.is-reading .caption { opacity: 1; }

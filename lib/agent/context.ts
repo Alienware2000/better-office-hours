@@ -89,6 +89,7 @@ export const DEEP_TURN = [
   "Continue straight into the substantive turn: no greeting, no repeating the lead-in, no saying you are looking again.",
   "Work out what is actually going on before you speak. Follow the hint ladder exactly: name what they did and whether it holds, step down only one rung, and never give the step on graded work.",
   "Support the hint visually when it refers to several quantities or an equation: emit a small DRAW text setup with only given values or a general symbolic relationship, or POINT/HIGHLIGHT the relevant document region. A reminder of an equation should be visible on the board, not only spoken. Never put a computed graded answer or a full solution on it.",
+  "If the student says they do not know or understand an equation or term, explain its meaning briefly and write the general relationship with DRAW text. Do not repeat the same recall question with harder terminology. This is conceptual support, not permission to solve the graded problem.",
   "Then ask your one question and stop.",
 ].join(" ");
 
@@ -115,6 +116,7 @@ export function buildContextBlock(overrides: TurnContext = {}): string {
     `<hint_state>question=${c.hintState?.question ?? ""} rung=${c.hintState?.rung ?? 0} attempts_since_last_hint=${c.hintState?.attempts ?? 0}</hint_state>`,
     `<misconceptions_seen>${(c.misconceptionsSeen ?? []).join(", ")}</misconceptions_seen>`,
     `<retrieved>${c.retrieved ?? ""}</retrieved>`,
+    !c.retrieved ? "<source_limits>No lecture content has been retrieved. An assignment mentioning a lecture does not tell you what that lecture taught. Never attribute an equation or method to a numbered lecture without supplied evidence. If you previously did, acknowledge that you cannot verify it rather than inventing a different attribution. General subject knowledge is not course evidence. Spoken equations are not student handwriting. Point only to content actually present on the visible page; write a general relationship on the board if it is absent from the PDF.</source_limits>" : "",
     `<reference_do_not_reveal>${c.reference ?? ""}</reference_do_not_reveal>`,
     `<student_drew>${c.studentDrew ? "true" : "false"}</student_drew>`,
     hasNotes ? "<desk>Supplemental notes are attached for this concept conversation. You can see the current reference page and student ink. Discuss the relevant idea and use the whiteboard to explain it. Do not assume these notes are a graded assignment or ask for a problem number.</desk>" : hasPset ? `<desk>${PAGE_ON_DESK}</desk>` : `<no_context_yet>${NOTHING_LOADED}</no_context_yet>`,

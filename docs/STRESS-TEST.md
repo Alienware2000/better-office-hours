@@ -39,3 +39,16 @@ Run `node scripts/check-voice-lifecycle.mjs`, `node scripts/check-teaching-repai
 The lifecycle harness uses the real hook with simulated audio and deferred STT. It covers cancellation, meaningful tap submission, quiet readiness events, full audio delivery, history, visual timing, noise bursts, and audio errors. It cannot measure how a real microphone or voice sounds.
 
 Pronunciation implementation follows the provider's advice to normalize text before synthesis and preserve preceding text across chunks: [ElevenLabs TTS best practices](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices). Normalization is bounded, not a general mathematical speech engine.
+
+## Latest desk and voice follow-up
+
+- Mention lecture one/two and ask what a variable means while a PDF is attached. The same homework PDF must remain visible. Explicitly switching topics can still park it.
+- Scroll to the start of a long transcript while the tutor responds. Your reading position must hold. Latest returns to the end. Export downloads the active session captions as plain text. There is no server-side archive.
+- Ask for the meaning of symbols in a general relationship. The tutor should write short definitions and explain them, not repeat the same recall question. The live probe wrote the equation plus four definitions; broader behavior still needs testing.
+- Ask which lecture a relationship comes from. Without actual lecture content, the tutor must say it cannot verify the attribution. An assignment mentioning lectures is not evidence of their contents. Runtime instructions are not a deterministic factuality guarantee.
+
+### Voice pipeline assessment
+
+The installed path remains local speech detection, batch Scribe transcription, Grok with page/board context, and ElevenLabs TTS. Scribe was upgraded from v1 to v2 and verified with generated physics speech through the real endpoint. Flash v2.5 remains the low-latency TTS option. Transcription still follows recording; reasoning still takes several seconds.
+
+[ElevenLabs model guidance](https://elevenlabs.io/docs/eleven-api/choosing-the-right-model) distinguishes Flash v2.5 for low latency, v3 Conversational for expressive realtime speech, and Scribe v2 Realtime for streaming recognition. [Expressive mode](https://elevenlabs.io/docs/eleven-agents/customization/voice/expressive-mode) combines v3 Conversational with turn-taking signals from Scribe v2 Realtime. That managed stack is a candidate for measured integration, not an installed feature or a proven winner for this desk. It must preserve Grok image context, graded-work boundaries, visual timing, interruption, and browser/iPad controls before replacing the current path. A provider change alone cannot repair desk routing or unsupported course claims.

@@ -2,13 +2,17 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 01:08 ET
+Updated: 2026-09-11 01:23 ET
 By: Voice and teaching surfaces
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
 Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability and PR #4 removes automatic test diagrams. Hussein's subsequent work requires new lane PRs and David's review.
 
 ## Now
+
+Third stress-test follow-up: fixed the reproduced lecture-mention routing bug that hid the homework PDF by opening a separate concept session. Ordinary lecture references and requests to teach a term keep the homework desk. Explicit topic changes still work. Captions retain the full active session, scroll without pulling readers down, and offer subtle Latest/Export controls. Scribe v2 replaces v1; Flash v2.5 remains TTS. Runtime source limits prohibit unsupported lecture attribution, and equation reminders request written definitions. No human prompt or shared-type edits.
+
+Validation: build, focused lint, lifecycle and workspace checks pass. Browser tested transcript scrolling, incoming-response scroll preservation, Latest, and full text export. Actual TTS-to-Scribe v2 round trip returned the physics sentence correctly. A live model probe wrote the general equation and four variable definitions. These synthetic probes do not establish real microphone quality or broad hallucination prevention.
 
 Second stress-test follow-up is ready on the same PR #5: stable controls, local speech detection, request deadlines, microphone retry, and stronger visual setup/reminder hints. The screenshot's paused state is consistent with the old tap race; this branch removes that ambiguous cancellation path. Current setup adds `@ricky0123/vad-web` and automatic local asset preparation through predev/prebuild. No shared types or human prompt changes. Review before merge.
 

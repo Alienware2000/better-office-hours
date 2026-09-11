@@ -40,10 +40,10 @@ export function detectMode(
   current: LayoutState = "orb_only",
 ): Extract<LayoutState, "pset" | "concept"> | null {
   const said = text.toLowerCase().replace(/’/g, "'");
+  if (/\b(?:switch|change) (?:the )?(?:topic|subject)\b|\b(?:work on|do|discuss) something else\b/.test(said)) return "concept";
   if (PSET.some((pattern) => pattern.test(said))) return "pset";
-  if (/\b(?:switch|change) (?:the )?(?:topic|subject)\b|\bsomething else\b|\btalk about\b/.test(said)) return "concept";
   if (current === "pset") {
-    if (/\bexplain a concept\b/.test(said) || /\bteach me\b/.test(said) || /\blecture\b/.test(said)) {
+    if (/\bexplain a concept\b/.test(said)) {
       return "concept";
     }
     return null;

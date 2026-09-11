@@ -1,7 +1,7 @@
 // Jessica: warm and conversational. The previous voice was tuned for narration.
 export const ELEVENLABS_VOICE_ID = "cgSgspJ2msm6clMCkdW9";
 export const ELEVENLABS_TTS_MODEL = "eleven_flash_v2_5";
-export const ELEVENLABS_STT_MODEL = "scribe_v1";
+export const ELEVENLABS_STT_MODEL = "scribe_v2";
 
 export function elevenLabsKey(): string {
   const key = process.env.ELEVENLABS_API_KEY;
