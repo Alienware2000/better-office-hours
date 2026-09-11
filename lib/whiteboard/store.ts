@@ -1,5 +1,6 @@
 import { layoutWriting } from "./writing";
 import { layoutDiagram } from './diagram-layout';
+import { composeDiagram } from './diagram-compose';
 import { validateAnimation } from "./animation";
 import type { AnimationSpec, DrawCommand } from "@/lib/types";
 import type { StudentInk } from "./colors";
@@ -124,6 +125,8 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, pulseId: op.id };
       continue;
     }
+    const previous = next.groups.find(group => group.id === op.group.id);
+    if (op.group.source && previous?.source && JSON.stringify(op.group.source) === JSON.stringify(previous.source)) continue;
     // A new topic continues below the old work, with its student ink intact.
     const previousTopic = next.groups.find(group => group.id === "topic");
     const words = (group: ShapeGroup) => group.drawables.flatMap(mark => mark.kind === "text" ? [mark.text] : []).join(" ").replace(/\s+/g, " ").trim().toLowerCase();
@@ -138,7 +141,8 @@ export function applyDrawCommands(commands: DrawCommand[]) {
     if (!laidOut) continue;
     const existing = next.groups.findIndex((group) => group.id === op.group.id);
     if (existing >= 0 && JSON.stringify(next.groups[existing].drawables) === JSON.stringify(laidOut.drawables)) continue;
-    const group: BoardGroup = { ...laidOut, appear: "pending", version: next.seq };
+    const geometryEdit = previous?.source && op.group.source?.op === previous.source.op && previous.appear === 'done' && !previous.unresolved;
+    const group: BoardGroup = { ...laidOut, appear: geometryEdit ? 'done' : 'pending', version: geometryEdit ? previous.version : next.seq };
     if (existing >= 0) {
       const groups = next.groups.slice();
       groups[existing] = group;
@@ -147,7 +151,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, groups: [...next.groups, group] };
     }
   }
-  state = { ...next, groups: layoutDiagram(next.groups, next.student) };
+  state = { ...next, groups: layoutDiagram(composeDiagram(next.groups), next.student) };
   emit();
 }
 

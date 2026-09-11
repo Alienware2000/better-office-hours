@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { TEACHING_GUIDANCE, teachingTag } from "./teaching-intent";
+import { DIAGRAM_GUIDANCE } from './diagram-guidance';
 import { parseAgentTurn } from "./tags";
 import {
   buildContextBlock,
@@ -88,7 +89,7 @@ export function buildGrokMessages(
   const lane = deep
     ? `\n<deep_turn>${DEEP_TURN}</deep_turn>`
     : `\n<when_to_think>${WHEN_TO_THINK}</when_to_think>`;
-  const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${boardNote}${BOARD_NARRATION}${MATH_GUIDANCE}${voice}${eventBlock}${materialNote}${describeBoard(board)}${TEACHING_GUIDANCE}${lane}`;
+  const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${boardNote}${BOARD_NARRATION}${MATH_GUIDANCE}${DIAGRAM_GUIDANCE}${voice}${eventBlock}${materialNote}${describeBoard(board)}${TEACHING_GUIDANCE}${lane}`;
   return [{ role: "system", content: system }, ...rest];
 }
 

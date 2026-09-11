@@ -2,6 +2,8 @@ import type { Color, DrawCommand, Pt } from "@/lib/types";
 import { boardLabel } from "./style";
 import { TUTOR_HEX } from "./colors";
 import type { MathDrawing } from './math-layout';
+import { diagramOptions } from './diagram-command';
+import { boardStyle } from './style';
 
 export type Drawable =
   | {
@@ -10,6 +12,8 @@ export type Drawable =
       d: string;
       color: string;
       dashed?: boolean;
+      width?: number;
+      opacity?: number;
     }
   | {
       kind: "head";
@@ -17,6 +21,7 @@ export type Drawable =
       d: string;
       color: string;
     }
+  | { kind: 'fill'; key: string; d: string; color: string; opacity?: number }
   | {
       kind: "text";
       key: string;
@@ -37,6 +42,8 @@ export type ShapeGroup = {
   id: string;
   drawables: Drawable[];
   geometry?: Pt[][]; // Local collision traces, never a change to model coordinates.
+  source?: DrawCommand; // Model-authored geometry retained for relative updates.
+  unresolved?: boolean;
 };
 
 export type BoardOp =
@@ -60,7 +67,14 @@ export function interpretCommand(
   }
 
   const id = (typeof command.id === "string" && command.id.trim()) || `draw-${seq}`;
+  const diagram = diagramOptions(command);
+  if (!diagram) return null;
   const color = TUTOR_HEX[command.op === "axes" ? "muted" : colorOf(command)] ?? TUTOR_HEX.ink;
+  const finish = (drawables: Drawable[], geometry: Pt[][], source: Exclude<DrawCommand, { op: 'clear' | 'remove' | 'highlight' }> = command): BoardOp => ({ kind: 'draw', group: {
+    id, source: { ...source, id }, geometry,
+    drawables: drawables.map(mark => mark.kind === 'path' && mark.width === undefined
+      ? { ...mark, width: diagram.weight === 'strong' ? 2.8 : diagram.weight === 'light' ? 1.4 : 2.1 } : mark),
+  } });
 
   if (command.op === "axes") {
     const origin = pt(command.origin) ?? { x: 0.2, y: 0.78 };
@@ -90,7 +104,7 @@ export function interpretCommand(
         color,
       });
     }
-    return { kind: "draw", group: { id, drawables, geometry: [[origin, xTo], [origin, yTo]] } };
+    return finish(drawables, [[origin, xTo], [origin, yTo]], { ...command, origin });
   }
 
   if (command.op === "arrow") {
@@ -99,9 +113,9 @@ export function interpretCommand(
     if (!from || !to) return null;
     const drawables = arrowDrawables(id, from, to, color);
     if (command.label) {
-      drawables.push(midLabel(`${id}-l`, from, to, command.label, color));
+      drawables.push(midLabel(`${id}-l`, from, to, command.label, color, diagram.labelSide));
     }
-    return { kind: "draw", group: { id, drawables, geometry: [[from, to]] } };
+    return finish(drawables, [[from, to]], { ...command, from, to });
   }
 
   if (command.op === "line") {
@@ -117,7 +131,8 @@ export function interpretCommand(
         dashed: Boolean(command.dashed),
       },
     ];
-    return { kind: "draw", group: { id, drawables, geometry: [[from, to]] } };
+    if (diagram.surface) drawables.unshift(surfaceHatching(id, from, to, diagram.surface));
+    return finish(drawables, [[from, to]], { ...command, from, to });
   }
 
   if (command.op === "curve") {
@@ -126,6 +141,8 @@ export function interpretCommand(
     const drawables: Drawable[] = [
       { kind: "path", key: `${id}-p`, d: curvePath(points), color },
     ];
+    if (diagram.fill && Math.hypot(points[0].x - points.at(-1)!.x, points[0].y - points.at(-1)!.y) < .001)
+      drawables.unshift(...bodyFill(id, curvePath(points) + ' Z', color, diagram.fill));
     if (command.label) {
       const mid = points[Math.floor(points.length / 2)];
       drawables.push({
@@ -137,7 +154,7 @@ export function interpretCommand(
         color,
       });
     }
-    return { kind: "draw", group: { id, drawables, geometry: [curveTrace(points)] } };
+    return finish(drawables, [curveTrace(points)], { ...command, points });
   }
 
   if (command.op === "circle") {
@@ -147,6 +164,7 @@ export function interpretCommand(
     const drawables: Drawable[] = [
       { kind: "path", key: `${id}-p`, d: circlePath(center, r), color },
     ];
+    if (diagram.fill) drawables.unshift(...bodyFill(id, circlePath(center, r), color, diagram.fill));
     if (command.label) {
       drawables.push({
         kind: "text",
@@ -157,7 +175,7 @@ export function interpretCommand(
         color,
       });
     }
-    return { kind: "draw", group: { id, drawables, geometry: [Array.from({ length: 49 }, (_, i) => ({ x: center.x + r * Math.cos(i * Math.PI / 24), y: center.y + r * Math.sin(i * Math.PI / 24) }))] } };
+    return finish(drawables, [Array.from({ length: 49 }, (_, i) => ({ x: center.x + r * Math.cos(i * Math.PI / 24), y: center.y + r * Math.sin(i * Math.PI / 24) }))], { ...command, center, r });
   }
 
   if (command.op === "text") {
@@ -211,7 +229,10 @@ function label(text: string, maxWords = 6) {
 }
 
 function arrowDrawables(id: string, from: Pt, to: Pt, color: string): Drawable[] {
-  const tip = shorten(from, to, 0.012);
+  const length = Math.hypot(to.x - from.x, to.y - from.y);
+  if (length < .003) return [];
+  const size = Math.min(.019, length * .3);
+  const tip = shorten(from, to, size * .7);
   return [
     {
       kind: "path",
@@ -219,7 +240,7 @@ function arrowDrawables(id: string, from: Pt, to: Pt, color: string): Drawable[]
       d: `M ${from.x} ${from.y} L ${tip.x} ${tip.y}`,
       color,
     },
-    { kind: "head", key: `${id}-h`, d: arrowHead(from, to), color },
+    { kind: "head", key: `${id}-h`, d: arrowHead(from, to, size), color },
   ];
 }
 
@@ -231,7 +252,7 @@ function shorten(from: Pt, to: Pt, amount: number): Pt {
   return { x: from.x + dx * t, y: from.y + dy * t };
 }
 
-function arrowHead(from: Pt, to: Pt, size = 0.028): string {
+function arrowHead(from: Pt, to: Pt, size: number): string {
   const angle = Math.atan2(to.y - from.y, to.x - from.x);
   const left = {
     x: to.x - size * Math.cos(angle - 0.42),
@@ -241,15 +262,16 @@ function arrowHead(from: Pt, to: Pt, size = 0.028): string {
     x: to.x - size * Math.cos(angle + 0.42),
     y: to.y - size * Math.sin(angle + 0.42),
   };
-  return `M ${left.x} ${left.y} L ${to.x} ${to.y} L ${right.x} ${right.y}`;
+  return `M ${left.x} ${left.y} L ${to.x} ${to.y} L ${right.x} ${right.y} Z`;
 }
 
-function midLabel(key: string, from: Pt, to: Pt, text: string, color: string): Drawable {
+function midLabel(key: string, from: Pt, to: Pt, text: string, color: string, side?: 'left' | 'right'): Drawable {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const len = Math.hypot(dx, dy) || 1;
-  const ox = (-dy / len) * 0.05;
-  const oy = (dx / len) * 0.05;
+  const sign = side === 'left' ? -1 : 1;
+  const ox = (-dy / len) * 0.055 * sign;
+  const oy = (dx / len) * 0.055 * sign;
   return {
     kind: "text",
     key,
@@ -261,6 +283,26 @@ function midLabel(key: string, from: Pt, to: Pt, text: string, color: string): D
     size: "s",
     color,
   };
+}
+
+function bodyFill(id: string, d: string, color: string, fill: 'paper' | 'tint'): Drawable[] {
+  return [
+    { kind: 'fill', key: `${id}-paper`, d, color: boardStyle.paper },
+    ...(fill === 'tint' ? [{ kind: 'fill' as const, key: `${id}-tint`, d, color, opacity: .1 }] : []),
+  ];
+}
+
+function surfaceHatching(id: string, from: Pt, to: Pt, side: 'left' | 'right'): Drawable {
+  const dx = to.x - from.x, dy = to.y - from.y, length = Math.hypot(dx, dy) || 1;
+  const sign = side === 'left' ? -1 : 1, nx = -dy / length * sign, ny = dx / length * sign;
+  const count = Math.min(48, Math.floor(length / .025));
+  const d = Array.from({ length: count }, (_, i) => {
+    const t = (i + .5) / Math.max(1, count), x = from.x + dx * t, y = from.y + dy * t;
+    const end = { x: x + nx * .018 - dx / length * .012, y: y + ny * .018 - dy / length * .012 };
+    if (end.x < 0 || end.x > 1 || end.y < 0 || end.y > 1) return '';
+    return `M ${x} ${y} L ${end.x} ${end.y}`;
+  }).join(' ');
+  return { kind: 'path', key: `${id}-surface`, d, color: TUTOR_HEX.muted, width: 1, opacity: .55 };
 }
 
 function curvePath(points: Pt[]): string {

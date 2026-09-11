@@ -55,6 +55,7 @@ export function snapshotBoard(
           : 1);
       ctx.globalAlpha = opacity;
       for (const mark of group.drawables) {
+        ctx.globalAlpha = opacity;
         if (mark.kind === "text") {
           ctx.save();
           const formula = mark.mathDrawing ?? ((mark.math ?? (!mark.heading && isMathText(mark.text))) ? typesetMath(mark.text, mark.color) : null);
@@ -88,8 +89,15 @@ export function snapshotBoard(
           continue;
         }
         const path = new Path2D(mark.d);
+        if (mark.kind === 'fill' || mark.kind === 'head') {
+          ctx.fillStyle = mark.color;
+          ctx.globalAlpha = opacity * (mark.kind === 'fill' ? mark.opacity ?? 1 : 1);
+          ctx.fill(path);
+          continue;
+        }
         ctx.strokeStyle = mark.color;
-        ctx.globalAlpha = opacity;
+        ctx.globalAlpha = opacity * (mark.opacity ?? 1);
+        ctx.lineWidth = (mark.width ?? 2.1) / width;
         if (mark.kind === "path" && mark.dashed) {
           ctx.setLineDash([8 / w, 6 / w]);
         } else {

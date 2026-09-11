@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 04:39 ET
+Updated: 2026-09-11 05:01 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,12 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Diagram composition follow-up: DRAW now accepts local optional diagram metadata for a circle tangent to a straight support, a vector/line attached to a circle or line anchor, support hatching, subtle body fills, stroke hierarchy, and preferred arrow-label side. Geometry resolves from explicit IDs, never words or topic heuristics. Changing a support updates its dependent body and vectors together; missing, cyclic, or out-of-bounds attachments stay hidden and are reported as unresolved in tutor provenance. Their original commands remain available for revision and cannot reference archived pages. Invalid metadata is rejected; the observed flat-field model spelling normalizes. No frozen shared types or human prompt/pedagogy edits.
+
+Filled arrowheads, smaller diagram titles, and common SVG/snapshot drawing styles make the figures clearer at both board sizes. New strokes/fills reveal progressively; revisions to existing geometry apply atomically, not as a physics animation. Chrome verified actual generated incline and directed-graph output, support/body updates, fill opacity, student-ink preservation, missing-reference behavior, reduced motion, and label bounds at 1000/700px plus expanded view. The new check-diagrams script covers general direction/side/radius cases, exact tangency, dependency order/cycles, page scoping, aliases, and disclosure boundaries. Build, focused lint, and the existing math/teaching/lifecycle/ink/workspace/animation regressions pass. Live model output still varies: the first incline response flattened metadata and detached the arrows; after schema examples the next used proper nesting and body attachment. This verifies sample generation and declared geometry, not general physical correctness. Two geometry-easing probes did not establish reliable morphing; that optional experiment was removed and documented.
+
+Next for this follow-up: David can request a fresh annotated diagram on localhost:3100 and review PR #5. Contact is currently circle-to-straight-line only; moving scenes retain the existing animation schema. Do not infer physical roles or retrofit contacts from old labels. No credential unblock is needed.
 
 LaTeX follow-up: the existing DRAW text field now supports locally typeset Base/AMS mathematics through pinned MathJax 4.1.3 and its bundled TeX font. Fractions, roots, scripts, vectors, integrals, aligned equations, and matrices render as SVG paths. No per-equation service or CDN call is needed. The same vector paths and transforms are drawn into the tutor snapshot. Layout measures real formula width/ascent/descent, including tall fractions and aligned rows; glyphs reveal progressively without reflow and respect reduced motion. Legacy simple notation remains supported. Runtime guidance requests properly escaped LaTeX only when the chosen teaching move permits it; the disclosure guard also covers fraction/root/environment notation.
 

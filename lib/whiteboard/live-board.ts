@@ -2,7 +2,7 @@ import type { BoardSnapshot } from "@/lib/types";
 import type { BoardState } from "./store";
 import { animationFrame } from "./animation";
 
-type TutorItem = { id: string; text: string; status: "visible" | "entering"; kinds: string[] };
+type TutorItem = { id: string; text: string; status: "visible" | "entering" | "unresolved"; kinds: string[]; layout?: string };
 
 export type LiveBoard = BoardSnapshot & {
   open?: boolean;
@@ -26,7 +26,8 @@ export function boardProvenance(state: BoardState) {
       ...state.groups.map(group => ({
         id: group.id,
         text: group.drawables.flatMap(mark => mark.kind === "text" ? [mark.text] : []).join(" "),
-        status: group.appear === "done" ? "visible" as const : "entering" as const,
+        status: group.unresolved ? 'unresolved' as const : group.appear === "done" ? "visible" as const : "entering" as const,
+        layout: group.source ? JSON.stringify(group.source).slice(0, 1200) : undefined,
         kinds: [...new Set(group.drawables.map(mark => mark.kind))],
       })),
       ...(state.animation ? state.animation.shapes.map(shape => ({ id: shape.id, text: "text" in shape ? shape.text : "label" in shape ? shape.label ?? "" : "", status: visibleAnimation.has(shape.id) ? "visible" as const : "entering" as const, kinds: [`animation:${shape.kind}`] })) : []),
@@ -64,7 +65,8 @@ export function asLiveBoard(value: unknown): LiveBoard | null {
   const tutorItems = Array.isArray(board.tutorItems) ? board.tutorItems.slice(0, 100).flatMap(item =>
     item && typeof item.id === "string" && typeof item.text === "string" ? [{
       id: item.id.slice(0, 100), text: item.text.slice(0, 500),
-      status: item.status === "entering" ? "entering" as const : "visible" as const,
+      status: item.status === 'unresolved' ? 'unresolved' as const : item.status === "entering" ? "entering" as const : "visible" as const,
+      layout: typeof item.layout === 'string' ? item.layout.slice(0, 1200) : undefined,
       kinds: Array.isArray(item.kinds) ? item.kinds.filter(kind => typeof kind === "string").slice(0, 8) : [],
     }] : []
   ) : undefined;

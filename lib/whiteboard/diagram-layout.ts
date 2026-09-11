@@ -34,6 +34,7 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
     (!mark.heading && !/^(?:topic(?:-|$)|(?:given|note|definition)-)/.test(group.id) && !isMathText(mark.text));
   const occupied: Box[] = groups.flatMap(group => group.drawables.flatMap(mark => mark.kind === 'text' && !isLabel(group, mark) ? [writingBounds(mark)] : []));
   return groups.map(group => ({ ...group, drawables: group.drawables.map(mark => {
+    if (mark.kind === 'text' && mark.heading) return { ...mark, fontSize: .048 };
     if (mark.kind !== 'text' || !isLabel(group, mark)) return mark;
     const preferred = mark.preferredAt ?? mark.at;
     const size = .038;

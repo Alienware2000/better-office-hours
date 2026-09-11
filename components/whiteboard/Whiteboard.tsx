@@ -39,7 +39,7 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
   const board = getBoardState();
   const isOpen = expanded || board.open;
   const pendingKey = board.groups
-    .filter((group) => group.appear === "pending")
+    .filter((group) => group.appear === "pending" && !group.unresolved)
     .map((group) => `${group.id}:${group.version ?? 0}`)
     .join(",");
 
@@ -74,7 +74,7 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
   }, []);
 
   useEffect(() => {
-    const pending = getBoardState().groups.filter((group) => group.appear === "pending");
+    const pending = getBoardState().groups.filter((group) => group.appear === "pending" && !group.unresolved);
     if (!pending.length) return;
     if (reduceMotion) {
       pending.forEach((group) => markGroupShown(group.id));
@@ -129,7 +129,7 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
 
   const enteringId = reduceMotion
     ? null
-    : board.groups.find((group) => group.appear === "pending")?.id ?? null;
+    : board.groups.find((group) => group.appear === "pending" && !group.unresolved)?.id ?? null;
 
   useEffect(() => {
     const scroll = scrollRef.current;

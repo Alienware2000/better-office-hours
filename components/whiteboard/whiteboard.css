@@ -20,6 +20,8 @@
 .board-heading:has(.board-author-tutor:hover) ~ .board-scroll .board-your-layer { opacity: .2; }
 .board-path, .board-head, .board-student { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .board-path, .board-head { stroke-width: 2.25px; }
+.board-fill { stroke: none; pointer-events: none; }
+.board-fill.is-entering { animation: board-fill-appear .3s ease both; }
 .board-path.is-dashed { stroke-dasharray: 7px 6px; }
 .board-path.is-entering { stroke-dasharray: 1; stroke-dashoffset: 1; animation: board-draw .52s ease both; }
 .board-head.is-entering { opacity: 0; animation: board-fade .18s ease .36s forwards; }
@@ -54,10 +56,11 @@
 .board-transport input { flex: 1; min-width: 0; accent-color: #b95832; height: 3px; cursor: ew-resize; }
 @keyframes board-draw { to { stroke-dashoffset: 0; } }
 @keyframes board-fade { to { opacity: 1; } }
+@keyframes board-fill-appear { from { fill-opacity: 0; } to { fill-opacity: 1; } }
 @keyframes board-character { from { opacity: 0; } to { opacity: 1; } }
 @keyframes board-text-focus { 50% { opacity: .55; } }
 @keyframes board-pulse { 50% { stroke-width: 4.2px; opacity: .55; } }
-@media (prefers-reduced-motion: reduce) { .board-path.is-entering, .board-head.is-entering, .board-glyph, .board-math-glyph, .board-group.is-pulse .board-math, .board-group.is-pulse .board-label, .board-group.is-pulse .board-path, .board-group.is-pulse .board-head { animation: none; stroke-dashoffset: 0; opacity: 1; } .board-tutor-layer, .board-your-layer, .board-group .board-label.is-diagram { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .board-fill.is-entering { animation: none; } .board-path.is-entering, .board-head.is-entering, .board-glyph, .board-math-glyph, .board-group.is-pulse .board-math, .board-group.is-pulse .board-label, .board-group.is-pulse .board-path, .board-group.is-pulse .board-head { animation: none; stroke-dashoffset: 0; opacity: 1; } .board-tutor-layer, .board-your-layer, .board-group .board-label.is-diagram { transition: none; } }
 
 .board-tool-hint { color: #928b7f; font-size: 10px; }
 

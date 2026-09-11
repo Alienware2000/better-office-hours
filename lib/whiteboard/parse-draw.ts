@@ -211,6 +211,11 @@ export function parseDrawCommand(body: string): DrawCommand | null {
     const value = json as Record<string, unknown>;
     const op = value.op === 'draw' ? value.kind : value.op;
     const normalized = { ...value, op };
+    // A live model trace flattened the local style/attachment options. Accept
+    // those exact aliases without inferring anything from labels or op names.
+    const diagramFields = ['fill', 'weight', 'surface', 'labelSide', 'contact', 'attach'];
+    const flatDiagram = Object.fromEntries(diagramFields.filter(key => key in value).map(key => [key, value[key]]));
+    if (!('diagram' in value) && Object.keys(flatDiagram).length) Object.assign(normalized, { diagram: flatDiagram });
     // Normalize common point spellings before geometry validation, not after
     // accepting an op-only shape that the renderer would silently discard.
     const point = (p: unknown) => Array.isArray(p) && p.length === 2 ? { x: p[0], y: p[1] } : p;
@@ -226,7 +231,7 @@ export function parseDrawCommand(body: string): DrawCommand | null {
       const w = Number(normalized.w), h = Number(normalized.h);
       if (at && Number.isFinite(at.x) && Number.isFinite(at.y) && Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) {
         const a = { x: at.x, y: at.y }, b = { x: at.x + w, y: at.y }, c = { x: at.x + w, y: at.y + h }, d = { x: at.x, y: at.y + h };
-        return { op: 'curve', id: typeof value.id === 'string' ? value.id : 'box', points: [a,b,b,c,c,d,d,a,a], label: typeof value.label === 'string' ? value.label : undefined, color: colorOf(typeof value.color === 'string' ? value.color : undefined) };
+        return Object.assign({ op: 'curve' as const, id: typeof value.id === 'string' ? value.id : 'box', points: [a,b,b,c,c,d,d,a,a], label: typeof value.label === 'string' ? value.label : undefined, color: colorOf(typeof value.color === 'string' ? value.color : undefined) }, 'diagram' in normalized ? { diagram: normalized.diagram } : {});
       }
     }
     if (isDrawCommand(normalized)) return normalized;

@@ -5,6 +5,7 @@ import { inkPath } from '@/lib/whiteboard/ink-path';
 import { groupReveal } from '@/lib/whiteboard/reveal';
 import { BoardText } from './BoardText';
 import { AnimLayer } from './AnimLayer';
+import { BoardShape } from './BoardShape';
 
 export function BoardDrawing({ groups, student, animation, time, focus, enteringId = null, pulseId = null, earlier = false }: {
   groups: BoardGroup[]; student: BoardStroke[]; animation: AnimationSpec | null; time: number; focus: string | null;
@@ -19,7 +20,7 @@ export function BoardDrawing({ groups, student, animation, time, focus, entering
         return <g key={`${group.id}:${group.version ?? 0}`} data-board-group={group.id} className={`board-group${pulseId === group.id ? ' is-pulse' : ''}`}>
           {group.drawables.map((mark, index) => mark.kind === 'text'
             ? <BoardText key={mark.key} mark={mark} entering={entering} delay={reveal.delays[index]} />
-            : <path key={mark.key} className={[mark.kind === 'head' ? 'board-head' : 'board-path', mark.kind === 'path' && mark.dashed && !entering ? 'is-dashed' : '', entering ? 'is-entering' : ''].filter(Boolean).join(' ')} d={mark.d} pathLength={mark.kind === 'path' ? 1 : undefined} stroke={mark.color} />)}
+            : <BoardShape key={mark.key} mark={mark} entering={entering} />)}
         </g>;
       })}
       {animation && <AnimLayer spec={animation} time={time} focus={focus} />}
