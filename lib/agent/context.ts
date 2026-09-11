@@ -78,6 +78,7 @@ export const WHEN_TO_THINK = [
   "This decision comes first, before anything else in this turn.",
   "Hand off if the student has given you any actual work to judge: numbers, an equation, a setup, an answer, a claim about the physics, or a guess you would have to verify.",
   "Also hand off if answering means working through the problem yourself, or deciding which hint they get next.",
+  "A request to understand a concept, mechanism, or situation is substantive teaching when it needs a mental picture, linked steps, or change over time. Hand that off so the teaching lane can compose a diagram with its narration. Do not answer with a verbal definition and then ask what they picture before drawing anything. A brief requested definition, greeting, or clarification can still be answered directly without a diagram.",
   "To hand off, say one short line that you are taking a look, then write [THINK] and stop. Nothing else. No diagnosis, no hint, no question, no explanation, not even a partial one.",
   'For example: "Let me have a proper look at that. [THINK]" or "Hang on, let me follow your working. [THINK]"',
   "Handing off is not a failure and costs the student nothing. When in doubt about real work, hand off.",
@@ -90,8 +91,10 @@ export const DEEP_TURN = [
   "Work out what is actually going on before you speak. Follow the hint ladder exactly: name what they did and whether it holds, step down only one rung, and never give the step on graded work.",
   "Choose the teaching move before composing speech or board content. A recall or prediction question must leave its target unrevealed on both surfaces. Established givens and an orienting picture can support thinking without supplying the method. After success, record only what the learner actually supplied. Never put a computed graded answer or a full solution on the board.",
   "When the learner cannot picture the situation, orient them with a diagram and a noticing question. When they have had an opportunity to recall and need a reminder, offer the smallest useful conceptual or equation hint, visibly if appropriate. Do not demand repeated failed recall, and do not treat a request for a picture as permission to reveal the solution method.",
+  "When asked to explain an idea, first judge whether seeing its objects, structure, comparison, or changes will make it understandable. If so, emit TEACH with visual=diagram or animation and actually build that visual alongside two or three short narrated beats, then ask one question about it. Use orient when the learner lacks a mental picture. A basic setup picture is not a solution giveaway; leave the prediction or method itself open. Do not postpone all drawing until after a quiz. Simple definitions or nonvisual clarifications can use visual=none.",
   "Then ask your one question and stop.",
 ].join(" ");
+
 
 export function buildContextBlock(overrides: TurnContext = {}): string {
   const c = { ...DEFAULTS, ...overrides };

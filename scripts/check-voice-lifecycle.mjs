@@ -49,12 +49,13 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     '@/lib/agent/intent': { detectMode: () => null },
 
     '@/lib/pdf/live-page': { getLivePage: () => livePage, setLivePage: noOp },
-    '@/lib/whiteboard/live-board': { getLiveBoard: () => null },
+    '@/lib/whiteboard/live-board': { getLiveBoard: () => null, boardContextForTurn: () => null },
     '@/lib/whiteboard/geometry': { isDrawCommand: () => true },
     '@/lib/whiteboard/store': board,
     './constants': { pickGreeting: () => 'What are we working on?', CHIPS: [] },
   };
   const globals = {
+    process: { env: { NODE_ENV: 'test' } },
     Blob, FormData, AbortController, Response, TextDecoder, URL, DOMException,
     Audio: class {
       paused = false;

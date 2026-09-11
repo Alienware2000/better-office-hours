@@ -54,6 +54,14 @@ export function getLiveBoard(): LiveBoard | null {
   return snapshotProvider ? snapshotProvider() : live;
 }
 
+// Desk entry changes the store before React mounts its snapshot provider. The
+// first spoken request must still carry that board's availability/authorship.
+export function boardContextForTurn(state: BoardState): LiveBoard | null {
+  return getLiveBoard() ?? (state.open ? {
+    ...boardProvenance(state), open: true, imageUrl: '', studentShapesSince: state.studentSince,
+  } : null);
+}
+
 export function asLiveBoard(value: unknown): LiveBoard | null {
   if (!value || typeof value !== "object") return null;
   const board = value as Partial<LiveBoard>;

@@ -5,7 +5,7 @@ import type { SessionEvent } from "@/lib/agent/events";
 import { detectMode } from "@/lib/agent/intent";
 import { parseAgentTurn, takeSpeechChunks, visualBeats, type ChatMessage } from "@/lib/agent/tags";
 import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
-import { getLiveBoard } from "@/lib/whiteboard/live-board";
+import { boardContextForTurn, getLiveBoard } from "@/lib/whiteboard/live-board";
 import { needsBoardRepair, teachingTag } from "@/lib/agent/teaching-intent";
 import { interpretCommand, isDrawCommand } from "@/lib/whiteboard/geometry";
 import { getBoardState, restoreBoard, type BoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, continueBoardPage, openBoard, resetBoard } from "@/lib/whiteboard/store";
@@ -414,7 +414,7 @@ export function useVoiceLoop() {
           messages: historyRef.current,
           stream: true,
           livePage: visualSource,
-          liveBoard: getLiveBoard(),
+          liveBoard: boardContextForTurn(getBoardState()),
           event,
           deep,
         }),
@@ -735,6 +735,10 @@ export function useVoiceLoop() {
     let candidate = false;
     let voicedMs = 0;
     let lastFrame = 0;
+    let lastInputTrace = 0;
+    let rmsPeak = 0;
+    let probabilityPeak = 0;
+    let pcmPeak = 0;
     let raf = 0;
     let capture: { controller: AbortController; epoch: number; pending: number; failed?: boolean; parts: (string | null)[] } | null = null;
     const flushCapture = () => {
@@ -937,6 +941,12 @@ export function useVoiceLoop() {
           else audioCapture.push(frame);
           speechProbability = probability;
           probabilityAt = performance.now();
+          if (process.env.NODE_ENV === 'development' && !pausedRef.current) {
+            probabilityPeak = Math.max(probabilityPeak, probability);
+            let energy = 0;
+            for (const sample of frame) energy += sample * sample;
+            pcmPeak = Math.max(pcmPeak, Math.sqrt(energy / Math.max(1, frame.length)));
+          }
         });
         if (cancelled || signal.aborted) {
           await created.destroy();
@@ -996,6 +1006,21 @@ export function useVoiceLoop() {
         for (const sample of data) sum += sample * sample;
         const rms = Math.sqrt(sum / data.length);
         setLevel(rms);
+        rmsPeak = Math.max(rmsPeak, rms);
+        // Development diagnostics for input that appears live but hears nothing.
+        // No audio, transcript, device name, or credential is recorded.
+        if (process.env.NODE_ENV === 'development' && now - lastInputTrace > 5000) {
+          lastInputTrace = now;
+          console.info('Voice input state ' + JSON.stringify({
+            tab: tabId.slice(0, 8), state: stateRef.current, rms: Number(rms.toFixed(4)),
+            rmsPeak: Number(rmsPeak.toFixed(4)), pcmPeak: Number(pcmPeak.toFixed(4)),
+            probabilityPeak: Number(probabilityPeak.toFixed(3)),
+            probability: Number(speechProbability.toFixed(3)), detectorAgeMs: Math.round(now - probabilityAt),
+            recording: recordingRef.current, candidate, voicedMs: Math.round(voicedMs),
+            pendingTranscriptions: capture?.pending ?? 0, playing: playingRef.current,
+          }));
+          rmsPeak = probabilityPeak = pcmPeak = 0;
+        }
         const elapsed = lastFrame ? Math.min(100, now - lastFrame) : 16;
         lastFrame = now;
         // Use speech probability, not volume, to distinguish non-speech noise.

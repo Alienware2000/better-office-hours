@@ -24,6 +24,8 @@ The speech queue prepares upcoming TTS audio and plays one chunk at a time. Capt
 
 Speech detection uses pinned `@ricky0123/vad-web` 0.0.30 with Silero v5 and ONNX Runtime WASM, on the client. This voice repair changes the shared package manifests and adds predev/prebuild asset preparation. `scripts/prepare-voice-assets.mjs` copies the installed model, worklet, and WASM assets to ignored `public/voice-assets`; no runtime CDN or microphone audio leaves the browser for detection. The STT service still receives completed recordings. Initialize and retry failures are visible. Recording finalization, STT, TTS, and model generation have deadlines, with late completions ignored.
 
+At spoken desk entry, live board context falls back to current store availability/provenance until React mounts the image provider. Concept and homework desks use a local structured routing decision on the fast model. Greetings/brief definitions remain direct; substantive explanations and attempted work use the existing reasoning handoff. The reasoning response declares a teaching move and up to three narrated beats. The server translates complete beats incrementally into the existing TEACH/DRAW/ANIM/POINT/HIGHLIGHT stream, so the client keeps its playback ordering, disclosure guard, PDF anchor resolution, authorship, and cancellation. Diagram content is generated per turn; there is no topic-to-scene mapping. Supplemental notes and homework setups share this transport and retain the existing graded-work disclosure limits. These are internal voice-lane types, not changes to lib/types.ts.
+
 ## 1. System shape
 
 ```

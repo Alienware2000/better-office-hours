@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { TEACHING_GUIDANCE, teachingTag } from "./teaching-intent";
 import { DIAGRAM_GUIDANCE } from './diagram-guidance';
+import { CONCEPT_RESPONSE_FORMAT, CONCEPT_FORMAT_GUIDANCE, conceptProgress, conceptResponse } from './concept-response';
+import { CONCEPT_ROUTING_FORMAT, CONCEPT_ROUTING_GUIDANCE, conceptRoute } from './concept-routing';
 import { parseAgentTurn } from "./tags";
 import {
   buildContextBlock,
@@ -24,6 +26,17 @@ export const GROK_MODEL = "grok-4.20-0309-non-reasoning";
 // covered by the fast lane's lead-in audio.
 export const GROK_DEEP_MODEL = "grok-4.6";
 
+// Teaching desks use narrated lessons for concepts and homework setups alike.
+// Topic names never select fixtures; the model decides what needs a picture.
+export function usesConceptLesson(deep = false, visualRepair = false): boolean {
+  const live = getLivePage();
+  return deep && !visualRepair && Boolean(live || getLiveBoard()?.open);
+}
+
+export function usesConceptRouter(deep = false, visualRepair = false): boolean {
+  return !deep && usesConceptLesson(true, visualRepair);
+}
+
 function client() {
   const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) {
@@ -32,7 +45,7 @@ function client() {
   return new OpenAI({ apiKey, baseURL: "https://api.x.ai/v1" });
 }
 
-const BOARD_NARRATION = `\n<board_narration>Let the teaching move determine what belongs on the board; a question can leave it unchanged. Coordinate speech and visuals: say one orienting sentence, then interleave each drawing with its explanation. Never write the equation, method, or conclusion the learner is being asked to recall or predict. Record the learner's checked relationship, or provide a needed teaching hint, only when that is the chosen move. An established given or a blank is often enough during elicitation. For orientation, favor a labeled picture of the objects, stages, or relationships over a formula. Use POINT or HIGHLIGHT for relevant content actually present on the PDF.
+const BOARD_NARRATION = `\n<board_narration>Let the teaching move determine what belongs on the board; a question can leave an established picture unchanged. For an unfamiliar idea whose meaning is spatial, structural, causal, or changes over time, build a small explanatory scene in this turn. Use the rhythm of a short whiteboard explainer: introduce an object, draw it, explain a relation, add or focus that relation, then ask one question about what is now visible. Put each DRAW or ANIM tag immediately BEFORE the spoken sentence naming that element. The app queues tags with narration; do not place all the drawing after your final question. Two or three beats around one connected figure are enough. Do not dump a finished diagram before its introduction or turn this into a long lecture. Never write the equation, method, or conclusion the learner is being asked to recall or predict. Record the learner's checked relationship, or provide a needed teaching hint, only when that is the chosen move. An established given or a blank is often enough during elicitation. For orientation, favor a labeled picture of the objects, stages, or relationships over a formula. Use POINT or HIGHLIGHT for relevant content actually present on the PDF.
 Compose a clear small teaching figure, not a loose collection of words. Give it a short descriptive topic heading. Use two to four important elements with visible connections; label the object, reference direction, and changing quantity when relevant. Attach concise labels to shapes using their label field; use standalone text only for a short caption or a distinct region. Place labels beside their referents, outside paths and arrowheads, with space between neighboring labels. Keep object sizes and line weights proportionate. Distinguish a physical object, its path, and a vector; don't draw one ambiguous arrow standing for all three. Prefer a meaningful qualitative sketch over unsupported precision. Choose color by role consistently: ink for structure, accent for the active quantity, muted for reference lines. Never calculate or label a new graded answer. Keep fixed attachments physically coherent. If an object rests on a surface, make the outlines touch rather than passing the surface through its center. Align reference arrows with the direction they label, and keep comparison labels explicit. If a motion spec cannot express the idea faithfully, draw a clear static comparison of states instead.
 Use LaTeX in DRAW text for equations, fractions, roots, vectors, and aligned mathematics; follow math_notation below. Plain Unicode remains supported for short quantities. Keep each equation compact and geometry labels at most six words. For notes, use a short topic heading (text id=topic, size s, y=0.12), then only the rows needed at this teaching step. Given/definition rows use IDs given-1, note-1, definition-1 and consistent left alignment; a justified relationship uses id=relation. There is no mandatory equation slot. New topic headings start a fresh scrollable page; preserve earlier work. Leave the lower third for student thinking and ink. Reuse IDs to revise your own work, use DRAW highlight id=... for focus, and remove stale tutor lines. Do not attribute tutor notes to the student or place shapes across existing notes. Coordinates are normalized 0 to 1 with y downward. Keep a generous margin.
 For motion use declarative [ANIM {...}] only, never ANIM_PROGRAM. Schema: {id,duration,shapes:[...]}, seconds under 8; kinds: axes {id,origin:{x,y},xLabel,yLabel}; arrow {id,label,keyframes:[{t,from:{x,y},to:{x,y},color,opacity}]}; dot {id,keyframes:[{t,at:{x,y},r,opacity}]}; path {id,points:[{x,y},...],keyframes:[{t,drawn,opacity}]}; text {id,text,keyframes:[{t,at:{x,y},opacity}]}; bar {id,keyframes:[{t,at:{x,y},w,h,opacity}]}. Every ANIM shape needs kind. ANIM kinds are exactly axes, arrow, dot, path, text, bar: NEVER line or circle. Use dot for a round moving object and path for a fixed line. All arrow keyframes must contain both from and to, all dot/text keyframes contain at, all path keyframes contain drawn. Write these required properties in EVERY frame, including holds; top-level positions or an opacity-only frame are invalid. Before emitting, check the scene against its constraints: fixed lengths stay fixed, attached parts move together, fixed supports stay fixed, arrows represent their named quantity. Prefer two or three coherent shapes over a complicated scene. Do not promise forces, speed changes, or effects that your geometry does not show. Static positions: text uses at:{x,y}, circle uses center:{x,y} and r, line/arrow use from:{x,y} and to:{x,y}. DRAW uses op equal to the shape name (arrow, axes, line, curve, circle, text), never op draw or a kind field. Keyframes have increasing t and optional ease linear, inOut, out. Points normalized 0..1, y downward. Arrow endpoints or dot at can use {follow:{pathId,offset:{x,y}}} to ride the path's drawn progress. Include a 0.65s initial hold and a final hold. Keep the spec compact, at most five shapes. [ANIM focus=id] signals one shape; [ANIM resume] continues after interruption. Use DRAW for a static diagram; ANIM when change over time is the idea.</board_narration>`;
@@ -60,9 +73,7 @@ export function buildGrokMessages(
           .join("; ")}</question_regions>`,
       ].join("\n")}`
     : "";
-  const boardNote = board?.open
-    ? "\n<board>The whiteboard is open. Coordinates are normalized 0 to 1, origin at the top left. Emit [BOARD open] then one JSON [DRAW ...] per stroke as you name it, for example [DRAW {\"op\":\"axes\",\"id\":\"axes\",\"origin\":{\"x\":0.2,\"y\":0.78},\"xLabel\":\"x\",\"yLabel\":\"y\"}] then [DRAW {\"op\":\"arrow\",\"id\":\"v\",\"from\":{\"x\":0.2,\"y\":0.78},\"to\":{\"x\":0.55,\"y\":0.35},\"label\":\"v\",\"color\":\"accent\"}]. ops: clear, axes, arrow, line, curve, circle, text, highlight, remove.</board>"
-    : "\n<board>When a picture helps, emit [BOARD open] then one JSON [DRAW {\"op\":\"arrow\",\"id\":\"v\",\"from\":{\"x\":0.2,\"y\":0.7},\"to\":{\"x\":0.6,\"y\":0.3},\"label\":\"v\"}] per stroke. Coordinates are normalized 0 to 1, origin at the top left.</board>";
+  const boardNote = `\n<board>The whiteboard is ${board?.open ? "open" : "available"}. Choose the visual from the learner's question. Coordinates are normalized 0 to 1, origin at top left. Emit [BOARD open] with DRAW commands in narrated order. A DRAW has op and id, with at for text, center and r for circle, from and to for line/arrow, points for curve, or origin for axes. Use the schemas below. No example scene or required equation is supplied.</board>`;
   const context = buildContextBlock(
     live
       ? {
@@ -173,7 +184,11 @@ export async function* streamGrok(
   visualRepair = false,
 ): AsyncGenerator<string> {
   const grok = client();
+  const conceptTeaching = usesConceptLesson(deep, visualRepair);
+  const conceptRouting = usesConceptRouter(deep, visualRepair);
   const messages = toApiMessages(history, event, deep);
+  if (conceptTeaching) messages.push({ role: 'system', content: CONCEPT_FORMAT_GUIDANCE });
+  if (conceptRouting) messages.push({ role: 'system', content: CONCEPT_ROUTING_GUIDANCE });
   if (visualRepair) {
     const last = history.filter(message => message.role === 'assistant').at(-1)?.content ?? '';
     const intent = parseAgentTurn(last).teaching;
@@ -186,14 +201,33 @@ export async function* streamGrok(
     // returns an empty message.
     // Board turns need room for a few DRAW tags plus a short spoken line.
     // 220 cut mid-tag and left the board empty.
-    max_tokens: deep ? 2400 : 1800,
+    max_tokens: conceptRouting ? 300 : deep ? 2400 : 1800,
     stream: true,
     messages,
     ...(deep ? { reasoning_effort: "low" as const } : {}),
+    ...(conceptTeaching ? { response_format: CONCEPT_RESPONSE_FORMAT } : {}),
+    ...(conceptRouting ? { response_format: CONCEPT_ROUTING_FORMAT } : {}),
   }, { signal });
 
+  let lesson = '';
+  let emitted = '';
   for await (const part of stream) {
     const text = part.choices[0]?.delta?.content;
-    if (text) yield text;
+    if (!text) continue;
+    if (!conceptTeaching && !conceptRouting) { yield text; continue; }
+    lesson += text;
+    if (conceptRouting) continue;
+    const progress = conceptProgress(lesson);
+    if (progress.length > emitted.length) {
+      if (!progress.startsWith(emitted)) throw new Error('The concept explanation changed while loading. Please try again.');
+      yield progress.slice(emitted.length);
+      emitted = progress;
+    }
+  }
+  if (conceptRouting) yield conceptRoute(lesson);
+  if (conceptTeaching) {
+    const complete = conceptResponse(lesson);
+    if (!complete.startsWith(emitted)) throw new Error('The concept explanation changed while loading. Please try again.');
+    yield complete.slice(emitted.length);
   }
 }

@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 14:35 ET
+Updated: 2026-09-11 15:15 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,12 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Concept explanation follow-up: reproduced the screenshot's verbal-only definition with no teaching metadata or drawing. The first spoken desk entry also carries board availability/provenance before React mounts its preview, closing a separate first-turn context gap. Concept and homework desks now use a small structured fast-lane decision: conversation/brief definition may answer directly, while lessons and learner work hand off to the existing reasoning model with a short acknowledgement. The reasoning lane emits a structured teaching move and narrated drawing beats, translated back into the existing protected stream. Each complete beat can arrive before the rest of the lesson; its geometry/PDF focus waits for its narration in the voice queue. Supplemental PDF anchors, LaTeX, authorship, disclosure guards, and bounded visual repair remain intact. Homework setups use the same narrated transport and existing hint/disclosure limits. No topic matching, scripted scenes, human prompt/pedagogy edits, or shared-type changes.
+
+Validation: production build, focused lint, concept-stream, teaching, voice lifecycle, workspace, diagram, and animation checks pass. A real model response through Chrome/Silero/SSE built a ball/ground, then a qualitative path, then a highest-point marker in successive spoken beats before one prediction question. TTS audio was stubbed for this browser check. A separate real homework request returned an orienting rocket/ground/two-stage sketch without an equation or calculated answer; the full model response took about 20s. Spoken entry from the lobby also passed with a replay of the generated lesson. The acknowledgement stayed fast, but substantive teaching began about 12s later in this sample. That delay and broader model judgment remain limitations. Fast-model teaching produced inconsistent motion even after guidance/schema changes, so it is not used for substantive concept lessons. Putting the reasoning model on first speech was also rejected after 25-31s probes. See NOTES for the rejected experiments and test-fixture interruption.
+
+Listening is still unconfirmed on David's real device. Development-only input traces now report current and five-second peak analyser/PCM energy, speech probability, detector age, and recording/transcription state without storing audio or transcripts. Chrome with real local Silero again accepted a third utterance after injected noise and STT failure. This does not establish the cause of the newly reported Listening-with-no-reaction hang. Next: leave the tutor tab open at the next real failure and inspect its input trace; review the concept flow and planning delay on PR #5. No microphone threshold change in this follow-up. Hussein remains unblocked below.
 
 Listening recovery follow-up: David reported Listening without a reaction to speech. Reproduced an AudioContext interrupted state that bypassed both the suspended-state recovery and the running-state heartbeat check, leaving the UI listening indefinitely. The loop now checks actual track availability as well as detector frames: closed/ended input exposes retry, unexpectedly disabled live input is enabled, and muted/interrupted input gets a bounded two-second recovery window. Restored input gets time for fresh detector frames. Persistent failure pauses voice and shows Retry microphone, which now reacquires input and resumes the existing conversation in one click. Diagnostics contain only audio/track state and frame age.
 
