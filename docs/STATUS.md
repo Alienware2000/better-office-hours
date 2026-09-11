@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 01:49 ET
+Updated: 2026-09-11 02:02 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,8 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Writing/tone follow-up: standalone DRAW text now wraps at a fixed readable size and finds space clear of existing text and student ink. Placement is stored, so SVG and tutor snapshots agree and earlier lines stay still. Reproduced the screenshot sequence in expanded and compact boards; compact writing measured 22px or larger in the tested 1440px desktop viewport. Same-ID updates reuse their space. Full boards keep existing work and reject additional writing with a console diagnostic; automatic pagination and avoiding arbitrary diagram paths are still open. v3 stability is now 1 for steadier delivery, with voice and playback rate retained. Actual synthesis returned valid audio; subjective tone still needs David’s retest. Regression checks, focused lint, and production build pass.
 
 Listening/upload follow-up: playback is 8% faster with pitch preserved. Confirmed recordings keep quiet syllables, but only speech probability at least 0.6 renews the approximately 1s endpoint timer. This closes the code path where uncertain background sound could keep listening open. Browser-suspended microphone audio attempts resume and exposes retry after 2s if still suspended. These are targeted fixes, not proof of the cause of every reported hang.
 

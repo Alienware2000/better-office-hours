@@ -103,3 +103,27 @@ assert.equal(isPutAwayPsetPhrase('Do not remove the PDF'), false);
 assert.equal(isPutAwayPsetPhrase('The rocket will take off in this question'), false);
 assert.equal(isPutAwayPsetPhrase('Remove the PDF'), true);
 assert.equal(boardLabel('u start v later a constant s displacement'), 'u start v later a constant s displacement');
+
+const { layoutWriting, writingBounds } = load('lib/whiteboard/writing.ts');
+const { interpretCommand } = load('lib/whiteboard/geometry.ts');
+const writing = (id,text,y,size='s') => interpretCommand({op:'text',id,text,at:{x:.4,y},size},1).group;
+const eq = layoutWriting(writing('equation','v² = u² + 2 a s',.25,'m'),[],[]);
+const givens = layoutWriting(writing('givens','u = 0, a = +3 m/s², s = 600 m',.45),[eq],[]);
+const nextLine = layoutWriting(writing('next','after fail: a = ? v_top = ?',.45,'m'),[eq,givens],[]);
+assert.ok(givens.drawables.length > 1,'Long writing wraps instead of shrinking');
+const all = [eq,givens,nextLine].flatMap(g=>g.drawables);
+for (const mark of all) {
+  assert.ok(mark.fontSize >= .068,'Standalone writing retains readable size');
+  const a = writingBounds(mark);
+  assert.ok(a.left >= .05 && a.right <= .95 && a.top >= .05 && a.bottom <= .95,'Writing stays on paper');
+  for (const other of all.filter(m=>m!==mark)) {
+    const b=writingBounds(other);
+    assert.ok(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top,'Consecutive writing must not overlap');
+  }
+}
+const replacement=layoutWriting(writing('givens','a = ?',.45),[eq,givens,nextLine],[]);
+assert.equal(replacement.drawables[0].at.y,.45,'Updating a group reuses its space');
+const withInk=layoutWriting(writing('ink-test','a = ?',.45),[],[{points:[{x:0,y:.35},{x:1,y:.55}]}]);
+assert.ok(writingBounds(withInk.drawables[0]).top > .55,'Student ink reserves space');
+assert.equal(layoutWriting(writing('full','a = ?',.45),[],[{points:[{x:0,y:0},{x:1,y:1}]}]),null,'A full board preserves existing work');
+console.log('PASS: screenshot writing sequence wraps, avoids overlap, preserves size, updates IDs, and respects student ink.');

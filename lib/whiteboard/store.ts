@@ -1,3 +1,4 @@
+import { layoutWriting } from "./writing";
 import { validateAnimation } from "./animation";
 import type { AnimationSpec, DrawCommand } from "@/lib/types";
 import type { StudentInk } from "./colors";
@@ -90,7 +91,9 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       continue;
     }
     const existing = next.groups.findIndex((group) => group.id === op.group.id);
-    const group: BoardGroup = { ...op.group, appear: "pending" };
+    const laidOut = layoutWriting(op.group, next.groups, next.student);
+    if (!laidOut) { console.warn("Whiteboard writing has no free space; keep existing content."); continue; }
+    const group: BoardGroup = { ...laidOut, appear: "pending" };
     if (existing >= 0) {
       const groups = next.groups.slice();
       groups[existing] = group;

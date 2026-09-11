@@ -30,7 +30,7 @@ export async function POST(req: Request) {
         // Conversational v3 rejects previous_text, including on a valid second sentence.
         previous_text: ELEVENLABS_TTS_MODEL === "eleven_v3_conversational"
           ? undefined : normalizeSpokenText(body.previousText ?? "") || undefined,
-        voice_settings: ELEVENLABS_TTS_MODEL === "eleven_v3_conversational" ? { stability: 0.5 } : {
+        voice_settings: ELEVENLABS_TTS_MODEL === "eleven_v3_conversational" ? { stability: 1 } : {
           stability: 0.42,
           similarity_boost: 0.75,
           style: 0.12,

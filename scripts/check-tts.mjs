@@ -15,6 +15,7 @@ try {
   assert.equal(response.status,200);
   assert.equal('previous_text' in payload,false,'v3 rejects previous_text; omit it even on later sentences');
   assert.equal(payload.model_id,'eleven_v3_conversational');
+  assert.equal(payload.voice_settings.stability,1,'Use robust delivery for a steadier tutor voice');
   config.ELEVENLABS_TTS_MODEL='eleven_flash_v2_5';
   response=await module.exports.POST(request());
   assert.equal(response.status,200);
