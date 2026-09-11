@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
+import { AnimLayer } from "./AnimLayer";
+import { projectileFixture } from "@/components/scenes/projectile";
+import { boardStyle } from "@/lib/whiteboard/style";
 import type { StudentInk } from "@/lib/whiteboard/colors";
 import { STUDENT_HEX } from "@/lib/whiteboard/colors";
-import { getLiveBoard, setLiveBoard } from "@/lib/whiteboard/live-board";
+import { getLiveBoard, setLiveBoard, setBoardSnapshotProvider } from "@/lib/whiteboard/live-board";
 import { snapshotBoard } from "@/lib/whiteboard/snapshot";
 import {
+  advanceAnimation, loadAnimation, pauseAnimation, playAnimation, seekAnimation, focusAnimation,
   addStudentStroke,
   applyDrawCommands,
   eraseStudentStrokes,
@@ -40,6 +44,13 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
     if (process.env.NODE_ENV === "production") return;
     const w = window as Window & {
       __bohBoard?: {
+        playFixture: (speed?: number, angle?: number) => boolean;
+        loadAnimation: typeof loadAnimation;
+        pause: typeof pauseAnimation;
+        play: typeof playAnimation;
+        seek: typeof seekAnimation;
+        focus: typeof focusAnimation;
+        getState: typeof getBoardState;
         openBoard: typeof openBoard;
         applyDrawCommands: typeof applyDrawCommands;
         resetBoard: typeof resetBoard;
@@ -47,7 +58,12 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
         getLiveBoard: typeof getLiveBoard;
       };
     };
-    w.__bohBoard = { openBoard, applyDrawCommands, resetBoard, addStudentStroke, getLiveBoard };
+    w.__bohBoard = { playFixture: (speed, angle) => loadAnimation(projectileFixture(speed, angle)), loadAnimation, pause: pauseAnimation, play: playAnimation, seek: seekAnimation, focus: focusAnimation, getState: getBoardState, openBoard, applyDrawCommands, resetBoard, addStudentStroke, getLiveBoard };
+    if (new URLSearchParams(window.location.search).get('boardFixture') === 'projectile') {
+      loadAnimation(projectileFixture());
+      pauseAnimation();
+      seekAnimation(2.1);
+    }
     return () => {
       delete w.__bohBoard;
     };
@@ -65,43 +81,50 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
   }, [pendingKey, reduceMotion]);
 
   useEffect(() => {
-    if (!active) {
-      setLiveBoard(null);
-      return;
-    }
-    const current = getBoardState();
-    if (!current.open) {
-      setLiveBoard(null);
-      return;
-    }
-    const hasMarks = current.groups.length > 0 || current.student.length > 0;
-    if (!hasMarks) {
-      setLiveBoard({ imageUrl: "", studentShapesSince: "", open: true });
-      return;
-    }
-    const paper = paperRef.current;
-    if (!paper) return;
-    const rect = paper.getBoundingClientRect();
-    if (rect.width < 8 || rect.height < 8) return;
-    const snap = snapshotBoard(current.groups, current.student, rect.width, rect.height);
-    if (!snap) return;
-    setLiveBoard({
-      imageUrl: snap.imageUrl,
-      studentShapesSince: current.studentSince,
-      open: true,
+    setBoardSnapshotProvider(() => {
+      const current = getBoardState();
+      if (!active || !current.open) return null;
+      const surface = paperRef.current?.querySelector('.board-surface');
+      const rect = surface?.getBoundingClientRect();
+      if (!rect || rect.width < 8 || rect.height < 8) return null;
+      const snap = snapshotBoard(
+        current.groups.filter(g => g.appear === 'done'), current.student,
+        rect.width, rect.height,
+        current.animation ? { spec: current.animation, time: current.time, focus: current.focus } : undefined,
+      );
+      return snap ? { ...snap, studentShapesSince: current.studentSince, open: true } : null;
     });
-  }, [active, board.open, board.groups, board.student, board.studentSince, board.seq]);
+    return () => { setBoardSnapshotProvider(null); setLiveBoard(null); };
+  }, [active]);
 
   useEffect(() => {
-    return () => setLiveBoard(null);
-  }, []);
+    if (reduceMotion) pauseAnimation();
+  }, [board.animation, reduceMotion]);
+
+  useEffect(() => {
+    if (!active) { pauseAnimation(); return; }
+    if (!board.playing) return;
+    let frame = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      advanceAnimation(Math.min((now - last) / 1000, 0.1));
+      last = now;
+      if (getBoardState().playing) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [active, board.playing]);
 
   const enteringId = reduceMotion
     ? null
     : board.groups.find((group) => group.appear === "pending")?.id ?? null;
 
   return (
-    <section
+    <motion.section
+      layout
+      initial={false}
+      animate={{ height: board.open ? "auto" : 0, opacity: board.open ? 1 : 0 }}
+      transition={reduceMotion ? { duration: 0 } : boardStyle.motion.spring}
       className={["board-root", board.open ? "is-open" : ""].filter(Boolean).join(" ")}
       aria-hidden={!board.open}
       aria-label="Whiteboard"
@@ -114,6 +137,7 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
           className={["board-surface", tool === "eraser" ? "is-eraser" : ""].join(" ")}
           onPointerDown={(event) => {
             if (!board.open || event.button !== 0) return;
+            pauseAnimation();
             event.preventDefault();
             const origin = event.currentTarget.getBoundingClientRect();
             const pointerId = event.pointerId;
@@ -183,7 +207,7 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
                           x={mark.at.x}
                           y={mark.at.y}
                           fill={mark.color}
-                          fontSize={mark.size === "m" ? 0.058 : 0.044}
+                          fontSize={boardStyle.label[mark.size]}
                           textAnchor="middle"
                         >
                           {mark.text}
@@ -209,6 +233,7 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
                 </g>
               );
             })}
+            {board.animation && <AnimLayer spec={board.animation} time={board.time} focus={board.focus} />}
             {board.student.map((stroke) => (
               <polyline
                 key={stroke.id}
@@ -230,8 +255,13 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
             ) : null}
           </svg>
         </div>
+        {board.animation && <div className="board-transport">
+          <button type="button" aria-label={board.playing ? "Pause animation" : "Play animation"} onClick={board.playing ? pauseAnimation : playAnimation}>{board.playing ? 'Ⅱ' : '▶'}</button>
+          <input aria-label="Animation time" type="range" min={0} max={board.animation.duration} step={0.01} value={board.time} onChange={event => { pauseAnimation(); seekAnimation(Number(event.target.value)); }} />
+          <span>{board.time.toFixed(1)}s</span>
+        </div>}
       </div>
-    </section>
+    </motion.section>
   );
 }
 

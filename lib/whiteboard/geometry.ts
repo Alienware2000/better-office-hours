@@ -1,4 +1,5 @@
 import type { Color, DrawCommand, Pt } from "@/lib/types";
+import { boardLabel } from "./style";
 import { TUTOR_HEX } from "./colors";
 
 export type Drawable =
@@ -41,16 +42,16 @@ export function interpretCommand(
 ): BoardOp | null {
   if (command.op === "clear") return { kind: "clear" };
   if (command.op === "remove") {
-    const id = command.id?.trim();
+    const id = typeof command.id === "string" ? command.id.trim() : "";
     return id ? { kind: "remove", id } : null;
   }
   if (command.op === "highlight") {
-    const id = command.id?.trim();
+    const id = typeof command.id === "string" ? command.id.trim() : "";
     return id ? { kind: "highlight", id } : null;
   }
 
   const id = (typeof command.id === "string" && command.id.trim()) || `draw-${seq}`;
-  const color = TUTOR_HEX[colorOf(command)] ?? TUTOR_HEX.ink;
+  const color = TUTOR_HEX[command.op === "axes" ? "muted" : colorOf(command)] ?? TUTOR_HEX.ink;
 
   if (command.op === "axes") {
     const origin = pt(command.origin) ?? { x: 0.2, y: 0.78 };
@@ -111,7 +112,7 @@ export function interpretCommand(
   }
 
   if (command.op === "curve") {
-    const points = (command.points ?? []).map(pt).filter((p): p is Pt => Boolean(p));
+    const points = (Array.isArray(command.points) ? command.points : []).slice(0, 256).map(pt).filter((p): p is Pt => Boolean(p));
     if (points.length < 2) return null;
     const drawables: Drawable[] = [
       { kind: "path", key: `${id}-p`, d: curvePath(points), color },
@@ -188,7 +189,7 @@ function radius(value: number | undefined) {
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return 0.08;
   if (n > 1) return clamp(n / 100, 0.03, 0.45);
-  return clamp(n, 0.03, 0.45);
+  return clamp(n, 0.006, 0.45);
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -196,7 +197,7 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function label(text: string, maxWords = 6) {
-  return text.trim().split(/\s+/).slice(0, maxWords).join(" ");
+  return boardLabel(text).split(/\s+/).slice(0, maxWords).join(" ");
 }
 
 function arrowDrawables(id: string, from: Pt, to: Pt, color: string): Drawable[] {

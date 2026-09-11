@@ -59,6 +59,7 @@ export function PdfViewer({
   const [pages, setPages] = useState<PageView[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [strokes, setStrokes] = useState<InkStroke[]>([]);
+  const publishedStrokesRef = useRef(strokes);
   const [tool, setTool] = useState<InkTool>("hand");
   const [color, setColor] = useState<InkColor>("ink");
   const [current, setCurrent] = useState(0);
@@ -360,8 +361,11 @@ export function PdfViewer({
 
     const page = pages[current];
     if (!page) return;
+    const marksChanged = publishedStrokesRef.current !== strokes;
+    publishedStrokesRef.current = strokes;
     const pageStrokes = strokes.filter((stroke) => stroke.page === current);
     let cancelled = false;
+    let markTimer: ReturnType<typeof setTimeout> | undefined;
 
     const publish = async () => {
       const imageUrl = pageStrokes.length
@@ -378,11 +382,15 @@ export function PdfViewer({
         questionRegions: page.questionRegions,
         studentMarks: pageStrokes.length,
       });
+      if (marksChanged) markTimer = setTimeout(() => {
+        if (!cancelled && activeRef.current) window.dispatchEvent(new Event('boh:student-mark'));
+      }, 850);
     };
 
     void publish();
     return () => {
       cancelled = true;
+      clearTimeout(markTimer);
     };
   }, [active, current, strokes, pages, psetId, title]);
 

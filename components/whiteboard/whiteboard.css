@@ -243,3 +243,15 @@
     opacity: 1;
   }
 }
+
+/* Motion owns entry; a stable paper surface keeps diagram proportions calm. */
+.board-root { flex: 0 0 auto; transition: none; }
+.board-root.is-open { flex: 0 0 auto; min-height: 0; }
+.board-root.is-open .board-paper { height: clamp(19rem, 40vh, 26rem); min-height: 0; }
+.board-surface { inset: 2.8rem 0 2.2rem; height: calc(100% - 5rem); width: auto; aspect-ratio: 1; margin-inline: auto; }
+.board-label { paint-order: stroke; stroke: #fffcf6; stroke-width: 0.009; stroke-linejoin: round; }
+.board-transport { position: absolute; bottom: 0.45rem; left: 1rem; right: 1rem; display: flex; align-items: center; gap: 0.7rem; color: #938b7d; font-size: 11px; font-variant-numeric: tabular-nums; }
+.board-transport button { border: 0; background: transparent; color: #292621; cursor: pointer; width: 1.6rem; height: 1.6rem; }
+.board-transport input { flex: 1; min-width: 0; accent-color: #b95832; height: 3px; cursor: ew-resize; }
+.board-transport :focus-visible { outline: 2px solid #b95832; outline-offset: 4px; }
+@media (max-width: 640px) { .board-root { display: flex; } }

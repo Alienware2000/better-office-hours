@@ -208,5 +208,10 @@ export function parseDrawCommand(body: string): DrawCommand | null {
   const trimmed = body.trim();
   const json = readJson(trimmed, trimmed.indexOf("{"));
   if (json && isDrawCommand(json)) return json;
+  // Tolerate the model wrapping the shape kind in a generic draw operation.
+  if (json && typeof json === 'object' && 'op' in json && json.op === 'draw' && 'kind' in json) {
+    const normalized = { ...json, op: json.kind };
+    if (isDrawCommand(normalized)) return normalized;
+  }
   return fromShorthand(trimmed);
 }

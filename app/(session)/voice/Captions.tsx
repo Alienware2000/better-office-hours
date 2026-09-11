@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import type { Turn } from "@/lib/types";
 import { isJunkSpeech } from "./speech";
 
@@ -9,6 +10,7 @@ import { isJunkSpeech } from "./speech";
 const LIVE_TURNS = 4;
 
 export function Captions({ turns }: { turns: Turn[] }) {
+  const reduced = useReducedMotion();
   const endRef = useRef<HTMLDivElement>(null);
   const spoken = turns
     .filter((turn) => turn.text.trim() && !isJunkSpeech(turn.text))
@@ -21,7 +23,7 @@ export function Captions({ turns }: { turns: Turn[] }) {
   if (!spoken.length) return null;
 
   return (
-    <div className="captions" aria-live="polite">
+    <motion.div layout transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 180, damping: 28 }} className="captions" aria-live="polite">
       <div className="captions-scroll">
         {spoken.map((turn, index) => (
           <p
@@ -33,6 +35,6 @@ export function Captions({ turns }: { turns: Turn[] }) {
         ))}
         <div ref={endRef} />
       </div>
-    </div>
+    </motion.div>
   );
 }

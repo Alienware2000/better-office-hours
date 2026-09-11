@@ -1,4 +1,5 @@
-import type { DrawCommand } from "@/lib/types";
+import { validateAnimation } from "./animation";
+import type { AnimationSpec, DrawCommand } from "@/lib/types";
 import type { StudentInk } from "./colors";
 import { interpretCommand, type ShapeGroup } from "./geometry";
 
@@ -20,6 +21,10 @@ export type BoardState = {
   studentSince: string;
   pulseId: string | null;
   seq: number;
+  animation: AnimationSpec | null;
+  time: number;
+  playing: boolean;
+  focus: string | null;
 };
 
 const empty = (): BoardState => ({
@@ -29,6 +34,7 @@ const empty = (): BoardState => ({
   studentSince: "",
   pulseId: null,
   seq: 0,
+  animation: null, time: 0, playing: false, focus: null,
 });
 
 let state: BoardState = empty();
@@ -68,7 +74,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
     if (!op) continue;
     next = { ...next, seq: next.seq + 1 };
     if (op.kind === "clear") {
-      next = { ...next, groups: [], pulseId: null, student: [], studentSince: "" };
+      next = { ...next, groups: [], animation: null, playing: false, time: 0, focus: null, pulseId: null, student: [], studentSince: "" };
       continue;
     }
     if (op.kind === "remove") {
@@ -136,5 +142,39 @@ export function eraseStudentStrokes(ids: string[]) {
     student,
     studentSince: student.length ? state.studentSince : "",
   };
+  emit();
+}
+
+export function loadAnimation(input: unknown) {
+  const animation = validateAnimation(input);
+  if (!animation) return false;
+  state = { ...state, open: true, animation, time: 0, playing: true, focus: null };
+  emit();
+  return true;
+}
+export function pauseAnimation() {
+  if (!state.playing) return;
+  state = { ...state, playing: false };
+  emit();
+}
+export function playAnimation() {
+  if (!state.animation) return;
+  state = { ...state, playing: true, time: state.time >= state.animation.duration ? 0 : state.time };
+  emit();
+}
+export function seekAnimation(time: number) {
+  if (!state.animation || !Number.isFinite(time)) return;
+  state = { ...state, time: Math.max(0, Math.min(state.animation.duration, time)) };
+  emit();
+}
+export function advanceAnimation(seconds: number) {
+  if (!state.playing || !state.animation) return;
+  const time = Math.min(state.animation.duration, state.time + seconds);
+  state = { ...state, time, playing: time < state.animation.duration };
+  emit();
+}
+export function focusAnimation(id: string) {
+  if (!state.animation?.shapes.some(s => s.id === id)) return;
+  state = { ...state, focus: id };
   emit();
 }

@@ -1,4 +1,6 @@
-import type { BoardSnapshot } from "@/lib/types";
+import { animationFrame } from "./animation";
+import { boardStyle } from "./style";
+import type { AnimationSpec, BoardSnapshot } from "@/lib/types";
 import { BOARD_CREAM, STUDENT_HEX } from "./colors";
 import type { BoardStroke } from "./store";
 import type { ShapeGroup } from "./geometry";
@@ -10,6 +12,7 @@ export function snapshotBoard(
   student: BoardStroke[],
   cssWidth: number,
   cssHeight: number,
+  animation?: { spec: AnimationSpec; time: number; focus: string | null },
 ): BoardSnapshot | null {
   const width = Math.max(120, Math.round(cssWidth));
   const height = Math.max(80, Math.round(cssHeight));
@@ -30,27 +33,47 @@ export function snapshotBoard(
   ctx.save();
   ctx.scale(w, h);
   ctx.lineWidth = 2.3 / w;
-  for (const group of groups) {
-    for (const mark of group.drawables) {
-      if (mark.kind === "text") {
-        ctx.save();
-        ctx.scale(1 / w, 1 / h);
-        ctx.fillStyle = mark.color;
-        ctx.font = `${mark.size === "m" ? 16 : 12}px "Source Sans 3", system-ui, sans-serif`;
-        ctx.fillText(mark.text, mark.at.x * w + 2, mark.at.y * h);
-        ctx.restore();
-        continue;
-      }
-      const path = new Path2D(mark.d);
-      ctx.strokeStyle = mark.color;
-      ctx.globalAlpha = 0.94;
-      if (mark.kind === "path" && mark.dashed) {
-        ctx.setLineDash([8 / w, 6 / w]);
-      } else {
-        ctx.setLineDash([]);
-      }
-      ctx.stroke(path);
+  const animated = animation
+    ? animationFrame(animation.spec, animation.time)
+    : null;
+  const layers = [{ groups, camera: null }, ...(animated ? [animated] : [])];
+  for (const layer of layers) {
+    ctx.save();
+    if (layer.camera) {
+      ctx.translate(0.5, 0.5);
+      ctx.scale(layer.camera.zoom, layer.camera.zoom);
+      ctx.translate(-layer.camera.x, -layer.camera.y);
     }
+    for (const group of layer.groups) {
+      const opacity =
+        ("opacity" in group ? Number(group.opacity) : 1) *
+        (layer.camera && animation?.focus && animation.focus !== group.id
+          ? 0.4
+          : 1);
+      ctx.globalAlpha = opacity;
+      for (const mark of group.drawables) {
+        if (mark.kind === "text") {
+          ctx.save();
+          ctx.scale(1 / w, 1 / h);
+          ctx.fillStyle = mark.color;
+          ctx.font = `${boardStyle.label[mark.size] * h}px "Source Sans 3", system-ui, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.fillText(mark.text, mark.at.x * w, mark.at.y * h);
+          ctx.restore();
+          continue;
+        }
+        const path = new Path2D(mark.d);
+        ctx.strokeStyle = mark.color;
+        ctx.globalAlpha = opacity;
+        if (mark.kind === "path" && mark.dashed) {
+          ctx.setLineDash([8 / w, 6 / w]);
+        } else {
+          ctx.setLineDash([]);
+        }
+        ctx.stroke(path);
+      }
+    }
+    ctx.restore();
   }
   ctx.restore();
 
@@ -62,7 +85,9 @@ export function snapshotBoard(
     ctx.strokeStyle = STUDENT_HEX[stroke.color];
     ctx.globalAlpha = stroke.tool === "highlighter" ? 0.42 : 0.92;
     ctx.lineWidth =
-      stroke.tool === "highlighter" ? Math.max(10, w * 0.045) : Math.max(2, w * 0.007);
+      stroke.tool === "highlighter"
+        ? Math.max(10, w * 0.045)
+        : Math.max(2, w * 0.007);
     ctx.moveTo(stroke.points[0].x * w, stroke.points[0].y * h);
     for (let i = 1; i < stroke.points.length; i++) {
       ctx.lineTo(stroke.points[i].x * w, stroke.points[i].y * h);

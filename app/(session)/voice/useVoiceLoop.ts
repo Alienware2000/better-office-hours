@@ -7,7 +7,7 @@ import { parseAgentTurn, takeSpeechChunks, type ChatMessage } from "@/lib/agent/
 import { getLivePage } from "@/lib/pdf/live-page";
 import { getLiveBoard } from "@/lib/whiteboard/live-board";
 import { isDrawCommand } from "@/lib/whiteboard/geometry";
-import { applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
+import { getBoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
 import { CHIPS, pickGreeting, type OrbState } from "./constants";
 import { isJunkSpeech, isPutAwayPsetPhrase, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
@@ -85,6 +85,8 @@ export function useVoiceLoop() {
   const playbackStartedAtRef = useRef(0);
   const playbackEndedAtRef = useRef(0);
   const boardAppliedRef = useRef(0);
+  const animAppliedRef = useRef("");
+  const animControlRef = useRef("");
   const playingRef = useRef(false);
   const recordingRef = useRef(false);
   const stateRef = useRef<OrbState>("idle");
@@ -154,6 +156,7 @@ export function useVoiceLoop() {
   }, []);
 
   const stopPlayback = useCallback(() => {
+    pauseAnimation();
     playbackEpochRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = new AbortController();
@@ -249,13 +252,33 @@ export function useVoiceLoop() {
     if (turn.pointer) setPointer(turn.pointer);
     if (turn.highlight) setHighlight(turn.highlight);
     if (turn.board?.open) openBoard();
+    const animation = turn.board?.animation;
+    if (animation && 'shapes' in animation) {
+      const key = JSON.stringify(animation);
+      if (key !== animAppliedRef.current) {
+        animAppliedRef.current = key;
+        if (loadAnimation(animation)) {
+          pauseAnimation();
+          const epoch = playbackEpochRef.current;
+          void enqueueSpeechTask(async () => {
+            if (epoch === playbackEpochRef.current && getBoardState().animation?.id === animation.id && getBoardState().time === 0 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) playAnimation();
+          });
+        }
+      }
+    }
+    const control = turn.board?.animControl;
+    if (control && JSON.stringify(control) !== animControlRef.current) {
+      animControlRef.current = JSON.stringify(control);
+      if (control.resume) playAnimation();
+      if (control.focus) focusAnimation(control.focus.replace(/^"|"$/g, ''));
+    }
     const commands = turn.board?.commands;
     if (commands && commands.length > boardAppliedRef.current) {
       const fresh = commands.slice(boardAppliedRef.current).filter(isDrawCommand);
       boardAppliedRef.current = commands.length;
       if (fresh.length) applyDrawCommands(fresh);
     }
-  }, [adoptKind, setLayout]);
+  }, [adoptKind, setLayout, enqueueSpeechTask]);
 
   // Leaving the desk parks that work. The tutor is back in the lobby and
   // cannot see the pset until the student sits down again.
@@ -333,6 +356,8 @@ export function useVoiceLoop() {
       // Each model pass has its own tag stream. Reset so a deep turn after
       // [THINK] does not skip DRAW commands that share indices with the lead-in.
       boardAppliedRef.current = 0;
+      animAppliedRef.current = "";
+      animControlRef.current = "";
       const response = await fetch("/api/agent/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -375,6 +400,13 @@ export function useVoiceLoop() {
       addTurn("tutor", "");
       const full = await readSseText(response, (raw) => {
         const partial = parseAgentTurn(raw);
+        // Queue the words before ANIM first, so its reveal waits for narration.
+        const animAt = raw.indexOf('[ANIM ');
+        if (partial.board?.animation && animAt >= 0 && JSON.stringify(partial.board.animation) !== animAppliedRef.current) {
+          const before = parseAgentTurn(raw.slice(0, animAt)).speech;
+          const pending = before.slice(emitted).trim();
+          if (pending) { enqueueSpeech(pending); emitted = before.length; }
+        }
         applyTurn(partial);
         reviseLastTutorTurn(partial.speech);
         // A lead-in turn is not worth speaking in pieces, and speaking it
@@ -496,6 +528,36 @@ export function useVoiceLoop() {
     },
     [runTurn, setOrb],
   );
+
+  // Coalesce marks while the tutor is speaking. Never interrupt speech to react
+  // to ink, and discard the event if that page is put away or voice is paused.
+  useEffect(() => {
+    let pendingPage: ReturnType<typeof getLivePage> = null;
+    let pendingEpoch = playbackEpochRef.current;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const flush = () => {
+      if (!pendingPage || pausedRef.current || getLivePage() !== pendingPage || playbackEpochRef.current !== pendingEpoch) {
+        pendingPage = null;
+        return;
+      }
+      if (recordingRef.current || playingRef.current || turnAbortRef.current || stateRef.current === 'thinking') {
+        timer = setTimeout(flush, 250);
+        return;
+      }
+      pendingPage = null;
+      void runTurn({ event: { kind: 'student_mark' } }).catch(err => {
+        if ((err as Error).name !== 'AbortError') setError('Could not respond to the page mark.');
+      });
+    };
+    const onMark = () => {
+      clearTimeout(timer);
+      pendingPage = getLivePage();
+      pendingEpoch = playbackEpochRef.current;
+      flush();
+    };
+    window.addEventListener('boh:student-mark', onMark);
+    return () => { clearTimeout(timer); window.removeEventListener('boh:student-mark', onMark); };
+  }, [runTurn]);
 
   // Something happened on screen that the tutor should react to on its own.
   const sendEvent = useCallback(
@@ -666,6 +728,7 @@ export function useVoiceLoop() {
       recorder.ondataavailable = (event) => {
         if (event.data.size) chunks.push(event.data);
       };
+      pauseAnimation();
       recorder.start();
       recordingRef.current = true;
       startedAt = performance.now();

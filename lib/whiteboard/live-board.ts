@@ -5,13 +5,18 @@ export type LiveBoard = BoardSnapshot & {
 };
 
 let live: LiveBoard | null = null;
+let snapshotProvider: (() => LiveBoard | null) | null = null;
+
+export function setBoardSnapshotProvider(provider: (() => LiveBoard | null) | null) {
+  snapshotProvider = provider;
+}
 
 export function setLiveBoard(next: LiveBoard | null) {
   live = next;
 }
 
 export function getLiveBoard(): LiveBoard | null {
-  return live;
+  return snapshotProvider ? snapshotProvider() : live;
 }
 
 export function asLiveBoard(value: unknown): LiveBoard | null {
