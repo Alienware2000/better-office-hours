@@ -43,7 +43,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     useEffect: effect => effects.push(effect),
   };
   const noOp = () => {};
-  const board = new Proxy({}, { get: (_, key) => key === 'getBoardState' ? () => ({ playing: false }) : key === 'applyDrawCommands' ? commands => marks.push(...commands) : noOp });
+  const board = new Proxy({}, { get: (_, key) => key === 'getBoardState' ? () => ({ playing: false, groups: [] }) : key === 'applyDrawCommands' ? commands => marks.push(...commands) : noOp });
   const imports = {
     react,
     './speech-detector': {

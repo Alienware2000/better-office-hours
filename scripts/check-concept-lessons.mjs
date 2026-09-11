@@ -77,9 +77,14 @@ assert.equal(turn.speech, [lesson.introduction, ...lesson.beats.map(b => b.speec
 assert.ok(!needsBoardRepair(turn));
 const hint = parseAgentTurn(conceptResponse(JSON.stringify({ ...lesson, move: 'hint' })));
 assert.ok(hint.board.commands.some(c => c.id === 'relation'), 'A justified hint keeps LaTeX');
-const definition = parseAgentTurn(conceptResponse(JSON.stringify({ ...lesson, visual: 'none', introduction: 'One sentence.', beats: [{ ...lesson.beats[0], speech: 'One sentence.' }], question: '' })));
+const definition = parseAgentTurn(conceptResponse(JSON.stringify({ ...lesson, move: 'consolidate', visual: 'none', introduction: 'One sentence.', beats: [{ ...lesson.beats[0], speech: 'One sentence.' }], question: '' })));
 assert.equal(definition.speech, 'One sentence.', 'Exact duplicate introductions are not read again');
 assert.equal(definition.board, undefined, 'A nonvisual turn does not inherit incidental geometry');
+for (const move of ['orient', 'explain']) {
+  const missing = parseAgentTurn(conceptResponse(JSON.stringify({ ...lesson, move, visual: 'none', beats: [] })));
+  assert.equal(missing.teaching.visual, 'diagram');
+  assert.ok(needsBoardRepair(missing), 'A declared explanation cannot silently opt out of the board');
+}
 const handoffRaw = JSON.stringify({ ...lesson, handoff: true });
 const handoff = parseAgentTurn(conceptResponse(handoffRaw));
 assert.ok(handoff.think);
@@ -107,14 +112,31 @@ setBoardSnapshotProvider(() => renderedContext);
 assert.equal(boardContextForTurn(boardStore.getBoardState()), renderedContext, 'Mounted previews retain priority');
 setBoardSnapshotProvider(null);
 const { usesConceptLesson, usesConceptRouter, streamGrok, GROK_MODEL, GROK_DEEP_MODEL } = load('lib/agent/grok.ts');
-const { conceptRoute } = load('lib/agent/concept-routing.ts');
-for (const kind of ['lesson', 'check_work']) {
+const { conceptRoute, conceptRoutingMessages } = load('lib/agent/concept-routing.ts');
+for (const kind of ['orient', 'lesson', 'check_work']) {
   assert.ok(parseAgentTurn(conceptRoute(JSON.stringify({ kind, speech: 'Let us look at that.' }))).think);
 }
-for (const kind of ['conversation', 'definition']) {
+for (const kind of ['clarify_topic', 'logistics', 'definition']) {
   assert.ok(!parseAgentTurn(conceptRoute(JSON.stringify({ kind, speech: 'A short response.' }))).think);
 }
-for (const input of ['', 'null', '{}', '{"kind":"other","speech":"Hello"}']) assert.throws(() => conceptRoute(input));
+for (const input of ['', 'null', '{}', '{"kind":"other","speech":"Hello"}', '{"kind":"conversation","speech":"What is the first step?"}']) assert.throws(() => conceptRoute(input));
+for (const speech of ['What do you picture happening?', 'Let us look at that. What do you picture?', 'Let us look carefully at everything about this problem together before working on it.']) {
+  const routed = parseAgentTurn(conceptRoute(JSON.stringify({ kind: 'orient', speech })));
+  assert.equal(routed.think, true, 'A bad acknowledgement cannot discard a teaching handoff');
+  assert.ok(!routed.speech.includes('?'), 'The acknowledgement cannot quiz before the picture');
+  assert.ok(routed.speech.split(/\s+/).length <= 12, 'Keep the handoff brief');
+}
+const unchecked = parseAgentTurn(conceptRoute(JSON.stringify({ kind: 'check_work', speech: "Yes that's valid. Why did you pick that height?" })));
+assert.equal(unchecked.think, true);
+assert.ok(!unchecked.speech.includes('valid') && !unchecked.speech.includes('?'), 'A routing response cannot validate work or question the learner before checking');
+assert.ok(parseAgentTurn(conceptRoute('{"kind":"orient","speech":""}')).think, 'Handoffs need no generated speech');
+assert.throws(() => conceptRoute('{"kind":"definition","speech":""}'), 'Direct replies still require speech');
+const routingHistory = [{ role: 'system', content: 'Old tool and teaching instructions.' }, { role: 'assistant', content: 'Which part?' }, { role: 'user', content: 'Part a, but I cannot picture it.' }];
+const routedMessages = conceptRoutingMessages(routingHistory, { board: { tutorItems: [{ text: 'Tutor-created setup' }], studentStrokeCount: 0 } });
+assert.equal(routedMessages.filter(m => m.role === 'system').length, 1, 'Routing has one focused instruction, not conflicting teaching/tool rules');
+assert.equal(routedMessages.at(-1).content, routingHistory.at(-1).content, 'Actual student request remains last');
+assert.ok(routedMessages[1].content.includes('NOT a student attempt'), 'Board provenance survives the compact routing context');
+assert.ok(!routedMessages.some(m => m.content.includes('Old tool and teaching instructions.')));
 setLivePage(null); setLiveBoard(null);
 assert.equal(usesConceptRouter(), false, 'The lobby stays fast conversation');
 setLiveBoard(firstContext);
@@ -141,6 +163,8 @@ result = '';
 for await (const text of streamGrok(history)) result += text;
 assert.ok(parseAgentTurn(result).think);
 assert.equal(requests.at(-1).request.model, GROK_MODEL, 'First acknowledgement stays fast');
+assert.equal(requests.at(-1).request.messages.filter(m => m.role === 'system').length, 1);
+assert.ok(requests.at(-1).request.messages[0].content.length < 4000, 'The router does not load the full drawing/animation prompt');
 setLiveBoard(null);
 chunks = ['A checked response.'];
 for await (const text of streamGrok(history, null, true)) assert.equal(text, chunks[0]);

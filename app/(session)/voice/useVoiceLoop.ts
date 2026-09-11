@@ -524,7 +524,8 @@ export function useVoiceLoop() {
         });
       }
       let visualRepair: Promise<void> = Promise.resolve();
-      if (needsBoardRepair(turn, getBoardState().animation)) {
+      const currentBoard = getBoardState();
+      if (needsBoardRepair(turn, currentBoard.animation, currentBoard.groups.filter(group => !group.unresolved).map(group => group.id))) {
         visualRepair = withRequestTimeout(signal, 6000, 'Board preparation timed out', async repairSignal => {
           const response = await fetch('/api/agent/llm', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: repairSignal,

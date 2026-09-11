@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 17:00 ET
+Updated: 2026-09-11 17:17 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, continuation of 179544c with merged origin/main
@@ -19,6 +19,14 @@ Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. D
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Blank-board follow-up: David's actual session replied to a selected-but-stuck homework request with verbal setup and another broad first-step question. Server traces show fast replies with no teaching metadata, no THINK handoff, and zero visual commands. A later reasoning pass was cancelled around 30s with no emitted content. The blank board in those replies was not a rendered diagram disappearing. The router had been receiving about 36k characters of competing teaching/tool instructions. It now uses a separate approximately 2.5k-character routing instruction plus concise document/board context and recent transcript, with explicit selected-but-stuck orientation and narrower topic-selection/logistics categories. Handoffs use a brief app-provided waiting cue because live probes showed the fast model could quiz or incorrectly validate work even in an acknowledgement. Teaching and diagram content remain model-generated, with the full human prompt and images on the reasoning pass.
+
+David clarified that explanations and walkthroughs should use the board by default; quick confirmations and focused questions may remain verbal when the learner has the picture. Runtime guidance and DESIGN now reflect this. Declared orient/explain moves with visual=none become missing diagrams eligible for the existing bounded recovery; elicit/consolidate can remain nonvisual. Focusing an existing current-page object counts as visual use without generating a replacement. Orientation guidance also requires leaving unknown continuations blank and checking that narration/geometry do not answer the final prediction. Human PROMPT/PEDAGOGY, frozen types, listening thresholds, paper UI, and toolbar are unchanged.
+
+Validation: focused lint, production build in an isolated copy, structured-lesson, teaching/disclosure/repair, voice lifecycle, request-deadline, and workspace checks pass. Real routing probes handed off stuck physics, recursion, statistics, and work-checking requests while keeping upload/social/standalone-definition replies direct. Replayed the generated two-beat setup through the actual paper board at compact and wider sizes, preserving its working page and a synthetic student stroke. This was a text-context reproduction of the reported conversation with recorded model output, not another real microphone/PDF/TTS session. Final setup generated its first DRAW at 16.2s and finished at 19.0s; this is generation timing, not audible playback timing. An earlier reasoning probe returned Service temporarily unavailable; subsequent calls succeeded. Earlier generated setups narrated an unknown continuation before asking about it; the final probe left that continuation blank after guidance changes. Model pedagogy and physical/layout quality remain variable, and the initial sample's object did not quite touch the ground. No claim of fully fixed reliability or lower teaching latency.
+
+Next: test a fresh live session on :3102 with David's PDF after loading the current code. Verify proactive drawings and useful annotations while keeping questions contingent on the learner; capture request traces if a response stays blank. Model planning latency, annotation richness, and physical/teaching consistency remain open. Review PR #10; leave Hussein's #6/#8/#9 open. Local probes are /tmp/boh-routing-{before,after,breadth-final,deep,visual}.json; the disposable visual-check route ran only in the isolated build copy on :3103 and its server is stopped.
 
 Microphone startup follow-up: David reported Preparing microphone, then Microphone unavailable, and subsequently confirmed it was working again. The failing in-app browser logged a running AudioContext with an ended microphone track just after the detector started. This establishes a disconnected source, not its cause; no Chrome comparison or new real-device recording was performed. The working session was left alone after his recovery report. The server remains available on http://localhost:3102.
 

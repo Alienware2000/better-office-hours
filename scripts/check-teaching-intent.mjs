@@ -31,6 +31,11 @@ const animation={id:'test',duration:1,shapes:[{kind:'text',id:'equation',text:'F
 const anim=parseAgentTurn(`[TEACH move=orient visual=animation][ANIM ${JSON.stringify(animation)}]`).board.animation;
 assert.equal(anim.shapes.length,1);assert.equal(anim.shapes[0].label,undefined);
 assert.ok(!needsBoardRepair(parseAgentTurn('[TEACH move=elicit visual=none] Which relationship?')));
+assert.ok(!needsBoardRepair(parseAgentTurn('[TEACH move=consolidate visual=none] That sign matches your chosen direction.')));
+for (const move of ['orient','explain']) assert.ok(needsBoardRepair(parseAgentTurn(`[TEACH move=${move} visual=none] Let us look at the setup.`)), 'Explanation needs a visual even when the model omits it');
+const focused = parseAgentTurn('[TEACH move=explain visual=diagram][DRAW {"op":"highlight","id":"existing-object"}] Look at this part.');
+assert.ok(!needsBoardRepair(focused, null, ['existing-object']), 'Emphasizing the current picture does not generate a replacement');
+assert.ok(needsBoardRepair(focused, null, ['other-object']), 'Unknown focus targets still need repair');
 assert.ok(!needsBoardRepair(parseAgentTurn('Can you picture this?')), 'Speech words never trigger repairs');
 assert.ok(needsBoardRepair(parseAgentTurn('[TEACH move=orient visual=diagram]'+draw(given))));
 assert.ok(!needsBoardRepair(parseAgentTurn('[TEACH move=orient visual=diagram]'+draw(geometry))));

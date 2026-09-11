@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { TEACHING_GUIDANCE, teachingTag } from "./teaching-intent";
 import { DIAGRAM_GUIDANCE } from './diagram-guidance';
 import { CONCEPT_RESPONSE_FORMAT, CONCEPT_FORMAT_GUIDANCE, conceptProgress, conceptResponse } from './concept-response';
-import { CONCEPT_ROUTING_FORMAT, CONCEPT_ROUTING_GUIDANCE, conceptRoute } from './concept-routing';
+import { CONCEPT_ROUTING_FORMAT, conceptRoutingMessages, conceptRoute, parseConceptRoute } from './concept-routing';
 import { parseAgentTurn } from "./tags";
 import {
   buildContextBlock,
@@ -186,9 +186,13 @@ export async function* streamGrok(
   const grok = client();
   const conceptTeaching = usesConceptLesson(deep, visualRepair);
   const conceptRouting = usesConceptRouter(deep, visualRepair);
-  const messages = toApiMessages(history, event, deep);
+  const live = getLivePage(), board = getLiveBoard();
+  const messages = conceptRouting ? conceptRoutingMessages(history, {
+    document: live ? { kind: live.documentKind ?? 'pset', title: live.title, page: live.page + 1, text: live.text.slice(0, 3000) } : null,
+    board: { open: board?.open ?? false, studentStrokeCount: board?.studentStrokeCount ?? null,
+      tutorItems: board?.tutorItems?.map(item => ({ id: item.id, text: item.text, status: item.status })).slice(-12) ?? [] },
+  }) : toApiMessages(history, event, deep);
   if (conceptTeaching) messages.push({ role: 'system', content: CONCEPT_FORMAT_GUIDANCE });
-  if (conceptRouting) messages.push({ role: 'system', content: CONCEPT_ROUTING_GUIDANCE });
   if (visualRepair) {
     const last = history.filter(message => message.role === 'assistant').at(-1)?.content ?? '';
     const intent = parseAgentTurn(last).teaching;
@@ -224,7 +228,13 @@ export async function* streamGrok(
       emitted = progress;
     }
   }
-  if (conceptRouting) yield conceptRoute(lesson);
+  if (conceptRouting) {
+    if (process.env.NODE_ENV !== 'production') {
+      const route = parseConceptRoute(lesson);
+      console.info('Tutor teaching route ' + JSON.stringify({ kind: route.kind, handoff: route.handoff }));
+    }
+    yield conceptRoute(lesson);
+  }
   if (conceptTeaching) {
     const complete = conceptResponse(lesson);
     if (!complete.startsWith(emitted)) throw new Error('The concept explanation changed while loading. Please try again.');
