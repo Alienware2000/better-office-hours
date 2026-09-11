@@ -2,6 +2,14 @@
 
 This is the source of truth for what we are building, why, and what we have decided. Every agent working in this repo reads this first. If something here conflicts with a chat message or an older doc, this wins.
 
+## Current implementation and sequencing
+
+The product vision below includes future features. The current approved baseline is one adaptive desk: homework opens the PDF view; concepts and other requests open the whiteboard. Every request can use PDF attachments and the same tutor orb, captions, and visual tools. The tutor leads explanations on the board; students can mark their work and collaborate on that surface. Projectile motion is only a test case, not the product's subject boundary.
+
+Implemented: the desk, custom SVG drawing/animation, PDF ink and pointer, custom STT/Grok/TTS voice loop, and live snapshots. Not yet implemented: authenticated identity, durable course/session storage, retrieval, spoken/saved recap, Canvas/Grok Bot ingestion, and verified Apple Pencil support. Descriptions of those capabilities below are targets, not claims that they exist. Hussein's first reviewable slices and integration boundaries are in LANES.md.
+
+Canvas/Grok Bot is the future course-context layer so the tutor already knows the student's classes. It comes after the current desk work and does not block manual attachments or independent context modules. Do not start automated Canvas access until David assigns it. Broader hackathon scope below is a target backlog, not authorization to run every lane ahead of review.
+
 ## 1. What we are building
 
 Better Office Hours is a voice-first tutor for Yale students. A student opens the app, the tutor already knows their course, the student uploads or opens a problem set, and the tutor walks them through it the way a great TA in office hours would: asking questions, pointing at the document, drawing on a whiteboard while it explains, and never giving the answer. It also handles the other things office hours are for: explaining a concept from scratch, going over lecture notes, and figuring out what a student does not understand. Every session ends with a spoken recap of where the student got stuck and what to review.
@@ -46,7 +54,7 @@ The empty orb screen animates into a split screen, roughly 65/35. The orb shrink
 ### The whiteboard: strokes and generated animation
 Visuals are how this feels like a great explainer rather than a chatbot with a voice. Nothing on the board is scripted for the demo. The tutor composes what it draws and animates for whatever the student is learning; projectile motion is only what we test on.
 
-1. Hand-drawn strokes. tldraw shapes that animate in one at a time as the tutor names them. The default for anything spatial.
+1. Hand-drawn strokes. SVG shapes that animate in one at a time as the tutor names them. The default for anything spatial.
 2. Generated animation, declarative. The tutor emits shapes with keyframes on a timeline (an arrow whose tip follows a path over two seconds, a label that appears at t=1, a curve that draws in, a bar that grows). The board runs it instantly. This covers most explanations in physics, math, and CS and is the primary animation path.
 3. Generated animation, programmatic. When the spec cannot express it (a simulation, a graph that responds to a slider), the tutor writes a small JS function against a tiny drawing API, run in a sandboxed iframe. Slower and riskier, used only when needed.
 4. Pre-built scenes (fallback and test fixture only). A hand-written projectile scene exists to test the pipeline and as a fallback if the generated path is flaky at the Friday checkpoint. It is not the product.
@@ -152,7 +160,7 @@ Why a bot instead of the Canvas API: no token setup, no CAS integration in our a
 - Next.js on Vercel.
 - ElevenLabs Conversational AI for voice (STT, TTS, turn-taking, barge-in) with a custom LLM endpoint pointed at Grok. If screenshot injection through the ElevenLabs agent fights us, fall back to ElevenLabs STT and TTS around our own orchestration loop.
 - Grok via api.x.ai, OpenAI-compatible, for reasoning, document vision, retrieval synthesis, and recap. `grok-4.20-0309-non-reasoning` runs the spoken turn; see the model note in section 12. $25 free credit plus event credits.
-- tldraw for the whiteboard.
+- Custom SVG for the current whiteboard; preserve its shared style and declarative runtime.
 - PDF.js for the workspace with an overlay layer for pointer, highlights, and student annotations.
 - Supabase (Postgres with pgvector) for course packs, chunks, sessions, and recaps.
 - Grok Bot for Canvas ingestion.
@@ -181,7 +189,7 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 - The pset is uploaded by the student; the Grok Bot collects everything around it.
 - Demo course is archived PHYS 180; the video shows the student flow only; README carries the honesty line.
 - Use what works for voice (ElevenLabs), keep Grok as the reasoning model so the sponsor stack is real.
-- Whiteboard is tldraw. Pointer and annotations render on a PDF we control, not on a screenshot.
+- Whiteboard currently uses custom SVG. Pointer and annotations render on a PDF we control, not on a screenshot.
 - Hint ladder never reaches bottom-out on graded work.
 - Student summarizes first at the end of every session.
 - Cut order if behind at the Friday morning checkpoint: pointer overlay first, Grok Bot second, style presets third, programmatic animation fourth (keep declarative). The voice loop, the PDF, the whiteboard strokes, generated animation, and the recap are never cut. If generated animation is flaky, the pre-built projectile scene is the fallback for the demo only.
@@ -192,7 +200,7 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 - Leave parks work. The orb is a lobby, not one long chat. Homework is one session (this PDF, this transcript, these marks). A concept is another. Leave puts the current session aside and returns to the lobby with a clean history, so the tutor cannot still see the pset. Sitting back down, the Homework chip, or saying homework again restores that session. Switching to "Explain a concept" does not keep the homework captions or the live page. This is not a ChatGPT-style chat sidebar. It is how office hours work: you step away from the desk, then you sit back down with the same paper.
 - One paper on the desk at a time. There is no GoodNotes-style notebook library for Friday. **Remove** puts the current PDF away, clears that homework session (captions, marks, what the tutor just saw), and returns the drop zone so the student can open a different problem. Saying they want a different pset does the same. Uploading the next file starts a fresh homework session.
 - Captions are live, not a chat log. Only the latest few lines stay on screen, they are not selectable like messages, and putting the paper away clears them. The full session is still in memory for the tutor until then.
-- Student ink on the PDF is a compact two-cluster bar (tools, then colors), in the spirit of GoodNotes / Notability / Canvas, kept to cream, black, rust, and gold. Pen, highlighter, and eraser. Marks are workspace-local and burned into the page image the tutor sees. The `StudentAnnotation` contract in `lib/types.ts` is unchanged. This is also the drawing feel the whiteboard should later match. The tldraw board itself is still not started.
+- Student ink on the PDF is a compact two-cluster bar (tools, then colors), in the spirit of GoodNotes / Notability / Canvas, kept to cream, black, rust, and gold. Pen, highlighter, and eraser. Marks are workspace-local and burned into the page image the tutor sees. The `StudentAnnotation` contract in `lib/types.ts` is unchanged. This is also the drawing feel the whiteboard should later match. The SVG board and declarative ANIM runtime are now implemented.
 - The PDF fits the desk at 100% on every screen. Zoom (− / percent / + in the ink bar, plus pinch or Ctrl-scroll) scales the page around the cursor or the center of the desk; the hand tool drags to pan. Click the percent to fit the page again. Pages live in that same bar. The title bar only has Leave, the filename, and Remove. Ink coordinates stay normalized to the page, so zoom does not break drawing or the laser.
 
 ## 13. Roadmap (README only)

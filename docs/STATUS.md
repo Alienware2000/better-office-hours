@@ -2,13 +2,11 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 23:31 ET
-By: Whiteboard lane
+Updated: 2026-09-10 23:40 ET
+By: Project handoff
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/whiteboard` (from `lane/workspace`)
-PR: draft #2 against `main`
-    https://github.com/Alienware2000/better-office-hours/pull/2
-    Includes workspace PR #1; coordinate merge order.
+Branch: `main`, approved integration baseline from `lane/whiteboard`
+Review: David explicitly approved merging the accumulated desk work to main. PRs #1 and #2 are included in this integration. Hussein's subsequent work requires new lane PRs and David's review.
 
 ## Now
 
@@ -16,7 +14,7 @@ One adaptive desk now handles homework, concepts, and other requests. The orb an
 
 Fixed two entry issues: concept state previously never rendered a workspace, and paused tabs claimed voice on microphone initialization, interrupting other tabs. Only an activated tab now claims voice. Starting the orb clears the old handoff message and resumes a suspended audio context. Speech intent accepts homework, home work, p set, assignments, and concept/other requests before waiting for a model tag.
 
-Whiteboard state parks separately with homework and concept sessions and restores paused. Notes do not replace the homework PDF. The existing declarative animation runtime and runtime-only visual hints remain in place. No changes to the human prompt, pedagogy, or shared types. David approved the current direction; `lane/whiteboard` is pushed and draft PR #2 is open. Hussein is the teammate responsible for the context, recap, and shell lanes. Hardware feel checks below remain before merging.
+Whiteboard state parks separately with homework and concept sessions and restores paused. Notes do not replace the homework PDF. The existing declarative animation runtime and runtime-only visual hints remain in place. No changes to the human prompt, pedagogy, or shared types. David approved this baseline for main so Hussein can branch from the working desk. Hussein owns context, recap, and shell. Read LANES.md for authorized first slices, acceptance checks, and integration boundaries. Hardware checks remain known follow-ups, not a block on those independent first PRs.
 
 ## What to do next
 
@@ -24,7 +22,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
 3. Try the board on an iPad with Apple Pencil. Pointer input is implemented, but Pencil behavior, palm rejection, and device-specific feel are not verified.
 4. Review live drawing cadence. Model DRAW output still varies: one earlier probe returned just one arrow across two turns. Do not weaken the pedagogy to force extra shapes.
-5. Canvas/Grok Bot remains a future course-context source, separate from the adaptive desk. Do not start that integration or recap without the next checkpoint.
+5. Hussein may start the context, recap, or shell first slice in LANES.md on a new lane branch from main. Open a PR for David; do not merge it or run ahead into another slice. Canvas/Grok Bot operation and live cross-lane integrations still need a separate assignment.
 
 ## Validation
 
@@ -34,7 +32,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 - Focused ESLint on whiteboard, scenes, runtime hints, events, and the animation check passes. Full repo lint still reports existing voice/workspace ref-access errors.
 - `node scripts/check-anim.mjs --unit` passes validation, interpolation, holds, Follow, pause/freeze, seek, focus, replay, clear, streaming parser, and a general bar/text/camera example.
 - Live ANIM generated a valid general motion spec through `:3100`. Live DRAW behavior varies as described above.
-- Browser fixture renders; playback ends and stops; keyboard scrubbing changes the frame. Review real speech synchronization and PDF ink with a mic before merging.
+- Browser fixture renders; playback ends and stops; keyboard scrubbing changes the frame. Review real speech synchronization and PDF ink with a mic as a hardware follow-up.
 
 ## Do not
 
@@ -46,7 +44,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 - Add chat boxes or command buttons for talking to the tutor.
 - Commit secrets. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
 
-## Done (this branch)
+## Included in main
 
 - Everything on `lane/workspace` (desk pass approved).
 - Whiteboard mount in the agent pane under captions.
@@ -60,12 +58,12 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 | Lane | Owner | Branch | State |
 |---|---|---|---|
-| voice | David | `lane/voice` | first pass on GitHub; later voice work is on workspace / whiteboard |
-| workspace | David | `lane/workspace` | PR #1 open; desk pass approved |
-| whiteboard | David | `lane/whiteboard` | **adaptive desk + animation in**; waiting on human feel check |
-| context | Hussein | not started | types ready; `lib/db/schema.sql` missing |
-| recap | Hussein | not started | |
-| shell | Hussein | not started | VoiceSession still composes the split |
+| voice | David | next voice branch from main | custom voice loop included in main |
+| workspace | David | next workspace branch from main | adaptive PDF desk included in main |
+| whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
+| context | Hussein | `lane/context` from main | first isolated slice authorized in LANES.md; schema missing |
+| recap | Hussein | `lane/recap` from main | first card/interface slice authorized in LANES.md |
+| shell | Hussein | `lane/shell` from main | first auth/shell slice authorized; preserve VoiceSession |
 
 ## Run
 

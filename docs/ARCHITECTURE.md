@@ -2,13 +2,21 @@
 
 Read DESIGN.md first. This doc defines the system shape and the contracts between lanes so that agents on two machines can build in parallel without talking.
 
+## Implementation baseline
+
+The diagram and interfaces below include target integrations. Read LANES.md for an inventory of actual files and first PR boundaries. Currently the browser owns the custom voice loop and calls the LLM route; STT and TTS are separate ElevenLabs API calls. The whiteboard is custom SVG. Auth, Supabase, ingest/retrieve endpoints, persistent session/recap endpoints, and the spoken recap flow are not implemented. Shared types describe their target data, not working services.
+
+Keep the existing adaptive desk in `app/(session)/voice/VoiceSession.tsx`. All three entry choices use the same shell; PDF and Whiteboard are views within it. Client speech intent switches the desk before waiting for model tags. Reference notes use optional `documentKind: notes` in the local LivePage adapter and do not replace the homework PDF. The working orb and captions remain in the voice lane until a coordinated integration explicitly moves them.
+
+Hussein can start the isolated context, recap, and shell slices in LANES.md from main. David reviews their PRs before merging. Root entry/layout, package files, environment names, and schema are shared touchpoints; do not overwrite another lane's integration to make an isolated slice run.
+
 ## 1. System shape
 
 ```
 Browser (Next.js app)
   ├─ Workspace pane: PDF.js + overlay (pointer, highlights, student annotations)
-  ├─ Agent pane: Orb + Transcript + Whiteboard (tldraw)
-  └─ Voice client: ElevenLabs Conversational AI SDK (mic in, audio out, barge-in)
+  ├─ Agent pane: Orb + captions + SVG whiteboard
+  └─ Voice client: Custom ElevenLabs STT/TTS loop (orb interruption)
             │
             ▼
 Next.js API routes
@@ -39,7 +47,7 @@ Each lane is a branch off `main` named `lane/<name>`. Lanes touch only their own
 | recap | Hussein | `app/api/session/*`, `lib/session/*`, `components/recap/*` |
 | shell | Hussein | `app/(auth)/*`, `app/layout.tsx`, `components/orb/*`, `components/transcript/*`, `README.md` |
 
-Shared and frozen after tonight: `lib/types.ts` (all contracts below live here), `lib/db/schema.sql`, `.env.example`.
+Shared: `lib/types.ts` (contracts below), `.env.example`, package manifests, root entry/layout, and database schema. The types are frozen pending coordination. `lib/db/schema.sql` does not exist yet; the context lane may propose its initial version in a PR as described in LANES.md.
 
 ## 3. Contracts
 
@@ -140,7 +148,7 @@ type PsetPage = {
 type BBox = { x: number; y: number; w: number; h: number }; // normalized 0..1 relative to page
 ```
 
-The overlay renders on top of the PDF canvas and accepts `PointerCommand` and `HighlightCommand` (3.4). Student annotations emit `StudentAnnotation`:
+The overlay renders over the PDF page and accepts the pointer/highlight shapes from AgentTurn (3.4). Current student freehand strokes stay in the viewer and are composited into the page JPEG. `StudentAnnotation` below remains a shared target type, not the current freehand transport; do not replace the working ink implementation to force it through this type:
 
 ```ts
 type StudentAnnotation = {
@@ -153,7 +161,7 @@ type StudentAnnotation = {
 
 ### 3.3 Whiteboard (whiteboard lane)
 
-The tutor draws through a small command set that the whiteboard lane maps onto tldraw shapes with animated stroke-in.
+The tutor draws through a small command set that the whiteboard lane maps onto SVG geometry with animated stroke-in.
 
 ```ts
 type DrawCommand =
@@ -195,15 +203,15 @@ type Keyframe<T> = { t: number; ease?: "linear" | "inOut" | "out" } & T;   // t 
 type Follow = { follow: { pathId: string; offset?: Pt } };                // ride along a path so the model need not compute every point
 ```
 
-Tier 2, programmatic (only when the spec cannot express it). The model emits a JS function body against a tiny API (`ctx.arrow`, `ctx.dot`, `ctx.path`, `ctx.text`, `ctx.slider(name, min, max)`, `ctx.onFrame(fn)`) that runs in a sandboxed iframe with no network. Timeout 50ms per frame; on error the board shows nothing and the tutor falls back to strokes.
+Tier 2, programmatic (future, not implemented; wait for an assigned checkpoint). The model emits a JS function body against a tiny API (`ctx.arrow`, `ctx.dot`, `ctx.path`, `ctx.text`, `ctx.slider(name, min, max)`, `ctx.onFrame(fn)`) that runs in a sandboxed iframe with no network. Timeout 50ms per frame; on error the board shows nothing and the tutor falls back to strokes.
 
 ```ts
 type AnimationProgram = { id: string; source: string; sliders?: { name: string; min: number; max: number; value: number }[] };
 ```
 
-Fallback fixture: `components/scenes/projectile.tsx` is a hand-written scene used to test the runtime and as a demo-only fallback. It is not referenced by the prompt.
+Fallback fixture: `components/scenes/projectile.ts` is a hand-written scene used to test the runtime and as a demo-only fallback. It is not referenced by the prompt.
 
-Playback pauses on barge-in and resumes on `[ANIM resume]`. Both tiers support `focus` highlighting of a named shape while the tutor narrates.
+Playback pauses on barge-in and resumes on `[ANIM resume]`. The declarative runtime supports `focus` highlighting of a named shape while the tutor narrates.
 
 Student drawing on the board emits:
 
@@ -249,7 +257,7 @@ Timing rule: tags are dispatched in the order they appear as the speech streams,
 
 ### 3.5 LLM endpoint contract (voice lane)
 
-`POST /api/agent/llm` is registered as the ElevenLabs agent's custom LLM. It receives the conversation so far and must respond in the OpenAI chat completions streaming format. Internally it:
+`POST /api/agent/llm` currently receives requests from the custom browser loop and returns OpenAI-style streaming events. It builds runtime context and attaches live images. Retrieval and session loading below are the target integration sequence, not implemented services:
 
 1. Loads session state (course, pset, current page, mode, hint rung per question, misconceptions seen).
 2. Retrieves top chunks for the latest student utterance (`/api/retrieve`), excluding `isSolution` chunks from anything returned to the student while allowing them in a hidden "reference" block.
@@ -319,7 +327,7 @@ Recap flow: model emits `[RECAP]`, the voice lane asks the student to summarize,
 
 ### 3.7 Intent and layout state (shell lane)
 
-The app has three layout states: `orb_only` (after sign-in), `pset`, and `concept`. The orb-only state renders the orb, the greeting, and three chips ("Homework", "Explain a concept", "Something else"). A chip tap injects its label as a student utterance. The LLM endpoint returns `[MODE pset]` or `[MODE concept]` once intent is clear; the shell animates the transition. State type:
+The app has three layout states: `orb_only` (after sign-in), `pset`, and `concept`. The orb-only state renders the orb, the greeting, and three chips ("Homework", "Explain a concept", "Something else"). A chip tap injects its label as a student utterance. Client-side `detectMode` chooses the desk immediately from student speech, including Something else; model MODE tags are a guarded fallback. Both modes have PDF and Whiteboard views in the same shell. State type:
 
 ```ts
 type LayoutState = "orb_only" | "pset" | "concept";
@@ -327,7 +335,7 @@ type LayoutState = "orb_only" | "pset" | "concept";
 
 ### 3.8 Auth and test account (shell lane)
 
-Google OAuth via NextAuth. Allowlist `@yale.edu` plus a judge account `judge@betterofficehours.app` with password login enabled only for that account, preloaded with PHYS 180 and pset 3. Credentials in the README.
+Planned: Google OAuth via NextAuth. No auth provider is installed yet. Allowlist `@yale.edu` plus a judge account `judge@betterofficehours.app` with password login enabled only for that account, preloaded with PHYS 180 and pset 3. Credentials in the README.
 
 ## 4. Environment
 
@@ -361,4 +369,4 @@ GOOGLE_CLIENT_SECRET=
 
 ## 7. Grok Bot task spec
 
-Bot name: Course Pack Collector. Task text lives in `grokbot/TASK.md`. Two phases. Phase 1: read the Canvas dashboard and each course's Assignments page, POST a `StudentProfile` to `/api/ingest/profile`. Phase 2: for each course (or the one named), collect syllabus, lectures, psets, solutions, exam reviews, name files by kind and number, POST to `/api/ingest`. Report what was collected and anything it could not access. Rehearse once with Duo before recording the README GIF.
+Bot name: Course Pack Collector. Future task text lives in `grokbot/TASK.md`; this collector is not running and requires a separate assignment from David. Two phases. Phase 1: read the Canvas dashboard and each course's Assignments page, POST a `StudentProfile` to `/api/ingest/profile`. Phase 2: for each course (or the one named), collect syllabus, lectures, psets, solutions, exam reviews, name files by kind and number, POST to `/api/ingest`. Report what was collected and anything it could not access. Rehearse once with Duo before recording the README GIF.

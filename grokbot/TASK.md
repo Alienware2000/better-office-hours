@@ -3,7 +3,9 @@
 Bot name: Course Pack Collector
 Purpose: collect everything around a course so Better Office Hours can tutor with real context.
 
-## Task text (paste into the bot)
+Status: future collector specification. The ingestion backend and authenticated ownership are not connected. Do not run this task until David assigns the Canvas integration and the ingest contract is reviewed.
+
+## Task text (paste into the bot after that checkpoint)
 
 You are collecting course materials for Better Office Hours.
 

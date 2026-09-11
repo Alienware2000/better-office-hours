@@ -4,21 +4,23 @@ You are a coding agent working on Better Office Hours, a voice-first tutor for Y
 
 ## Read in this order
 
-1. `docs/STATUS.md` — where we are, what is waiting on a human, what to do next. Read this every session, including mid-conversation if you just resumed.
-2. `docs/DESIGN.md` — what we are building and every decision made. This wins over anything else for product questions.
-3. `docs/ARCHITECTURE.md` — system shape, your lane's directories, and the contracts in `lib/types.ts`.
-4. `docs/PROMPT.md` — the tutor's system prompt. Do not rewrite it. Humans edit it.
-5. `docs/PEDAGOGY.md` — the learning-science basis. Read it if your work touches tutor behavior, the recap, the whiteboard triggers, or timing.
-6. `docs/DEMO.md` — the 90-second demo. Everything we build exists to make that take work.
-7. `docs/NOTES.md` — per-lane stubs and gotchas.
+1. `docs/STATUS.md` - where we are, what is waiting on a human, what to do next. Read this every session, including mid-conversation if you just resumed.
+2. `docs/DESIGN.md` - what we are building and every decision made. This wins over anything else for product questions.
+3. `docs/ARCHITECTURE.md` - system shape, your lane's directories, and the contracts in `lib/types.ts`.
+4. `docs/PROMPT.md` - the tutor's system prompt. Do not rewrite it. Humans edit it.
+5. `docs/PEDAGOGY.md` - the learning-science basis. Read it if your work touches tutor behavior, the recap, the whiteboard triggers, or timing.
+6. `docs/DEMO.md` - the 90-second demo. Everything we build exists to make that take work.
+7. `docs/NOTES.md` - per-lane stubs and gotchas.
+8. `docs/LANES.md` - Hussein's starting slices, ownership, integration boundaries, and PR acceptance checks.
 
-If STATUS says we are waiting on human review, do not start the next checkpoint. Summarize where we are and stop.
+If your assigned lane is waiting on human review, do not start its next checkpoint. Another lane's pending hardware review does not block an explicitly authorized first slice in docs/LANES.md.
 
 ## Rules
 
 - Work only inside your lane's directories (ARCHITECTURE.md section 2). If you need to change a shared contract, stop and say so; do not edit `lib/types.ts` silently.
 - Branch is `lane/<name>`. Commit small and often. Open a PR to `main` when your slice runs. `main` must always build and deploy.
-- Never commit secrets. Use `.env.example` names.
+- Hussein's lanes go through PRs to main. David reviews and merges them; agents must not merge their own PRs or push directly to main without David explicitly asking.
+- Never commit secrets. Use `.env.example` names. Do not add automatic tool co-author attribution.
 - Voice is the only input to the agent. Do not add chat boxes, command buttons, or menus for talking to the tutor.
 - The tutor never gives final answers on graded work. If you are writing anything that could leak solution text to the student, stop.
 - Nothing on the whiteboard is scripted for the demo. Animations are composed by the tutor per turn from a general spec. The hand-written projectile scene is a test fixture and fallback only; do not wire the prompt to it.
@@ -42,7 +44,7 @@ Pointer overlay, then Grok Bot ingestion (fall back to manual upload), then styl
 
 ## Stack
 
-Next.js (App Router, TypeScript), Tailwind, tldraw, PDF.js, ElevenLabs Conversational AI SDK, Grok via `https://api.x.ai/v1` with the OpenAI SDK, Supabase (Postgres, pgvector, storage), NextAuth with Google. Deploys to Vercel from `main`.
+Implemented: Next.js (App Router, TypeScript), Tailwind, Motion, custom SVG whiteboard, PDF.js, ElevenLabs STT/TTS through a custom voice loop, and Grok via `https://api.x.ai/v1` with the OpenAI SDK. Planned integrations: Supabase and authentication. tldraw and the ElevenLabs Conversational AI SDK are not installed; do not replace the working implementations to satisfy an older stack description. Vercel deployment configuration still needs verification.
 
 ## Checkpoints and handoff
 
