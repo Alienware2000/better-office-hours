@@ -68,6 +68,8 @@ assert.equal(isAllowedEmail("student@yale.edu"), true);
 assert.equal(isAllowedEmail("STUDENT@YALE.EDU"), true);
 assert.equal(isAllowedEmail(JUDGE_EMAIL), true);
 assert.equal(isAllowedEmail("student@yale.edu.example.com"), false);
+assert.equal(isAllowedEmail("attacker@@yale.edu"), false);
+assert.equal(isAllowedEmail("student @yale.edu"), false);
 assert.equal(isAllowedEmail("student@gmail.com"), false);
 assert.equal(isAllowedEmail(null), false);
 

@@ -14,7 +14,9 @@ export function normalizeEmail(email: string): string {
 export function isAllowedEmail(email: string | null | undefined): boolean {
   if (!email) return false;
   const normalized = normalizeEmail(email);
-  return normalized.endsWith("@yale.edu") || normalized === JUDGE_EMAIL;
+  return (
+    /^[^@\s]+@yale\.edu$/.test(normalized) || normalized === JUDGE_EMAIL
+  );
 }
 
 export function getAuthReadiness(
