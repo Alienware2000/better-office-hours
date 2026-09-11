@@ -20,6 +20,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false } = {}
   const marks = [];
   let now = 1000, loud = false, frame, stateIndex = 0;
   const listeners = new Map();
+  let probabilityCallback = () => {};
   const track = { enabled: true, stop() {} };
   const react = {
     useRef: value => ({ current: value }),
@@ -49,6 +50,10 @@ async function mount({ llmText = '', manualAudio = false, failTts = false } = {}
   const board = new Proxy({}, { get: (_, key) => key === 'getBoardState' ? () => ({ playing: false }) : key === 'applyDrawCommands' ? commands => marks.push(...commands) : noOp });
   const imports = {
     react,
+    './speech-detector': {
+      createSpeechDetector: async (_stream, _context, callback) => { probabilityCallback = callback; return { destroy: async () => {} }; },
+      isSpeechFrame: (probability, recording, playback) => probability >= (playback ? .85 : recording ? .35 : .65),
+    },
     '@/lib/agent/intent': { detectMode: () => null },
 
     '@/lib/pdf/live-page': { getLivePage: () => null, setLivePage: noOp },
@@ -107,7 +112,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false } = {}
   const cleanups = effects.map(effect => effect());
   await settle();
   hook.interrupt(); // Activate voice without relying on a rendered health update.
-  const tick = (volume, elapsed) => { loud = volume; now += elapsed; frame(); };
+  const tick = (volume, elapsed) => { loud = volume; now += elapsed; probabilityCallback(volume ? .98 : .01); frame(); };
   async function record() {
     tick(true, 1000);
     for (let i = 0; i < 20; i++) tick(true, 20);
@@ -127,7 +132,7 @@ for (const action of ['pause', 'resume', 'leave', 'enter', 'remove', 'hide', 'un
   const test = await mount();
   await test.record();
   const request = test.requests.find(r => r.url.endsWith('/stt'));
-  if (action === 'pause' || action === 'resume') test.hook.interrupt();
+  if (action === 'pause' || action === 'resume') test.hook.pauseVoice();
   if (action === 'resume') test.hook.interrupt();
   if (action === 'enter') test.hook.enterWorkspace();
   if (action === 'remove') test.hook.putAwayPset();
@@ -165,8 +170,8 @@ console.log('PASS: pending STT state, single recording, late-response isolation 
   test.stt.resolve(Response.json({ text: 'Help me understand units' }));
   await settle();
   assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, 1);
-  test.hook.interrupt();
-  assert.equal(test.states[4], true, 'Idle tap pauses without creating a turn');
+  test.hook.pauseVoice();
+  assert.equal(test.states[4], true, 'Explicit pause stops without creating a turn');
   test.cleanup();
 }
 const explanation = 'First, watch the arrow. Its value is 9.8 m/s². Notice the direction. What do you predict?';
@@ -238,3 +243,30 @@ console.log('PASS: patient silence, tap-to-submit, full spoken captions, quiet u
   test.cleanup();
 }
 console.log('PASS: brief-noise rejection, writing interruption, spoken-history integrity, visual/audio ordering, and TTS failure recovery.');
+
+// Auto-endpoint can race a tap already aimed at "finished". Primary taps must
+// not change ownership or discard the transcript during processing/playback.
+{
+  const test = await mount();
+  await test.record();
+  const request = test.requests.find(r => r.url.endsWith('/stt'));
+  test.hook.interrupt();
+  assert.equal(request.signal.aborted, false, 'A late finish tap cannot cancel STT');
+  assert.equal(test.states[4], false);
+  test.stt.resolve(Response.json({ text: 'I want to understand the setup' }));
+  await settle();
+  assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, 1);
+  test.cleanup();
+}
+{
+  const test = await mount({ llmText: explanation, manualAudio: true });
+  const speaking = test.hook.sendUtterance('Explain this');
+  await settle();
+  test.hook.interrupt();
+  assert.equal(test.audio[0].paused, false, 'Primary tap does not turn into cancellation during response');
+  test.hook.pauseVoice();
+  assert.equal(test.audio[0].paused, true, 'Explicit Pause still stops immediately');
+  await speaking;
+  test.cleanup();
+}
+console.log('PASS: finish-tap race across automatic endpoint and playback; separate pause control.');

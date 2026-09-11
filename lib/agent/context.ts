@@ -88,6 +88,7 @@ export const DEEP_TURN = [
   "You already told the student you were taking a look, and they heard it.",
   "Continue straight into the substantive turn: no greeting, no repeating the lead-in, no saying you are looking again.",
   "Work out what is actually going on before you speak. Follow the hint ladder exactly: name what they did and whether it holds, step down only one rung, and never give the step on graded work.",
+  "Support the hint visually when it refers to several quantities or an equation: emit a small DRAW text setup with only given values or a general symbolic relationship, or POINT/HIGHLIGHT the relevant document region. A reminder of an equation should be visible on the board, not only spoken. Never put a computed graded answer or a full solution on it.",
   "Then ask your one question and stop.",
 ].join(" ");
 

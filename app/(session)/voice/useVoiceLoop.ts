@@ -9,6 +9,8 @@ import { getLiveBoard } from "@/lib/whiteboard/live-board";
 import { isDrawCommand } from "@/lib/whiteboard/geometry";
 import { getBoardState, restoreBoard, type BoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
+import { createSpeechDetector, isSpeechFrame } from "./speech-detector";
+import { withRequestTimeout } from "./request-timeout";
 import { CHIPS, pickGreeting, type OrbState } from "./constants";
 import { isJunkSpeech, isPutAwayPsetPhrase, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
 
@@ -64,6 +66,9 @@ export function useVoiceLoop() {
   const [turns, setTurns] = useState<Turn[]>([]);
 
   const speechQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const [inputReady, setInputReady] = useState(false);
+  const inputReadyRef = useRef(false);
+  const [inputAttempt, setInputAttempt] = useState(0);
   const [greeting] = useState(pickGreeting);
   const greetingRef = useRef(greeting);
   const historyRef = useRef<ChatMessage[]>([
@@ -187,12 +192,14 @@ export function useVoiceLoop() {
           if ('error' in result) throw result.error;
           blob = result.blob;
         } else {
-          const response = await fetch("/api/agent/tts", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text, previousText }), signal: controller.signal,
+          blob = await withRequestTimeout(controller.signal, 15000, "Voice playback took too long. Please try again.", async signal => {
+            const response = await fetch("/api/agent/tts", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text, previousText }), signal,
+            });
+            if (!response.ok) throw new Error("Voice playback failed");
+            return response.blob();
           });
-          if (!response.ok) throw new Error("Voice playback failed");
-          blob = await response.blob();
         }
         if (controller.signal.aborted || epoch !== playbackEpochRef.current) return;
         url = URL.createObjectURL(blob);
@@ -419,10 +426,11 @@ export function useVoiceLoop() {
         const previousText = saidSoFar;
         saidSoFar = [saidSoFar, trimmed].filter(Boolean).join(" ");
         const audioSignal = abortRef.current?.signal;
-        const prepared = fetch("/api/agent/tts", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: trimmed, previousText }), signal: audioSignal,
-        }).then(async response => {
+        const prepared = withRequestTimeout(audioSignal, 15000, "Voice playback took too long. Please try again.", async signal => {
+          const response = await fetch("/api/agent/tts", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: trimmed, previousText }), signal,
+          });
           if (!response.ok) throw new Error("Voice playback failed");
           return { blob: await response.blob() };
         }).catch((error: unknown) => ({ error }));
@@ -530,13 +538,13 @@ export function useVoiceLoop() {
         addTurn("student", said);
       }
 
-      const lead = await runPass({ event, deep: false, signal, playbackEpoch });
+      const lead = await withRequestTimeout(signal, 30000, "The tutor took too long. Please try again.", signal => runPass({ event, deep: false, signal, playbackEpoch }));
 
 
       if (lead.turn.think) {
         // Fired before waiting on the lead-in audio, so the reasoning wait
         // happens underneath it rather than after it.
-        const deep = runPass({ event, deep: true, signal, playbackEpoch });
+        const deep = withRequestTimeout(signal, 30000, "The tutor took too long. Please try again.", signal => runPass({ event, deep: true, signal, playbackEpoch }));
         void deep.catch(() => {});
         await lead.spoken;
         if (playbackEpoch === playbackEpochRef.current && !playingRef.current) setOrb("thinking");
@@ -596,7 +604,27 @@ export function useVoiceLoop() {
   // when the student next speaks. No background event starts a tutor turn.
   const sendEvent: (event: SessionEvent) => Promise<void> = useCallback(async () => {}, []);
 
+  const pauseVoice = useCallback(() => {
+    pausedRef.current = true;
+    setPaused(true);
+    turnAbortRef.current?.abort();
+    turnAbortRef.current = null;
+    stopPlayback();
+    discardRecordingRef.current();
+    setInputEnabledRef.current(false);
+    setOrb("idle");
+  }, [setOrb, stopPlayback]);
+
+  const retryMicrophone = useCallback(() => {
+    pauseVoice();
+    inputReadyRef.current = false;
+    setInputReady(false);
+    setError(null);
+    setInputAttempt(attempt => attempt + 1);
+  }, [pauseVoice]);
+
   const interrupt = useCallback(() => {
+    if (!inputReadyRef.current) return;
     if (recordingRef.current && !pausedRef.current) {
       finishRecordingRef.current();
       return;
@@ -633,15 +661,9 @@ export function useVoiceLoop() {
       return;
     }
 
-    pausedRef.current = true;
-    setPaused(true);
-    turnAbortRef.current?.abort();
-    turnAbortRef.current = null;
-    stopPlayback();
-    discardRecordingRef.current();
-    setInputEnabledRef.current(false);
-    setOrb("idle");
-  }, [addTurn, health, setOrb, stopPlayback]);
+    // The primary control only starts or submits. A tap aimed at "finished"
+    // must remain harmless if automatic endpointing just changed the state.
+  }, [addTurn, health, setOrb]);
 
   const sendRef = useRef(sendUtterance);
   const stopRef = useRef(stopPlayback);
@@ -654,6 +676,9 @@ export function useVoiceLoop() {
   useEffect(() => {
     let cancelled = false;
     let stream: MediaStream | null = null;
+    let detector: Awaited<ReturnType<typeof createSpeechDetector>> | null = null;
+    let speechProbability = 0;
+    let probabilityAt = 0;
     let audioContext: AudioContext | null = null;
     let recorder: MediaRecorder | null = null;
     let chunks: Blob[] = [];
@@ -670,6 +695,7 @@ export function useVoiceLoop() {
         : new BroadcastChannel("better-office-hours-voice");
 
     const setInputEnabled = (enabled: boolean) => {
+      if (enabled) probabilityAt = performance.now();
       if (enabled && audioContext?.state === "suspended") void audioContext.resume();
       stream?.getAudioTracks().forEach((track) => {
         track.enabled = enabled;
@@ -722,10 +748,12 @@ export function useVoiceLoop() {
     const transcribe = async (blob: Blob, signal: AbortSignal) => {
       const form = new FormData();
       form.set("file", blob, "speech.webm");
-      const response = await fetch("/api/agent/stt", { method: "POST", body: form, signal });
-      if (!response.ok) throw new Error("Could not hear that");
-      const data = (await response.json()) as { text?: string };
-      return (data.text ?? "").trim();
+      return withRequestTimeout(signal, 12000, "Transcription took too long. Please try again.", async signal => {
+        const response = await fetch("/api/agent/stt", { method: "POST", body: form, signal });
+        if (!response.ok) throw new Error("Could not hear that");
+        const data = (await response.json()) as { text?: string };
+        return (data.text ?? "").trim();
+      });
     };
 
     const stopRecorder = async () => {
@@ -736,18 +764,20 @@ export function useVoiceLoop() {
       const current = () => !cancelled && !pausedRef.current &&
         !controller.signal.aborted && epoch === playbackEpochRef.current;
       setOrb("thinking");
+      const finishedRecorder = recorder;
+      const finishedChunks = chunks;
       const done = new Promise<Blob>((resolve) => {
-        recorder!.onstop = () => {
-          resolve(new Blob(chunks, { type: recorder!.mimeType || "audio/webm" }));
-          chunks = [];
+        finishedRecorder.onstop = () => {
+          resolve(new Blob(finishedChunks, { type: finishedRecorder.mimeType || "audio/webm" }));
+          if (recorder === finishedRecorder) chunks = [];
         };
       });
-      recorder.stop();
+      finishedRecorder.stop();
       recordingRef.current = false;
       setRecording(false);
       const meaningful = voicedMs >= 160;
-      const blob = await done;
       try {
+        const blob = await withRequestTimeout(controller.signal, 3000, "The recording could not be finished. Please try again.", async () => done);
         if (!current() || !meaningful || blob.size < 1200) return;
         const text = await transcribe(blob, controller.signal);
         // A paused tab or a different desk must never receive an old recording,
@@ -768,7 +798,7 @@ export function useVoiceLoop() {
     finishRecordingRef.current = () => {
       if (candidate || voicedMs < 160) {
         discardRecording();
-        suspendVoice();
+        if (!playingRef.current && !turnAbortRef.current) setOrb("listening");
       } else void stopRecorder();
     };
 
@@ -782,22 +812,23 @@ export function useVoiceLoop() {
       setOrb("listening");
     };
 
-    const startRecorder = (duringPlayback = false) => {
+    const startRecorder = () => {
       if (!stream || recordingRef.current || pausedRef.current) return;
       chunks = [];
       const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : undefined;
       recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      const recordingChunks = chunks;
       recorder.ondataavailable = (event) => {
-        if (event.data.size) chunks.push(event.data);
+        if (event.data.size) recordingChunks.push(event.data);
       };
-      candidate = duringPlayback;
+      candidate = true;
       voicedMs = 0;
       recorder.start();
       recordingRef.current = true;
       startedAt = performance.now();
-      if (!candidate) takeFloor();
+      setRecording(false);
     };
 
     const boot = async () => {
@@ -819,6 +850,7 @@ export function useVoiceLoop() {
           channelCount: 1,
         },
       });
+      if (cancelled) { stream.getTracks().forEach(track => track.stop()); return; }
       setInputEnabled(!pausedRef.current);
       // A newly opened, paused tab must not steal an active conversation.
       if (!pausedRef.current) claimTab();
@@ -829,6 +861,25 @@ export function useVoiceLoop() {
       analyser.fftSize = 2048;
       source.connect(analyser);
       const data = new Float32Array(analyser.fftSize);
+      const inputStream = stream;
+      const inputContext = audioContext;
+      detector = await withRequestTimeout(undefined, 20000, "The microphone could not get ready. Try the microphone again.", async signal => {
+        const created = await createSpeechDetector(inputStream, inputContext, probability => {
+          if (cancelled || signal.aborted) return;
+          speechProbability = probability;
+          probabilityAt = performance.now();
+        });
+        if (cancelled || signal.aborted) {
+          await created.destroy();
+          if (cancelled) inputStream.getTracks().forEach(track => track.stop());
+          throw new DOMException("Cancelled", "AbortError");
+        }
+        return created;
+      });
+      if (cancelled) { await detector.destroy(); return; }
+      inputReadyRef.current = true;
+      setInputReady(true);
+
 
       const loop = () => {
         if (cancelled) return;
@@ -843,22 +894,29 @@ export function useVoiceLoop() {
         const rms = Math.sqrt(sum / data.length);
         setLevel(rms);
         const now = performance.now();
+        if (inputReadyRef.current && audioContext?.state === "running" && now - probabilityAt > 5000) {
+          inputReadyRef.current = false;
+          setInputReady(false);
+          suspendVoice("The microphone stopped responding. Retry the microphone.");
+          raf = requestAnimationFrame(loop);
+          return;
+        }
         const elapsed = lastFrame ? Math.min(100, now - lastFrame) : 16;
         lastFrame = now;
-        // Browser echo cancellation stays enabled during playback. Require a
-        // stronger, sustained signal to interrupt than to continue a thought.
-        const loud = rms > (playingRef.current || candidate ? 0.065 : 0.025);
+        // Use speech probability, not volume, to distinguish non-speech noise.
+        // The analyser now drives only the visual input meter.
+        const loud = now - probabilityAt < 500 && isSpeechFrame(speechProbability, recordingRef.current && !candidate, playingRef.current);
         if (loud) lastLoud = now;
         if (!recordingRef.current && !transcriptionAbortRef.current && loud &&
             (playingRef.current || now - playbackEndedAtRef.current > 300)) {
-          startRecorder(playingRef.current);
+          startRecorder();
         }
         if (recordingRef.current) {
           if (loud) voicedMs += elapsed;
           if (candidate) {
             if (voicedMs >= 180) takeFloor();
             else if (now - lastLoud > 120) discardRecording();
-          } else if ((now - lastLoud > 1800 && now - startedAt > 450) || now - startedAt > 90000) {
+          } else if ((now - lastLoud > 1100 && now - startedAt > 450) || now - startedAt > 90000) {
             void stopRecorder();
           }
         }
@@ -888,6 +946,9 @@ export function useVoiceLoop() {
 
     void boot().catch((err: unknown) => {
       if (cancelled) return;
+      inputReadyRef.current = false;
+      setInputReady(false);
+      suspendVoice();
       const name = err instanceof DOMException ? err.name : "";
       setError(
         name === "NotAllowedError"
@@ -907,25 +968,28 @@ export function useVoiceLoop() {
       turnAbortRef.current?.abort();
       stopRef.current();
       stream?.getTracks().forEach((track) => track.stop());
-      void audioContext?.close();
+      void (async () => { await detector?.destroy(); await audioContext?.close(); })();
       discardRecording();
       discardRecordingRef.current = () => {};
       finishRecordingRef.current = () => {};
       setInputEnabledRef.current = () => {};
       claimTabRef.current = () => {};
     };
-  }, [addTurn, setOrb]);
+  }, [addTurn, setOrb, inputAttempt]);
 
   return {
     state,
     level,
     recording,
+    inputReady,
+    retryMicrophone,
     health,
     error,
     paused,
     sendUtterance,
     sendEvent,
     interrupt,
+    pauseVoice,
     exitWorkspace,
     enterWorkspace,
     putAwayPset,

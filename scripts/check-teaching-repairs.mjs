@@ -68,3 +68,17 @@ const { describeEvent } = load('lib/agent/events.ts');
 assert.ok(describeEvent({ kind: 'pset_ready' }).includes('Silence is not a request to continue'));
 assert.ok(!describeEvent({ kind: 'pset_ready' }).includes('Speak now'));
 console.log('PASS: spoken SI units, variables, Unicode/LaTeX, streamed decimal integrity, visual narration boundaries, equations, and zoom-aware region scrolling.');
+
+const { isSpeechFrame } = load('app/(session)/voice/speech-detector.ts');
+assert.equal(isSpeechFrame(.05, false, false), false, 'Non-speech probability never starts recording');
+assert.equal(isSpeechFrame(.7, false, false), true);
+assert.equal(isSpeechFrame(.4, true, false), true, 'Retain quieter syllables in a confirmed turn');
+assert.equal(isSpeechFrame(.7, false, true), false, 'Playback interruption needs stronger speech evidence');
+const { withRequestTimeout } = load('app/(session)/voice/request-timeout.ts');
+await assert.rejects(withRequestTimeout(undefined, 5, 'Timed out', async () => new Promise(() => {})), /Timed out/);
+const abort = new AbortController();
+const waiting = withRequestTimeout(abort.signal, 10000, 'Timed out', async () => new Promise(() => {}));
+abort.abort();
+await assert.rejects(waiting, { name: 'AbortError' });
+assert.equal(await withRequestTimeout(undefined, 1000, 'Timed out', async () => 'ready'), 'ready');
+console.log('PASS: speech-probability gates, stalled-request timeout, cancellation, and successful request cleanup.');

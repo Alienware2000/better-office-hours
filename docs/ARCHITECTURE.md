@@ -12,9 +12,11 @@ Hussein can start the isolated context, recap, and shell slices in LANES.md from
 
 ## Student turn ownership
 
-Attachments and ink update live context without starting speech. Readiness callbacks remain for desk compatibility, but only a student utterance or initial greeting starts spoken interaction. The current voice loop waits 1.8s of quiet to submit recorded speech, or accepts an orb tap to finish. During playback, browser echo cancellation plus sustained microphone activity can interrupt. This needs real-device validation and is not semantic endpoint detection.
+Attachments and ink update live context without starting speech. Readiness callbacks remain for desk compatibility, but only a student utterance or initial greeting starts spoken interaction. The current voice loop waits about 1.1s of non-speech to submit recorded speech, or accepts an orb tap to finish. The orb never cancels a turn; the separate Pause control and Escape stop voice without leaving the desk. During playback, browser echo cancellation plus sustained Silero speech probability can interrupt. This needs real-device validation and is not semantic endpoint detection or speaker identification. Background vocals can still be classified as speech.
 
 The speech queue prepares upcoming TTS audio and plays one chunk at a time. Captions and assistant history advance at sentence start, not model token arrival. There is no silent client word/sentence cap. Completed visual tags are queued after their preceding words. Short symbolic equations use existing DRAW text, with bounded line length and shared SVG/snapshot sizing; no new shared contract is required. The speech-only normalizer expands common SI notation while the board retains written symbols. A partially interrupted sentence is not word-aligned.
+
+Speech detection uses pinned `@ricky0123/vad-web` 0.0.30 with Silero v5 and ONNX Runtime WASM, on the client. This voice repair changes the shared package manifests and adds predev/prebuild asset preparation. `scripts/prepare-voice-assets.mjs` copies the installed model, worklet, and WASM assets to ignored `public/voice-assets`; no runtime CDN or microphone audio leaves the browser for detection. The STT service still receives completed recordings. Initialize and retry failures are visible. Recording finalization, STT, TTS, and model generation have deadlines, with late completions ignored.
 
 ## 1. System shape
 

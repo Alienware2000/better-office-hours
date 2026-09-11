@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 00:36 ET
+Updated: 2026-09-11 01:08 ET
 By: Voice and teaching surfaces
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -10,9 +10,11 @@ Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were a
 
 ## Now
 
+Second stress-test follow-up is ready on the same PR #5: stable controls, local speech detection, request deadlines, microphone retry, and stronger visual setup/reminder hints. The screenshot's paused state is consistent with the old tap race; this branch removes that ambiguous cancellation path. Current setup adds `@ricky0123/vad-web` and automatic local asset preparation through predev/prebuild. No shared types or human prompt changes. Review before merge.
+
 David and Hussein stress-tested the desk and reported premature problem selection, interruptions, missing audio, awkward SI pronunciation, repetitive wording, and weak board/pointer use. This repair is ready for a new human stress test before merge. See STRESS-TEST.md for the consolidated findings, changes, and remaining acceptance checks.
 
-Uploads and ink no longer start autonomous speech. Orb taps submit meaningful recordings or pause when idle. Student speech can interrupt playback through an echo-cancelled microphone with a sustained-signal threshold; silence endpoint is now 1.8s. All response chunks are spoken, with captions/history following sentence playback and upcoming audio prepared ahead. Unit/symbol normalization is applied only to TTS. Board equations and queued visual narration are supported; writing on the board stops speech. PDF scrolling targets the requested region using measured zoomed geometry.
+Uploads and ink no longer start autonomous speech. The orb starts or submits only. A separate Pause button and Escape stop voice without leaving the desk, avoiding the automatic-endpoint/tap-to-cancel race. Local Silero v5 speech detection replaces RMS triggering; the endpoint is about 1.1s of non-speech. Startup and request stalls have deadlines and visible recovery. All response chunks are spoken, with captions/history following sentence playback and upcoming audio prepared ahead. Unit/symbol normalization is applied only to TTS. Board equations and queued visual narration are supported; writing on the board stops speech. PDF scrolling targets the requested region using measured zoomed geometry.
 
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
@@ -26,7 +28,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 ## What to do next
 
-Next: David and Hussein run STRESS-TEST.md on real microphones, first with headphones and then speakers. Check interruption, quiet voices, pauses, pronunciation, equation use, and zoomed pointers. Review this branch before merging; Hussein continues his isolated lanes.
+Next: David and Hussein run STRESS-TEST.md on real microphones, first with headphones and then speakers, including background music. Check interruption, quiet voices, pauses, pronunciation, equation use, and zoomed pointers. Review this branch before merging; Hussein continues his isolated lanes.
 
 1. Human mic check: tap the orb, say a homework request, then leave and ask for a concept. Confirm the desk opens from speech and the response feels natural.
 2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
@@ -35,6 +37,8 @@ Next: David and Hussein run STRESS-TEST.md on real microphones, first with headp
 5. Hussein may start the context, recap, or shell first slice in LANES.md on a new lane branch from main. Open a PR for David; do not merge it or run ahead into another slice. Canvas/Grok Bot operation and live cross-lane integrations still need a separate assignment.
 
 ## Validation
+
+- Second pass: build, TypeScript, focused lint, voice lifecycle, teaching repair, workspace, and animation checks pass. Headless Chrome loaded the real local speech detector assets and rejected synthetic non-speech input; Pause and Escape work, failed model loading recovers through Retry microphone, and the 768px control layout was inspected. Real microphone/music quality is not established by this smoke test.
 
 - Stress-test branch: build, voice lifecycle harness, teaching repair checks, workspace checks, and animation unit checks pass. Focused voice/runtime/whiteboard lint passes; legacy PDF viewer ref-access lint errors remain.
 - The live upload-only model probe still chose problem one despite revised wording. Automatic readiness turns are now disabled in the client. The live general-equation probe produced a DRAW text equation and one question (about 5.8s to first token in the reasoning lane). These are isolated probes, not broad model-quality validation.
@@ -96,8 +100,8 @@ Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.
 
 Pointer quality depends on Grok seeing the page image.
 
-The reasoning lane still leaves about 5 to 8s of quiet after the lead-in.
+The reasoning lane still leaves several seconds of quiet after the lead-in; the latest equation reminder probe took about 9s to its first token.
 
-Hands-free interruption now uses browser echo cancellation and a sustained RMS threshold. False interruptions from speaker echo and missed quiet voices remain hardware risks. The orb provides submit/pause/cancel control.
+Hands-free interruption now uses browser echo cancellation and local speech probabilities. Background vocals, speaker echo, and quiet voices remain hardware risks. The orb starts/submits; the separate Pause button and Escape stop voice.
 
 PROMPT.md still does not show a JSON DRAW example; the runtime hint and shorthand parser cover it for now.
