@@ -23,10 +23,11 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
   let sttCount = 0;
   const audio = [];
   const marks = [];
+  const timers = new Map();
   let now = 1000, loud = false, frame, stateIndex = 0;
   const listeners = new Map();
   let probabilityCallback = () => {};
-  const track = { enabled: true, stop() {} };
+  const track = { enabled: true, muted: false, readyState: 'live', stop() { this.readyState = 'ended'; } };
   const react = {
     useRef: value => ({ current: value }),
     useCallback: callback => callback,
@@ -61,7 +62,13 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
       play() { this.onplaying?.(); if (!manualAudio) queueMicrotask(() => this.onended?.()); return Promise.resolve(); }
       pause() { this.paused = true; }
     },
-    structuredClone, queueMicrotask, setTimeout, clearTimeout,
+    structuredClone, queueMicrotask,
+    setTimeout: (callback, milliseconds) => {
+      const timer = setTimeout(() => { timers.delete(timer); callback(); }, milliseconds);
+      timers.set(timer, { callback, milliseconds });
+      return timer;
+    },
+    clearTimeout: timer => { timers.delete(timer); clearTimeout(timer); },
     crypto: { randomUUID: () => 'test-tab' },
     performance: { now: () => now },
     navigator: { mediaDevices: { getUserMedia: async () => ({ getAudioTracks: () => [track], getTracks: () => [track] }) } },
@@ -110,7 +117,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
   const cleanups = effects.map(effect => effect());
   await settle();
   hook.interrupt(); // Activate voice without relying on a rendered health update.
-  const tick = (volume, elapsed) => { loud = volume; now += elapsed; probabilityCallback(typeof volume === 'number' ? volume : volume ? .98 : .01, new Float32Array(Math.max(1,Math.round(elapsed*16))).fill(volume ? .25 : 0)); frame(); };
+  const tick = (volume, elapsed, detectorFrame = true) => { loud = volume; now += elapsed; if (detectorFrame) probabilityCallback(typeof volume === 'number' ? volume : volume ? .98 : .01, new Float32Array(Math.max(1,Math.round(elapsed*16))).fill(volume ? .25 : 0)); frame(); };
   async function record() {
     tick(true, 1000);
     for (let i = 0; i < 20; i++) tick(true, 20);
@@ -122,6 +129,14 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     assert.equal(recordings.length, 1, 'One recording before the first transcription');
   }
   return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks,
+    track,
+    expireTranscription: () => {
+      const pending = [...timers].find(([, entry]) => entry.milliseconds === 12000);
+      assert.ok(pending, 'An STT deadline is pending');
+      const [timer, entry] = pending;
+      clearTimeout(timer); timers.delete(timer); entry.callback();
+    },
+    setAudioState: value => { inputAudioState.value = value; },
     suspendAudio: () => { inputAudioState.value = 'suspended'; },
     cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
@@ -310,6 +325,70 @@ console.log('PASS: low-confidence noise endpoint, quiet one-time upload receipt,
   test.cleanup();
 }
 console.log('PASS: suspended microphone audio has a bounded recovery path.');
+
+// A processed silence frame is not proof that the microphone is available.
+for (const fault of ['interrupted', 'closed', 'muted', 'ended', 'detector']) {
+  const test = await mount();
+  try {
+    if (fault === 'interrupted' || fault === 'closed') test.setAudioState(fault);
+    if (fault === 'muted') test.track.muted = true;
+    if (fault === 'ended') test.track.readyState = 'ended';
+    const hasFrames = fault === 'muted' || fault === 'ended';
+    test.tick(false, 100, hasFrames);
+    test.tick(false, 5100, hasFrames);
+    await settle();
+    assert.equal(test.states[4], true, `${fault}: unavailable input cannot keep claiming to listen`);
+    assert.equal(test.states[0], 'idle');
+    assert.ok(test.states[3].includes('Retry the microphone'), `${fault}: expose actionable recovery`);
+  } finally { test.cleanup(); }
+}
+// Brief browser interruptions recover without requiring a new conversation.
+for (const fault of ['interrupted', 'muted', 'disabled']) {
+  const test = await mount();
+  try {
+    if (fault === 'interrupted') test.setAudioState(fault);
+    if (fault === 'muted') test.track.muted = true;
+    if (fault === 'disabled') test.track.enabled = false;
+    test.tick(false, 100);
+    test.setAudioState('running');
+    test.track.muted = false;
+    test.tick(false, 100);
+    assert.equal(test.track.enabled, true, 'Active input restores an unexpectedly disabled track');
+    assert.equal(test.states[4], false, 'Transient interruption keeps the session active');
+    await test.record();
+    test.stt.resolve(Response.json({ text: 'Can you hear me now?' }));
+    await settle();
+    assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, 1);
+  } finally { test.cleanup(); }
+}
+// Recovery must accept another utterance, not just change the displayed state.
+for (const result of ['noise', 'failure', 'empty', 'timeout', 'misheard']) {
+  const test = await mount({ llmText: 'Could you say that again?' });
+  try {
+    await test.record();
+    if (result === 'failure') test.stt.reject(new Error('Network unavailable'));
+    else if (result === 'timeout') test.expireTranscription();
+    else test.stt.resolve(Response.json({ text: result === 'noise' ? '[background noise]' : result === 'misheard' ? 'An unclear phrase' : '' }));
+    await settle();
+    test.tick(true, 1000);
+    for (let i = 0; i < 20; i++) test.tick(true, 20);
+    test.tick(false, 1700);
+    await settle();
+    assert.equal(test.requests.filter(r => r.url.endsWith('/stt')).length, 2, `${result}: next utterance reaches transcription`);
+    if (result === 'timeout') {
+      test.stt.resolve(Response.json({ text: 'This old result must be ignored' }));
+      await settle();
+    }
+    test.sttNext.resolve(Response.json({ text: 'Let me say that again' }));
+    await settle();
+    const calls = test.requests.filter(r => r.url.endsWith('/llm'));
+    assert.equal(calls.length, result === 'misheard' ? 2 : 1, `${result}: retry reaches the tutor once`);
+    assert.equal(JSON.parse(calls.at(-1).body).messages.at(-1).content, 'Let me say that again');
+    assert.equal(test.states[0], 'listening');
+  } finally { test.cleanup(); }
+}
+console.log('PASS: interrupted/closed/muted/ended/stalled input exposes recovery; transient faults and rejected transcripts accept the next utterance.');
+
 
 {
   const bbox0={x:.1,y:.2,w:.3,h:.02}, bbox1={x:.1,y:.4,w:.3,h:.02};

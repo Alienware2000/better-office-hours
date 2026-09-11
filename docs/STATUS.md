@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 14:25 ET
+Updated: 2026-09-11 14:35 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,10 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Listening recovery follow-up: David reported Listening without a reaction to speech. Reproduced an AudioContext interrupted state that bypassed both the suspended-state recovery and the running-state heartbeat check, leaving the UI listening indefinitely. The loop now checks actual track availability as well as detector frames: closed/ended input exposes retry, unexpectedly disabled live input is enabled, and muted/interrupted input gets a bounded two-second recovery window. Restored input gets time for fresh detector frames. Persistent failure pauses voice and shows Retry microphone, which now reacquires input and resumes the existing conversation in one click. Diagnostics contain only audio/track state and frame age.
+
+Build, focused lint, and expanded lifecycle tests pass. Tests accept the next utterance after noise, empty/failed/timed-out STT, and a misheard turn, and ignore late timed-out transcripts. Chrome fault injection verified interrupted/muted/ended recovery, temporary interruption, disabled-track repair, unchanged board/transcript, and no extra greeting after retry. A separate Chrome run used real local Silero with a synthetic microphone feed for three successive utterances: a noise result and an STT failure both allowed the next captured utterance to reach the tutor. The current report did not include input-state telemetry, so these reproduce and close confirmed failure paths rather than prove the exact cause of David's previous incident. Next: retest the existing localhost:3100 session with the real microphone and review PR #5. No human prompt, shared type, or detector-threshold change.
 
 Voice authentication follow-up: reproduced the synthesis failure as an ElevenLabs HTTP 401 invalid_api_key response. The server was loading the local configuration correctly. David supplied a replacement key, which was saved only in ignored .env.local. A real request through localhost:3100 returned conversational v3 audio (HTTP 200), and Chrome decoded and played the complete response at the existing 1.08 rate. No credential values were logged or committed.
 

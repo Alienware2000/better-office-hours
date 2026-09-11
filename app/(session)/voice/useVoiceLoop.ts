@@ -665,6 +665,9 @@ export function useVoiceLoop() {
     inputReadyRef.current = false;
     setInputReady(false);
     setError(null);
+    // Retrying the input resumes this conversation after the new stream is ready.
+    pausedRef.current = false;
+    setPaused(false);
     setInputAttempt(attempt => attempt + 1);
   }, [pauseVoice]);
 
@@ -752,7 +755,9 @@ export function useVoiceLoop() {
 
     const setInputEnabled = (enabled: boolean) => {
       if (enabled) probabilityAt = performance.now();
-      if (enabled && audioContext?.state === "suspended") void audioContext.resume();
+      if (enabled && audioContext && audioContext.state !== "running" && audioContext.state !== "closed") {
+        void audioContext.resume().catch(() => {});
+      }
       stream?.getAudioTracks().forEach((track) => {
         track.enabled = enabled;
       });
@@ -780,6 +785,17 @@ export function useVoiceLoop() {
       setInputEnabled(false);
       setOrb("idle");
       if (message) setError(message);
+    };
+
+    const inputUnavailable = (message: string) => {
+      console.warn('Voice input unavailable ' + JSON.stringify({
+        audioState: audioContext?.state,
+        tracks: stream?.getAudioTracks().map(track => ({ state: track.readyState, muted: track.muted, enabled: track.enabled })),
+        detectorAgeMs: Math.round(performance.now() - probabilityAt),
+      }));
+      inputReadyRef.current = false;
+      setInputReady(false);
+      suspendVoice(message);
     };
 
     const handleVisibility = () => {
@@ -941,32 +957,45 @@ export function useVoiceLoop() {
           raf = requestAnimationFrame(loop);
           return;
         }
+        const now = performance.now();
+        const tracks = inputStream.getAudioTracks();
+        if (!tracks.length || tracks.some(track => track.readyState === 'ended') || inputContext.state === 'closed') {
+          inputUnavailable('The microphone connection ended. Retry the microphone.');
+          raf = requestAnimationFrame(loop);
+          return;
+        }
+        // A live detector can keep processing silence from a muted/disabled
+        // track. Check the source itself before trusting its heartbeat.
+        for (const track of tracks) if (!track.enabled) track.enabled = true;
+        if (inputContext.state !== 'running' || tracks.some(track => track.muted)) {
+          setLevel(0);
+          if (suspendedAt === null) {
+            suspendedAt = now;
+            if (inputContext.state !== 'running') void inputContext.resume().catch(() => {});
+          } else if (now - suspendedAt > 2000) {
+            inputUnavailable(inputContext.state === 'suspended'
+              ? 'Microphone audio was suspended. Retry the microphone.'
+              : 'Microphone audio was interrupted. Retry the microphone.');
+          }
+          raf = requestAnimationFrame(loop);
+          return;
+        }
+        if (suspendedAt !== null) {
+          suspendedAt = null;
+          // Allow fresh detector frames after the browser restores audio.
+          probabilityAt = now;
+          speechProbability = 0;
+        }
+        if (now - probabilityAt > 5000) {
+          inputUnavailable('The microphone stopped responding. Retry the microphone.');
+          raf = requestAnimationFrame(loop);
+          return;
+        }
         analyser.getFloatTimeDomainData(data);
         let sum = 0;
         for (const sample of data) sum += sample * sample;
         const rms = Math.sqrt(sum / data.length);
         setLevel(rms);
-        const now = performance.now();
-        if (inputReadyRef.current && audioContext?.state === "running" && now - probabilityAt > 5000) {
-          inputReadyRef.current = false;
-          setInputReady(false);
-          suspendVoice("The microphone stopped responding. Retry the microphone.");
-          raf = requestAnimationFrame(loop);
-          return;
-        }
-        if (audioContext?.state === "suspended") {
-          if (suspendedAt === null) {
-            suspendedAt = now;
-            void audioContext.resume().catch(() => {});
-          } else if (now - suspendedAt > 2000) {
-            inputReadyRef.current = false;
-            setInputReady(false);
-            suspendVoice("Microphone audio was suspended. Retry the microphone.");
-          }
-          raf = requestAnimationFrame(loop);
-          return;
-        }
-        suspendedAt = null;
         const elapsed = lastFrame ? Math.min(100, now - lastFrame) : 16;
         lastFrame = now;
         // Use speech probability, not volume, to distinguish non-speech noise.
