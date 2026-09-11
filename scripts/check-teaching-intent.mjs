@@ -1,10 +1,12 @@
+import { createRequire } from 'node:module';
+const external = createRequire(import.meta.url);
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import ts from 'typescript';
 const cache=new Map();
-function load(file){file=path.resolve(file);if(cache.has(file))return cache.get(file);const mod={exports:{}};const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;vm.runInThisContext(`(function(require,module,exports){${code}\n})`)(name=>load((name.startsWith('@/')?path.resolve(name.slice(2)):path.resolve(path.dirname(file),name))+'.ts'),mod,mod.exports);cache.set(file,mod.exports);return mod.exports;}
+function load(file){file=path.resolve(file);if(cache.has(file))return cache.get(file);const mod={exports:{}};const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;vm.runInThisContext(`(function(require,module,exports){${code}\n})`)(name=>name.startsWith('@mathjax/') ? external(name) : load((name.startsWith('@/')?path.resolve(name.slice(2)):path.resolve(path.dirname(file),name))+'.ts'),mod,mod.exports);cache.set(file,mod.exports);return mod.exports;}
 const {parseAgentTurn,visualBeats}=load('lib/agent/tags.ts');
 const {isRelationship,needsBoardRepair}=load('lib/agent/teaching-intent.ts');
 const draw=command=>`[DRAW ${JSON.stringify(command)}]`;

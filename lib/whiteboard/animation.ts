@@ -1,5 +1,7 @@
 import type { AnimationSpec, AnimShape, DrawCommand, Pt } from "../types";
 import { interpretCommand, type ShapeGroup } from "./geometry";
+import { typesetMath } from './math-layout';
+import { isMathText } from './text';
 
 const clamp = (n: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, n));
 type Frame = Record<string, unknown> & { t: number; ease?: string };
@@ -298,7 +300,7 @@ export function animationFrame(
       // Moving labels keep their model attachment and stable size. Avoid a
       // per-frame collision solver that would make them jump between sides.
       op.group.drawables = op.group.drawables.map(mark => mark.kind === 'text'
-        ? { ...mark, fontSize: .038, diagramLabel: true } : mark);
+        ? { ...mark, fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color) ?? undefined : undefined } : mark);
       groups.push({ ...op.group, opacity: clamp(Number(f.opacity ?? 1)) });
     }
   }

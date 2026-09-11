@@ -17,7 +17,7 @@ export function groupReveal(group: ShapeGroup) {
   const delays = group.drawables.map(mark => {
     if (mark.kind !== 'text') { cursor = Math.max(cursor, 520); return 0; }
     const start = cursor;
-    cursor += textReveal(mark.text).duration + 80;
+    cursor += (mark.mathDrawing ? mark.mathDrawing.paths.length * 32 + 90 : textReveal(mark.text).duration) + 80;
     return start;
   });
   return { delays, duration: Math.max(560, cursor) };

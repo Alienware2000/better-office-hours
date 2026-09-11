@@ -2,6 +2,7 @@ import type { Pt } from '@/lib/types';
 import type { Drawable, ShapeGroup } from './geometry';
 import { isMathText } from './text';
 import { textWidth, writingBounds } from './writing';
+import { typesetMath } from './math-layout';
 
 type TextMark = Extract<Drawable, { kind: 'text' }>;
 type Box = ReturnType<typeof writingBounds>;
@@ -39,7 +40,7 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
     const half = textWidth(mark.text, size, isMathText(mark.text)) / 2;
     // Overlong labels keep their existing wrapping rather than becoming tiny.
     if (half > .455) { occupied.push(writingBounds(mark)); return mark; }
-    const base: TextMark = { ...mark, diagramLabel: true, preferredAt: preferred, fontSize: size, textAnchor: 'middle', math: isMathText(mark.text) };
+    const base: TextMark = { ...mark, diagramLabel: true, preferredAt: preferred, fontSize: size, textAnchor: 'middle', math: isMathText(mark.text), mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color) ?? undefined : undefined };
     const fit = (at: Pt) => ({ x: Math.max(margin + half, Math.min(1 - margin - half, at.x)), y: Math.max(margin + size, Math.min(1 - margin - size * .25, at.y)) });
     const candidates = [fit(preferred)];
     // Small concentric offsets retain association with the labeled object.

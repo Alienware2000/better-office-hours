@@ -1,6 +1,7 @@
 import type { Color, DrawCommand, Pt } from "@/lib/types";
 import { boardLabel } from "./style";
 import { TUTOR_HEX } from "./colors";
+import type { MathDrawing } from './math-layout';
 
 export type Drawable =
   | {
@@ -28,6 +29,7 @@ export type Drawable =
       fontSize?: number; // Resolved standalone writing size, shared by SVG and snapshots.
       diagramLabel?: boolean;
       preferredAt?: Pt; // Keep the requested attachment when labels are reflowed.
+      mathDrawing?: MathDrawing;
       color: string;
     };
 

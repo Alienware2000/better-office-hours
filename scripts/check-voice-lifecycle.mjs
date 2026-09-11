@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+const external = createRequire(import.meta.url);
 // Exercise the real voice hook with deferred STT and a simulated microphone.
 // No credentials, audio hardware, or model calls are used.
 import assert from 'node:assert/strict';
@@ -92,6 +94,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     const loaded = { exports: {} };
     vm.runInContext(`(function(require,module,exports){${js}\n})`, context)(name => {
       if (name in imports) return imports[name];
+      if (name.startsWith('@mathjax/')) return external(name);
       return load((name.startsWith('@/') ? path.resolve(name.slice(2)) : path.resolve(path.dirname(file), name)) + '.ts');
     }, loaded, loaded.exports);
     return loaded.exports;

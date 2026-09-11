@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+const external = createRequire(import.meta.url);
 // Routing and desk isolation checks, without microphone or model variability.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -16,7 +18,7 @@ function load(file) {
       target: ts.ScriptTarget.ES2022,
     },
   }).outputText;
-  const require = (name) =>
+  const require = (name) => name.startsWith('@mathjax/') ? external(name) :
     load(
       (name.startsWith("@/")
         ? path.resolve(name.slice(2))

@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 04:24 ET
+Updated: 2026-09-11 04:39 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -20,13 +20,17 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 
 ## Now
 
+LaTeX follow-up: the existing DRAW text field now supports locally typeset Base/AMS mathematics through pinned MathJax 4.1.3 and its bundled TeX font. Fractions, roots, scripts, vectors, integrals, aligned equations, and matrices render as SVG paths. No per-equation service or CDN call is needed. The same vector paths and transforms are drawn into the tutor snapshot. Layout measures real formula width/ascent/descent, including tall fractions and aligned rows; glyphs reveal progressively without reflow and respect reduced motion. Legacy simple notation remains supported. Runtime guidance requests properly escaped LaTeX only when the chosen teaching move permits it; the disclosure guard also covers fraction/root/environment notation.
+
+Validation: build, focused lint, all current regression scripts, and the new check-math script pass. Chrome checked compact/expanded math, progressive glyph appearance, stable geometry, tall formula clearance, matching snapshot content, and reduced motion. A live 4.6 probe recorded a learner-supplied average-velocity ratio with a valid LaTeX fraction and a consolidation move. Math input is bounded to 800 characters/512 rendered primitives with a bounded cache; custom macros, external content, and unsupported TeX fall back to text. This is mathematical typesetting, not full document LaTeX. The new package/lock changes are part of David's requested math rendering slice; other machines should run npm ci. No shared contract or human prompt changes.
+
 Pedagogy/diagram follow-up: the tutor now declares a local TEACH move (elicit, orient, hint, consolidate, explain) and a visual choice in its existing response stream, based on the conversation. Removed phrase-based diagram triggers, mandatory equation/setup beats, and automatic copying of spoken formulas. Elicit/orient turns withhold new symbolic relationships from streamed DRAW text and geometry/animation labels. Missing or late metadata also withholds them. A silent visual repair inherits the original move and cannot promote itself to a new hint. The runtime no longer supplies fictitious rung-zero counters on every turn. Human PROMPT/PEDAGOGY and shared lib/types.ts remain unchanged.
 
 Static diagram labels use a smaller consistent scale and measured placement clear of paths, neighboring annotations, and student ink. The actual geometry stays fixed. Resolved placements are shared with snapshots. Animated labels keep their attachment and stable size without a per-frame placement solver. ASCII powers/subscripts normalize for the board, comma-separated note givens become aligned rows, and circle coordinate aliases from a live trace normalize. Existing writing reveal, author distinction, scrollback, and tools remain.
 
 Validation: production build, focused lint, teaching-intent/repair, lifecycle, ink, workspace, and animation checks pass. Chrome exercised the actual voice/SSE/SVG path: a deliberately premature equation was withheld, a requested reminder appeared, and two live generated diagrams rendered. Labels were inspected at 1400/1000/700px and expanded. Live Grok probes chose elicitation without an equation after the givens, a formula hint after an explicit failed recall/reminder request, and diagrams for an incline and recursion in differently worded requests. These are small samples, not a guarantee of model judgment. Static annotation placement does not validate subject correctness; crowded layouts and animation physics remain limited. Full lint still has the earlier five PdfViewer render-ref findings.
 
-Next: David should retest a fresh homework recall attempt, a subsequent reminder, and a concept visualization on localhost:3100, then review PR #5 before merge. No new credentials or human unblock is required for this slice. Earlier speech-formula recovery and lexical setup triggers below are historical and have been superseded.
+Next: David should retest a fresh homework recall attempt, a subsequent reminder, a concept visualization, and a typeset fraction on localhost:3100, then review PR #5 before merge. No new credentials or human unblock is required for this slice. Earlier speech-formula recovery and lexical setup triggers below are historical and have been superseded.
 
 ### Earlier stress-test slices (historical)
 

@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+const external = createRequire(import.meta.url);
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,7 +10,7 @@ function load(file) {
   const js = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
-  vm.runInThisContext(`(function(require,module,exports){${js}\n})`, { filename: file })(name =>
+  vm.runInThisContext(`(function(require,module,exports){${js}\n})`, { filename: file })(name => name.startsWith('@mathjax/') ? external(name) :
     load((name.startsWith('@/') ? path.resolve(name.slice(2)) : path.resolve(path.dirname(file), name)) + '.ts'), loaded, loaded.exports);
   return loaded.exports;
 }
@@ -113,7 +115,7 @@ const writing = (id,text,y,size='s') => interpretCommand({op:'text',id,text,at:{
 const eq = layoutWriting(writing('equation','v² = u² + 2 a s',.25,'m'),[],[]);
 const screenshotEquation = layoutWriting(writing('relation','v² = v₀² + 2 a Δy',.3,'m'),[],[]);
 assert.equal(screenshotEquation.drawables.length, 1, 'The screenshot equation keeps its complete product on one line');
-const givens = layoutWriting(writing('givens','u = 0, a = +3 m/s², s = 600 m',.45),[eq],[]);
+const givens = layoutWriting(writing('given-1','u = 0, a = +3 m/s², s = 600 m',.45),[eq],[]);
 const nextLine = layoutWriting(writing('next','after fail: a = ? v_top = ?',.45,'m'),[eq,givens],[]);
 assert.ok(givens.drawables.length > 1,'Long writing wraps instead of shrinking');
 const all = [eq,givens,nextLine].flatMap(g=>g.drawables);
@@ -126,7 +128,7 @@ for (const mark of all) {
     assert.ok(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top,'Consecutive writing must not overlap');
   }
 }
-const replacement=layoutWriting(writing('givens','a = ?',.45),[eq,givens,nextLine],[]);
+const replacement=layoutWriting(writing('given-1','a = ?',.45),[eq,givens,nextLine],[]);
 assert.equal(replacement.drawables[0].at.y,.45,'Updating a group reuses its space');
 const withInk=layoutWriting(writing('ink-test','a = ?',.45),[],[{points:[{x:0,y:.35},{x:1,y:.55}]}]);
 assert.ok(writingBounds(withInk.drawables[0]).top > .55,'Student ink reserves space');

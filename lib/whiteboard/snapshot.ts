@@ -6,6 +6,7 @@ import { BOARD_CREAM, STUDENT_HEX } from "./colors";
 import type { BoardStroke } from "./store";
 import type { ShapeGroup } from "./geometry";
 import { inkPath } from "./ink-path";
+import { typesetMath } from './math-layout';
 
 const MAX_WIDTH = 768;
 
@@ -56,6 +57,21 @@ export function snapshotBoard(
       for (const mark of group.drawables) {
         if (mark.kind === "text") {
           ctx.save();
+          const formula = mark.mathDrawing ?? ((mark.math ?? (!mark.heading && isMathText(mark.text))) ? typesetMath(mark.text, mark.color) : null);
+          if (formula) {
+            const size = mark.fontSize ?? .068;
+            ctx.translate(mark.at.x - (mark.textAnchor === 'start' ? 0 : formula.width * size / 2), mark.at.y);
+            ctx.scale(size / 1000, size / 1000);
+            for (const path of formula.paths) {
+              ctx.save();
+              ctx.transform(...path.matrix);
+              ctx.fillStyle = path.color;
+              ctx.fill(new Path2D(path.d));
+              ctx.restore();
+            }
+            ctx.restore();
+            continue;
+          }
           // Match SVG's preserveAspectRatio=none: horizontal glyph metrics use
           // board width, vertical metrics use height even on a compact board.
           ctx.scale(1 / h, 1 / h);

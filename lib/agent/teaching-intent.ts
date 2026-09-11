@@ -27,6 +27,7 @@ export const canRevealRelationship = (intent?: TeachingIntent) => Boolean(intent
 // symbolic relationship would answer the recall task before the learner tries.
 export function isRelationship(text: string): boolean {
   if (typeof text !== 'string') return false;
+  if (/\\(?:d?frac|tfrac|sqrt|int|sum|prod|begin)\b/.test(text)) return true;
   const compact = text.replace(/\s+/g, '');
   if (/[∫∑∏]/u.test(compact)) return true;
   const relation = compact.match(/[=≈∝]/u);

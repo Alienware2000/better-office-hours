@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+const external = createRequire(import.meta.url);
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,7 +10,7 @@ function load(file) {
   if(cache.has(file))return cache.get(file);
   const loadedModule={exports:{}};
   const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-  vm.runInThisContext(`(function(require,module,exports){${code}\n})`,{filename:file})(name=>load((name.startsWith('@/')?path.resolve(name.slice(2)):path.resolve(path.dirname(file),name))+'.ts'),loadedModule,loadedModule.exports);
+  vm.runInThisContext(`(function(require,module,exports){${code}\n})`,{filename:file})(name=>name.startsWith('@mathjax/') ? external(name) : load((name.startsWith('@/')?path.resolve(name.slice(2)):path.resolve(path.dirname(file),name))+'.ts'),loadedModule,loadedModule.exports);
   cache.set(file,loadedModule.exports);return loadedModule.exports;
 }
 const {hitInk,inkPath,moveInk,inkBounds}=load('lib/whiteboard/ink-path.ts');

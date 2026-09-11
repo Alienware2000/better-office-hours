@@ -1,4 +1,5 @@
 import type { Color } from "../types";
+import { hasLatex } from './math-source';
 
 export const boardStyle = {
   paper: "#fffcf6",
@@ -18,6 +19,8 @@ export const boardStyle = {
 };
 
 export function boardLabel(value: string) {
+  // Never truncate a TeX command or normalize its braces into invalid source.
+  if (hasLatex(String(value))) return String(value).trim().slice(0, 800);
   return String(value)
     .replace(/[\u2014\u2013]/g, ", ")
     .replace(/\^([23])/g, (_, digit: string) => digit === '2' ? '²' : '³')

@@ -175,6 +175,8 @@ type StudentAnnotation = {
 
 ### 3.3 Whiteboard (whiteboard lane)
 
+The existing DRAW text string accepts plain notation or LaTeX; no shared field was added. `math-layout.ts` imports MathJax Base/AMS plus the TeX font directly and typesets synchronously in the app. Only bounded path/rectangle primitives and affine transforms are retained, with measured width/ascent/descent. Local Drawable mathDrawing metadata stores the result. BoardText renders those paths; snapshotBoard fills the same paths into canvas without asynchronous image decoding or external fonts. Existing non-LaTeX notes can resolve through the same renderer. Plain prose stays in the ordinary text renderer. Cache size, source length, and primitive count are bounded; unsupported input falls back to text. No custom macros, links, HTML, external package loading, or full document compilation. Package dependencies @mathjax/src and @mathjax/mathjax-tex-font are pinned to 4.1.3 as part of David's math-rendering request. The shared types below remain unchanged.
+
 The tutor draws through a small command set that the whiteboard lane maps onto SVG geometry with animated stroke-in.
 
 ```ts
@@ -399,4 +401,4 @@ Speech synthesis defaults to ElevenLabs conversational v3; set ELEVENLABS_TTS_MO
 
 Local LivePage metadata now includes optional textRegions: bounded PDF.js text fragments with normalized BBox geometry. PdfViewer publishes them, the LLM route validates numeric coordinates, and the runtime exposes them as measured anchors. These locate fragments, not individual glyphs inside a long fragment. Image-only PDFs still rely on vision. Active-session MODE commands cannot replace student intent.
 
-BoardText is the common SVG typography renderer for DRAW and ANIM. The snapshot canvas uses the same font family, sizing, and deterministic symbol colors. This supports short Unicode equations and labels, not arbitrary LaTeX or symbolic algebra. Student ink stays independent of tutor revisions.
+BoardText is the common SVG typography renderer for DRAW and ANIM. The snapshot canvas uses the same font family, sizing, and deterministic symbol colors. This supports plain notation and Base/AMS LaTeX math, with shared vector glyphs for SVG and snapshots. It does not perform symbolic algebra or compile full LaTeX documents. Student ink stays independent of tutor revisions.

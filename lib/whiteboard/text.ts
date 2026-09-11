@@ -1,8 +1,9 @@
 import { boardStyle } from './style';
+import { isMathNotation } from './math-source';
 
 export const MATH_FONT = '"Cambria Math", "STIX Two Math", Georgia, serif';
 export const LABEL_FONT = '"Source Sans 3", system-ui, sans-serif';
-export const isMathText = (text: string) => /[=≈∝≤≥∫∑√]|[²³₀₁₂]/.test(text);
+export const isMathText = isMathNotation;
 
 // Keep a symbol's identity across lines, independent of the order it was drawn.
 const SYMBOL_COLORS = ['#b95832', '#397b78', '#76649a'];
