@@ -1,7 +1,7 @@
 export { chunkSourceRecord, chunkSourceRecords } from "./chunk";
-export { retrieveStudentChunks } from "./retrieve";
+export { retrieveStudentContext } from "./retrieve";
 export type {
   CourseSourceRecord,
-  IndexedCourseChunk,
   RetrievalRequest,
+  StudentContextChunk,
 } from "./types";

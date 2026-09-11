@@ -24,3 +24,10 @@ export type RetrievalRequest = {
   query: string;
   limit?: number;
 };
+
+export type StudentContextChunk = {
+  documentKind: Exclude<CourseDocument["kind"], "solution">;
+  documentTitle: string;
+  page?: number;
+  text: string;
+};

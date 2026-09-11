@@ -39,10 +39,10 @@ function score(item: IndexedCourseChunk, queryTerms: string[]): number {
   }, 0);
 }
 
-export function rankCourseChunks(
-  index: readonly IndexedCourseChunk[],
+export function rankCourseChunks<T extends IndexedCourseChunk>(
+  index: readonly T[],
   request: RetrievalRequest,
-): IndexedCourseChunk[] {
+): T[] {
   const queryTerms = terms(request.query);
   if (!request.courseId.trim() || queryTerms.length === 0) return [];
 

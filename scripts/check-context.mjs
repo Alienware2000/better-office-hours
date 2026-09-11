@@ -29,7 +29,7 @@ function load(file) {
 }
 
 const { chunkSourceRecord, chunkSourceRecords } = load("lib/context/chunk.ts");
-const { retrieveStudentChunks } = load("lib/context/retrieve.ts");
+const { retrieveStudentContext } = load("lib/context/retrieve.ts");
 const { retrieveServerReferenceChunks } = load(
   "lib/context/server-reference.ts",
 );
@@ -62,6 +62,16 @@ const sources = [
     storagePath: "cs-223/lecture-9.pdf",
     page: 4,
     text: "A graph search can use a queue or stack. Horizontal velocity is not part of this course.",
+  },
+  {
+    courseId: "phys-180",
+    documentId: "worked-answer",
+    documentKind: "lecture",
+    documentTitle: "Instructor worked answer",
+    storagePath: "phys-180/private/worked-answer.pdf",
+    page: 1,
+    text: "This mislabeled record contains a secret horizontal velocity answer.",
+    isSolution: true,
   },
 ];
 
@@ -135,18 +145,48 @@ const solutionChunk = index.find(
 assert.ok(solutionChunk);
 assert.equal(solutionChunk.chunk.isSolution, true);
 
-const studentResults = retrieveStudentChunks(index, {
+const studentResults = retrieveStudentContext(index, {
   courseId: "phys-180",
   query: "horizontal velocity",
 });
 assert.ok(studentResults.length > 0);
-assert.ok(studentResults.every((item) => item.courseId === "phys-180"));
-assert.ok(studentResults.every((item) => !item.chunk.isSolution));
+assert.deepEqual(Object.keys(studentResults[0]).sort(), [
+  "documentKind",
+  "documentTitle",
+  "page",
+  "text",
+]);
+assert.ok(studentResults.every((item) => item.documentKind !== "solution"));
 assert.ok(
-  studentResults.some((item) => item.chunk.documentId === "lecture-4"),
+  studentResults.some(
+    (item) => item.documentTitle === "Lecture 4: Projectile Motion",
+  ),
 );
 assert.ok(
-  studentResults.every((item) => item.chunk.documentId !== "solution-3"),
+  studentResults.every(
+    (item) =>
+      item.documentTitle !== "Problem Set 3 Solutions" &&
+      item.documentTitle !== "Instructor worked answer",
+  ),
+);
+assert.ok(
+  studentResults.every(
+    (item) =>
+      !("courseId" in item) &&
+      !("storagePath" in item) &&
+      !("embedding" in item) &&
+      !("isSolution" in item) &&
+      !("chunk" in item),
+  ),
+);
+
+const rankedResults = retrieveStudentContext(index, {
+  courseId: "phys-180",
+  query: "projectile gravity vertical",
+});
+assert.equal(
+  rankedResults[0]?.documentTitle,
+  "Lecture 4: Projectile Motion",
 );
 
 const references = retrieveServerReferenceChunks(index, {
@@ -158,25 +198,25 @@ assert.ok(references.every((item) => item.courseId === "phys-180"));
 assert.ok(references.every((item) => item.chunk.isSolution));
 
 assert.deepEqual(
-  retrieveStudentChunks(index, {
+  retrieveStudentContext(index, {
     courseId: "missing-course",
     query: "horizontal velocity",
   }),
   [],
 );
 assert.deepEqual(
-  retrieveStudentChunks([], {
+  retrieveStudentContext([], {
     courseId: "phys-180",
     query: "horizontal velocity",
   }),
   [],
 );
 assert.deepEqual(
-  retrieveStudentChunks(index, { courseId: "phys-180", query: "the and of" }),
+  retrieveStudentContext(index, { courseId: "phys-180", query: "the and of" }),
   [],
 );
 assert.deepEqual(
-  retrieveStudentChunks(index, {
+  retrieveStudentContext(index, {
     courseId: "phys-180",
     query: "horizontal velocity",
     limit: 0,

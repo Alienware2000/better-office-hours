@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 01:02 ET
+Updated: 2026-09-11 01:07 ET
 By: Hussein (context lane)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/context`, from the approved `main` baseline
@@ -10,7 +10,7 @@ Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were a
 
 ## Now
 
-Context first slice is ready for David's review. `lib/context/*` now chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Chunk IDs are deterministic and page-aware, repeated source ingestion is deduplicated, malformed identity/page fields fail early, and mathematical Unicode survives chunking. Student retrieval is course-scoped and always excludes solutions; solution retrieval has a separate server-runtime-only entry point. The focused synthetic check covers chunk boundaries, stable IDs, repeated ingestion, cross-course filtering, solution separation, missing data, and browser rejection of reference access. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
+Context first slice is ready for David's review. `lib/context/*` now chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Chunk IDs are deterministic and page-aware, repeated source ingestion is deduplicated, malformed identity/page fields fail early, and mathematical Unicode survives chunking. Student retrieval is course-scoped and always excludes solutions, including non-solution document kinds explicitly flagged as private answers. Its public result contains only document kind, title, page, and text; course IDs, storage paths, embeddings, solution flags, and internal chunk records cannot cross that boundary. Solution retrieval has a separate server-runtime-only entry point. The focused synthetic check covers chunk boundaries, stable IDs, repeated ingestion, ranking quality, cross-course filtering, solution separation, result-field leakage, missing data, and browser rejection of reference access. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
 
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
@@ -34,7 +34,7 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 
 ## Validation
 
-- Context: `node scripts/check-context.mjs`, focused ESLint, production build, workspace checks, and animation unit checks pass. Standalone `npx tsc --noEmit` still reports the pre-existing `LayoutProps` error in `app/layout.tsx`; `next build` completes its TypeScript phase successfully.
+- Context: `node scripts/check-context.mjs`, focused ESLint, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass.
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. Existing hook ref-access/immutability lint failures remain; the new harness passes lint.
 
 - `npm run build` and `npx tsc --noEmit` pass.
