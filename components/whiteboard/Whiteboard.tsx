@@ -24,7 +24,7 @@ import {
 import { BoardInkBar, type BoardTool } from "./BoardInkBar";
 import "./whiteboard.css";
 
-export function Whiteboard({ active = true }: { active?: boolean }) {
+export function Whiteboard({ active = true, expanded = false }: { active?: boolean; expanded?: boolean }) {
   const [, setTick] = useState(0);
   const [tool, setTool] = useState<BoardTool>("pen");
   const [color, setColor] = useState<StudentInk>("ink");
@@ -33,10 +33,13 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
   const draftRef = useRef<{ x: number; y: number }[]>([]);
   const reduceMotion = useReducedMotion() ?? false;
   const board = getBoardState();
+  const isOpen = expanded || board.open;
   const pendingKey = board.groups
     .filter((group) => group.appear === "pending")
     .map((group) => group.id)
     .join(",");
+
+  useEffect(() => { if (expanded) openBoard(); }, [expanded]);
 
   useEffect(() => subscribeBoard(() => setTick((n) => n + 1)), []);
 
@@ -123,20 +126,20 @@ export function Whiteboard({ active = true }: { active?: boolean }) {
     <motion.section
       layout
       initial={false}
-      animate={{ height: board.open ? "auto" : 0, opacity: board.open ? 1 : 0 }}
+      animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
       transition={reduceMotion ? { duration: 0 } : boardStyle.motion.spring}
-      className={["board-root", board.open ? "is-open" : ""].filter(Boolean).join(" ")}
-      aria-hidden={!board.open}
+      className={["board-root", isOpen ? "is-open" : "", expanded ? "board-expanded" : ""].filter(Boolean).join(" ")}
+      aria-hidden={!isOpen}
       aria-label="Whiteboard"
     >
       <div className="board-paper" ref={paperRef}>
-        {board.open ? (
+        {isOpen ? (
           <BoardInkBar tool={tool} color={color} onTool={setTool} onColor={setColor} />
         ) : null}
         <div
           className={["board-surface", tool === "eraser" ? "is-eraser" : ""].join(" ")}
           onPointerDown={(event) => {
-            if (!board.open || event.button !== 0) return;
+            if (!isOpen || event.button !== 0) return;
             pauseAnimation();
             event.preventDefault();
             const origin = event.currentTarget.getBoundingClientRect();

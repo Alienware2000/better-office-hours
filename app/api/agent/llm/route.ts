@@ -30,6 +30,7 @@ function asLivePage(body: unknown): LivePage | null {
   }
   return {
     psetId: page.psetId,
+    documentKind: page.documentKind === "notes" ? "notes" : "pset",
     title: typeof page.title === "string" ? page.title : "",
     page: typeof page.page === "number" ? page.page : 0,
     pages: typeof page.pages === "number" ? page.pages : 1,

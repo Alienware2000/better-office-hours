@@ -10,6 +10,7 @@ export type LoadedPset = { id: string; title: string; fileUrl: string };
 
 export function WorkspacePane({
   pset,
+  kind = "pset",
   onPsetChange,
   pointer,
   highlight,
@@ -21,6 +22,7 @@ export function WorkspacePane({
   // Held by the session rather than here, so closing the workspace and coming
   // back does not lose the student's upload.
   pset: LoadedPset | null;
+  kind?: "pset" | "notes";
   onPsetChange: (pset: LoadedPset) => void;
   pointer?: { page: number; x: number; y: number; label?: string };
   highlight?: { page: number; bbox: BBox };
@@ -39,7 +41,7 @@ export function WorkspacePane({
             <LeaveButton onLeave={onExit} />
           </div>
         ) : null}
-        <DropZone onUploaded={onPsetChange} />
+        <DropZone kind={kind} onUploaded={onPsetChange} />
       </div>
     );
   }
@@ -49,6 +51,7 @@ export function WorkspacePane({
       <PdfViewer
         key={pset.id}
         psetId={pset.id}
+        documentKind={kind}
         title={pset.title}
         fileUrl={pset.fileUrl}
         pointer={pointer}

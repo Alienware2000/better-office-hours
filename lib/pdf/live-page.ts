@@ -2,6 +2,7 @@ import type { BBox } from "@/lib/types";
 
 export type LivePage = {
   psetId: string;
+  documentKind?: "pset" | "notes";
   title: string;
   page: number;
   pages: number;

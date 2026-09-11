@@ -299,3 +299,33 @@
     transition: none;
   }
 }
+
+.pdf-desk { height: 100%; }
+.pdf-desk.is-hidden { display: none; }
+.concept-desk {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.5rem 1.75rem 1.75rem;
+  background: #e9e3d6;
+}
+.concept-toolbar { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem; }
+.concept-toolbar > span { color: #8a8276; font-size: 0.75rem; letter-spacing: 0.025em; }
+.concept-desk .board-expanded { flex: 1 1 auto; height: 100% !important; min-height: 0; }
+.concept-desk .board-expanded .board-paper { height: 100%; margin: 0; border-radius: 6px; }
+.concept-desk .board-surface { width: min(calc(100% - 2rem), calc(100dvh - 11rem)); height: auto; max-height: calc(100% - 5rem); top: 2.8rem; bottom: 2.2rem; margin: auto; }
+.concept-desk .board-ink-bar { top: 0.8rem; }
+@media (max-width: 640px) {
+  .concept-desk { padding: 0.8rem; }
+  .concept-desk .board-surface { width: min(calc(100% - 1rem), calc(100dvh - 18rem)); }
+  .agent-stage > .board-root { display: none; }
+}
+.concept-desk.is-hidden { display: none; }
+.concept-content { position: relative; flex: 1; min-height: 0; }
+.concept-board, .concept-notes { position: absolute; inset: 0; }
+.is-concealed { visibility: hidden; pointer-events: none; }
+.concept-notes > .desk { height: 100%; }
+.concept-views { display: flex; margin-left: auto; padding: 3px; border: 1px solid #d8d0c3; border-radius: 999px; gap: 2px; }
+.concept-views button { padding: 0.4rem 0.75rem; border: 0; border-radius: 999px; font-size: 0.75rem; color: #78716c; cursor: pointer; background: transparent; }
+.concept-views button[aria-pressed="true"] { background: #fffcf6; color: #292621; box-shadow: 0 1px 3px #30241812; }
+.concept-views button:focus-visible { outline: 2px solid #b95832; outline-offset: 2px; }

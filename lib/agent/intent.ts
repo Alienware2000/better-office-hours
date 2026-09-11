@@ -1,11 +1,11 @@
 import type { LayoutState } from "@/lib/types";
 
 const PSET = [
-  /\bhomework\b/,
+  /\bhome\s*work\b/,
   /\bhw\b/,
-  /\bp-?set\b/,
-  /\bproblem set\b/,
-  /\bassignment\b/,
+  /\bp[ -]?sets?\b/,
+  /\bproblem sets?\b/,
+  /\bassignments?\b/,
   /\bproblem \d/,
   /\bquestion \d/,
   /\bnumber \d/,
@@ -13,6 +13,8 @@ const PSET = [
 
 const CONCEPT = [
   /\bexplain a concept\b/,
+  /\bsomething else\b/,
+  /\bhelp me (?:learn|understand)\b/,
   /\bconcept\b/,
   /\blecture\b/,
   /\bteach me\b/,
@@ -37,7 +39,7 @@ export function detectMode(
   text: string,
   current: LayoutState = "orb_only",
 ): Extract<LayoutState, "pset" | "concept"> | null {
-  const said = text.toLowerCase();
+  const said = text.toLowerCase().replace(/’/g, "'");
   if (PSET.some((pattern) => pattern.test(said))) return "pset";
   if (current === "pset") {
     if (/\bexplain a concept\b/.test(said) || /\bteach me\b/.test(said) || /\blecture\b/.test(said)) {

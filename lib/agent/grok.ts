@@ -61,16 +61,19 @@ export function buildGrokMessages(
   const context = buildContextBlock(
     live
       ? {
+          documentKind: live.documentKind,
           psetTitle: live.title || "the PDF the student uploaded",
           page: live.page + 1,
           pages: live.pages,
-          mode: "pset",
+          mode: live.documentKind === "notes" ? "concept" : "pset",
           studentDrew: (live.studentMarks ?? 0) > 0 || Boolean(board?.studentShapesSince),
         }
       : {
+          mode: board?.open ? "concept" : "orb_only",
           studentDrew: Boolean(board?.studentShapesSince),
         },
   );
+  const materialNote = live?.documentKind === "notes" ? "\n<reference_notes>The attached PDF is supplemental notes in a concept session. Keep the concept workspace. Do not treat these notes as an assignment, ask which problem to solve, or emit MODE pset unless the student explicitly asks for homework. Point at relevant material and draw to explain it.</reference_notes>" : "";
   const eventBlock = event ? `\n<event>${describeEvent(event)}</event>` : "";
   const rest = history.filter((message) => message.role !== "system");
   // Late in the system message, because these are the instructions the model
@@ -83,7 +86,7 @@ export function buildGrokMessages(
     : `\n<when_to_think>${WHEN_TO_THINK}</when_to_think>`;
   const visual = wantsVisualHelp(history)
     ? '\n<visual_help>The student wants help picturing the idea. If it is spatial or relational, open the board now and compose one small diagram with DRAW, or ANIM for change over time. Preserve the hint ladder and prediction before explanation. Do not merely promise to draw.</visual_help>' : '';
-  const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${boardNote}${BOARD_NARRATION}${visual}${voice}${eventBlock}${lane}`;
+  const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${boardNote}${BOARD_NARRATION}${visual}${voice}${eventBlock}${materialNote}${lane}`;
   return [{ role: "system", content: system }, ...rest];
 }
 
@@ -116,7 +119,7 @@ function toApiMessages(
         {
           type: "text",
           text: [
-            `This is the student's screen right now: page ${live.page + 1} of the assignment on their desk.`,
+            `This is the student's screen right now: page ${live.page + 1} of the ${live.documentKind === "notes" ? "supplemental notes" : "assignment"} on their desk.`,
             "You can see this page. Do not ask them to upload it or which assignment it is.",
             live.studentMarks
               ? `The student drew ${live.studentMarks === 1 ? "a mark" : `${live.studentMarks} marks`} on this page; the ink is in the image. Respond to what they marked.`

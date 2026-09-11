@@ -178,3 +178,9 @@ export function focusAnimation(id: string) {
   state = { ...state, focus: id };
   emit();
 }
+
+// Park each desk independently, always restoring a still frame.
+export function restoreBoard(snapshot: BoardState) {
+  state = { ...structuredClone(snapshot), playing: false };
+  emit();
+}

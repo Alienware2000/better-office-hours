@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { BBox } from "@/lib/types";
 import { detectQuestionRegions, type PdfTextItem } from "@/lib/pdf/questions";
-import { setLivePage } from "@/lib/pdf/live-page";
+import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
 import { InkBar } from "./InkBar";
 import { LeaveButton } from "./LeaveButton";
 import { Overlay } from "./Overlay";
@@ -35,6 +35,7 @@ type PageView = {
 
 export function PdfViewer({
   psetId,
+  documentKind = "pset",
   title,
   fileUrl,
   pointer,
@@ -45,6 +46,7 @@ export function PdfViewer({
   onRemove,
 }: {
   psetId: string;
+  documentKind?: "pset" | "notes";
   title: string;
   fileUrl: string;
   onReady?: (info: { title: string; pages: number }) => void;
@@ -216,6 +218,7 @@ export function PdfViewer({
         if (activeRef.current) {
           setLivePage({
             psetId,
+            documentKind,
             title,
             page: 0,
             pages: nextPages.length,
@@ -237,9 +240,9 @@ export function PdfViewer({
 
     return () => {
       cancelled = true;
-      setLivePage(null);
+      if (getLivePage()?.psetId === psetId) setLivePage(null);
     };
-  }, [fileUrl, psetId, title]);
+  }, [fileUrl, psetId, title, documentKind]);
 
   // Whichever page the student is looking at is the page the tutor sees. This
   // used to update only when the tutor pointed, so scrolling left it blind.
@@ -355,7 +358,7 @@ export function PdfViewer({
 
   useEffect(() => {
     if (!active) {
-      setLivePage(null);
+      if (getLivePage()?.psetId === psetId) setLivePage(null);
       return;
     }
 
@@ -374,6 +377,7 @@ export function PdfViewer({
       if (cancelled) return;
       setLivePage({
         psetId,
+        documentKind,
         title,
         page: current,
         pages: pages.length,
@@ -392,7 +396,7 @@ export function PdfViewer({
       cancelled = true;
       clearTimeout(markTimer);
     };
-  }, [active, current, strokes, pages, psetId, title]);
+  }, [active, current, strokes, pages, psetId, title, documentKind]);
 
   const goToPage = (index: number) => {
     const clamped = Math.min(Math.max(index, 0), pages.length - 1);
@@ -464,7 +468,7 @@ export function PdfViewer({
             type="button"
             className="desk-button desk-remove"
             onClick={onRemove}
-            aria-label="Remove this problem set"
+            aria-label={documentKind === "notes" ? "Remove these notes" : "Remove this problem set"}
           >
             Remove
           </button>

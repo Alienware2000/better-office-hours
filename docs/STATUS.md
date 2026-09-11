@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 23:16 ET
+Updated: 2026-09-10 23:27 ET
 By: Whiteboard lane
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/whiteboard` (from `lane/workspace`)
@@ -11,20 +11,25 @@ PR: whiteboard PR not opened yet; workspace PR #1 still open against `main`
 
 ## Now
 
-The declarative whiteboard slice is implemented locally on `lane/whiteboard`, ready for human feel review. No push or PR for this slice. DRAW and ANIM share the paper, color roles, labels, axes, and geometry. The tutor composes visuals for the current topic; projectile motion is only a development fixture.
+One adaptive desk now handles homework, concepts, and other requests. The orb and captions keep the same position. Every desk offers Whiteboard and PDF views: homework starts at Attach pset, concepts and Something else start on the large board with Attach notes available. While viewing a PDF, tutor drawings use the smaller board alongside it. A tutor pointer switches to the attached PDF view. Supplemental notes use the existing upload, highlighting, and ink tools, with their own concept-session state and model context.
 
-ANIM supports validated keyframes, path following, camera movement, focus, play/pause, and scrubbing. Its reveal waits for preceding narration. Orb stop, student recording, and board ink pause motion on its current frame. PDF marks publish a fresh image and a debounced `student_mark` event; reactions wait while the tutor is busy and are discarded if the page changes or voice is paused. Board snapshots are captured at request time, including the current animation frame.
+Fixed two entry issues: concept state previously never rendered a workspace, and paused tabs claimed voice on microphone initialization, interrupting other tabs. Only an activated tab now claims voice. Starting the orb clears the old handoff message and resumes a suspended audio context. Speech intent accepts homework, home work, p set, assignments, and concept/other requests before waiting for a model tag.
+
+Whiteboard state parks separately with homework and concept sessions and restores paused. Notes do not replace the homework PDF. The existing declarative animation runtime and runtime-only visual hints remain in place. No changes to the human prompt, pedagogy, or shared types. All work is local on `lane/whiteboard`; no push or PR for these slices.
 
 ## What to do next
 
-1. Human review: ask for a diagram on an arbitrary topic, ask to animate a change, scrub, then interrupt with the orb. Check narration and drawing feel together.
-2. Mark a PDF while listening and confirm the tutor refers to that marked region without needing a verbal description. The live mic and PDF event flow still need this manual check.
-3. Review model consistency: the first live DRAW check passed its tag-count threshold, but the latest returned only one arrow across two turns and failed that threshold. The renderer accepts both standard DRAW JSON and the observed generic `op: draw` plus `kind` variation. Do not weaken the pedagogy to force extra shapes.
-4. Concept mode as a full-size board remains a separate checkpoint. Do not start recap or programmatic animation from this slice.
+1. Human mic check: tap the orb, say a homework request, then leave and ask for a concept. Confirm the desk opens from speech and the response feels natural.
+2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
+3. Try the board on an iPad with Apple Pencil. Pointer input is implemented, but Pencil behavior, palm rejection, and device-specific feel are not verified.
+4. Review live drawing cadence. Model DRAW output still varies: one earlier probe returned just one arrow across two turns. Do not weaken the pedagogy to force extra shapes.
+5. Canvas/Grok Bot remains a future course-context source, separate from the adaptive desk. Do not start that integration or recap without the next checkpoint.
 
 ## Validation
 
 - `npm run build` and `npx tsc --noEmit` pass.
+- `node scripts/check-workspace.mjs` passes intent routing, separate board restoration, notes context, and notes event checks.
+- Browser verified Homework, Explain a concept, and Something else entry; full-board switching; notes PDF upload/render with annotation controls; return to Whiteboard and Leave. Actual microphone recognition still needs human testing.
 - Focused ESLint on whiteboard, scenes, runtime hints, events, and the animation check passes. Full repo lint still reports existing voice/workspace ref-access errors.
 - `node scripts/check-anim.mjs --unit` passes validation, interpolation, holds, Follow, pause/freeze, seek, focus, replay, clear, streaming parser, and a general bar/text/camera example.
 - Live ANIM generated a valid general motion spec through `:3100`. Live DRAW behavior varies as described above.
@@ -56,7 +61,7 @@ ANIM supports validated keyframes, path following, camera movement, focus, play/
 |---|---|---|---|
 | voice | David | `lane/voice` | first pass on GitHub; later voice work is on workspace / whiteboard |
 | workspace | David | `lane/workspace` | PR #1 open; desk pass approved |
-| whiteboard | David | `lane/whiteboard` | **declarative runtime in**; waiting on human feel check |
+| whiteboard | David | `lane/whiteboard` | **adaptive desk + animation in**; waiting on human feel check |
 | context | Teammate | not started | types ready; `lib/db/schema.sql` missing |
 | recap | Teammate | not started | |
 | shell | Teammate | not started | VoiceSession still composes the split |

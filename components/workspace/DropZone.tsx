@@ -5,7 +5,9 @@ import "./workspace.css";
 
 export function DropZone({
   onUploaded,
+  kind = "pset",
 }: {
+  kind?: "pset" | "notes";
   onUploaded: (pset: { id: string; title: string; fileUrl: string }) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -67,7 +69,7 @@ export function DropZone({
       />
       <span className="paper-rule" />
       <p className="paper-copy">
-        {busy ? "Opening the problem set." : "Drop the pset PDF here"}
+        {busy ? "Opening the PDF." : kind === "notes" ? "Drop your notes PDF here" : "Drop the pset PDF here"}
       </p>
       {busy ? null : <p className="paper-hint">or click to choose a file</p>}
       {error ? <p className="paper-error">{error}</p> : null}

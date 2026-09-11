@@ -6,6 +6,7 @@ import {
   WorkspacePane,
   type LoadedPset,
 } from "@/components/workspace/WorkspacePane";
+import { LeaveButton } from "@/components/workspace/LeaveButton";
 import { Whiteboard } from "@/components/whiteboard/Whiteboard";
 import { Captions } from "./Captions";
 import { Orb } from "./Orb";
@@ -33,13 +34,30 @@ export function VoiceSession() {
     highlight,
   } = useVoiceLoop();
   const [pset, setPset] = useState<LoadedPset | null>(null);
-  const split = layout === "pset";
-  const deskKept = split || Boolean(pset);
+  const [notes, setNotes] = useState<LoadedPset | null>(null);
+  const [documentViews, setDocumentViews] = useState({
+    pset: true,
+    concept: false,
+  });
+  const [notesReady, setNotesReady] = useState<{
+    title: string;
+    pages: number;
+  } | null>(null);
+  const announcedNotes = useRef<string | null>(null);
+  const split = layout !== "orb_only";
+  const concept = layout === "concept";
+  const homework = layout === "pset";
+  const deskMode = concept ? "concept" : "pset";
+  const documentView = documentViews[deskMode];
+  const setDocumentView = (show: boolean) =>
+    setDocumentViews((current) => ({ ...current, [deskMode]: show }));
+  const deskKept = split || Boolean(pset) || Boolean(notes);
   const reduceMotion = useReducedMotion();
   const announcedReady = useRef<string | null>(null);
-  const [deskReady, setDeskReady] = useState<{ title: string; pages: number } | null>(
-    null,
-  );
+  const [deskReady, setDeskReady] = useState<{
+    title: string;
+    pages: number;
+  } | null>(null);
 
   useEffect(() => {
     bindDiscardPset(() => {
@@ -66,9 +84,9 @@ export function VoiceSession() {
   // sendEvent no-ops while paused, so do not mark the pset announced until
   // the student is actually listening. Otherwise the tutor never sees the page.
   useEffect(() => {
-    if (paused || !split || !pset || !deskReady) return;
+    if (paused || !homework || !pset || !deskReady) return;
     announceReady(deskReady, pset.id);
-  }, [announceReady, deskReady, paused, pset, split]);
+  }, [announceReady, deskReady, paused, pset, homework]);
 
   useEffect(() => {
     if (!split) return;
@@ -78,6 +96,28 @@ export function VoiceSession() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [exitWorkspace, split]);
+
+  useEffect(() => {
+    if (
+      !concept ||
+      paused ||
+      !notes ||
+      !notesReady ||
+      announcedNotes.current === notes.id
+    )
+      return;
+    announcedNotes.current = notes.id;
+    void sendEvent({ kind: "notes_ready", ...notesReady });
+  }, [concept, paused, notes, notesReady, sendEvent]);
+
+  useEffect(() => {
+    if (!pointer || !(concept ? notes : homework && pset)) return;
+    const mode = concept ? "concept" : "pset";
+    const frame = requestAnimationFrame(() => setDocumentViews((current) =>
+      current[mode] ? current : { ...current, [mode]: true },
+    ));
+    return () => cancelAnimationFrame(frame);
+  }, [pointer, concept, homework, notes, pset]);
 
   const layoutTransition = reduceMotion
     ? { duration: 0 }
@@ -128,7 +168,13 @@ export function VoiceSession() {
         {deskKept ? (
           <motion.div
             key="workspace"
-            className={["workspace-layout", split ? "" : "is-parked"].filter(Boolean).join(" ")}
+            className={[
+              "workspace-layout",
+              split ? "" : "is-parked",
+              concept ? "is-concept" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             initial={{ opacity: 0 }}
             animate={{ opacity: split ? 1 : 0 }}
             transition={{ duration: reduceMotion ? 0 : 0.18 }}
@@ -140,16 +186,92 @@ export function VoiceSession() {
               animate={{ opacity: 1, x: 0 }}
               transition={layoutTransition}
             >
-              <WorkspacePane
-                pset={pset}
-                onPsetChange={setPset}
-                pointer={pointer}
-                highlight={highlight}
-                active={split}
-                onExit={exitWorkspace}
-                onRemove={putAwayPset}
-                onPsetReady={setDeskReady}
-              />
+              <div className="concept-desk adaptive-desk">
+                <div className="concept-toolbar">
+                  <LeaveButton onLeave={exitWorkspace} />
+                  <div
+                    className="concept-views"
+                    role="group"
+                    aria-label="Desk view"
+                  >
+                    <button
+                      type="button"
+                      aria-pressed={!documentView}
+                      onClick={() => setDocumentView(false)}
+                    >
+                      Whiteboard
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={documentView}
+                      onClick={() => setDocumentView(true)}
+                    >
+                      {concept
+                        ? notes
+                          ? "Notes"
+                          : "Attach notes"
+                        : pset
+                          ? "Problem set"
+                          : "Attach pset"}
+                    </button>
+                  </div>
+                </div>
+                <div className="concept-content">
+                  {split && !documentView && (
+                    <div className="concept-board">
+                      <Whiteboard expanded />
+                    </div>
+                  )}
+                  <div
+                    className={
+                      homework && documentView
+                        ? "concept-notes"
+                        : "concept-notes is-concealed"
+                    }
+                    aria-hidden={!homework || !documentView}
+                    inert={!homework || !documentView}
+                  >
+                    <WorkspacePane
+                      pset={pset}
+                      onPsetChange={setPset}
+                      pointer={pointer}
+                      highlight={highlight}
+                      active={homework}
+                      onRemove={putAwayPset}
+                      onPsetReady={setDeskReady}
+                    />
+                  </div>
+                  {(concept || notes) && (
+                    <div
+                      className={
+                        concept && documentView
+                          ? "concept-notes"
+                          : "concept-notes is-concealed"
+                      }
+                      aria-hidden={!concept || !documentView}
+                      inert={!concept || !documentView}
+                    >
+                      <WorkspacePane
+                        kind="notes"
+                        pset={notes}
+                        onPsetChange={(value) => {
+                          setNotesReady(null);
+                          setNotes(value);
+                        }}
+                        active={concept}
+                        pointer={pointer}
+                        highlight={highlight}
+                        onPsetReady={setNotesReady}
+                        onRemove={() => {
+                          setNotes(null);
+                          setNotesReady(null);
+                          announcedNotes.current = null;
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </motion.section>
 
             {split ? (
@@ -168,8 +290,10 @@ export function VoiceSession() {
                 </motion.div>
                 <p className="orb-status">{statusText(state, paused)}</p>
                 <Captions turns={turns} />
-                <Whiteboard active={split} />
-                {error ? <p className="session-note workspace-note">{error}</p> : null}
+                {documentView && <Whiteboard active={split} />}
+                {error ? (
+                  <p className="session-note workspace-note">{error}</p>
+                ) : null}
               </section>
             ) : null}
           </motion.div>

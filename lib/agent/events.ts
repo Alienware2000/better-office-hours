@@ -3,7 +3,7 @@
  * without the student having to prompt it. The client sends a kind, never
  * prose, so nothing it sends can rewrite the tutor's instructions.
  */
-export type SessionEventKind = "pset_ready" | "student_mark";
+export type SessionEventKind = "pset_ready" | "student_mark" | "notes_ready";
 
 export type SessionEvent = {
   kind: SessionEventKind;
@@ -11,7 +11,7 @@ export type SessionEvent = {
   pages?: number;
 };
 
-const KINDS: SessionEventKind[] = ["pset_ready", "student_mark"];
+const KINDS: SessionEventKind[] = ["pset_ready", "student_mark", "notes_ready"];
 
 export function asSessionEvent(input: unknown): SessionEvent | null {
   if (!input || typeof input !== "object") return null;
@@ -29,6 +29,7 @@ export function asSessionEvent(input: unknown): SessionEvent | null {
 }
 
 export function describeEvent(event: SessionEvent): string {
+  if (event.kind === "notes_ready") return "The student attached supplemental notes for this concept. You can see the PDF page. Briefly refer to what is actually on it and ask one question about what they want to understand. These are reference notes, not necessarily a graded assignment. Use the whiteboard when a diagram helps.";
   if (event.kind === "student_mark") return "The student just finished marking the PDF. The fresh page image includes their ink. Briefly acknowledge the specific marked region and ask one focused question about it. Do not solve the graded problem or ask them to describe a mark you can see.";
   if (event.kind === "pset_ready") {
     const named = event.title ? `, titled "${event.title}"` : "";

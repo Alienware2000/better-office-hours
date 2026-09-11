@@ -5,6 +5,7 @@ export type TurnContext = {
   studentName?: string;
   courseCodes?: string[];
   psetTitle?: string;
+  documentKind?: "pset" | "notes";
   psetDueAt?: string;
   page?: number;
   pages?: number;
@@ -94,7 +95,8 @@ export function buildContextBlock(overrides: TurnContext = {}): string {
     .filter(Boolean)
     .join("; ");
   const courses = c.courseCodes?.length ? c.courseCodes.join(", ") : "unknown";
-  const hasPset = Boolean(c.psetTitle);
+  const hasNotes = Boolean(c.psetTitle) && c.documentKind === "notes";
+  const hasPset = Boolean(c.psetTitle) && !hasNotes;
   const pset = hasPset
     ? `${c.psetTitle}${c.psetDueAt ? `, due ${c.psetDueAt}` : ""}, on page ${c.page ?? 1} of ${c.pages ?? 1}`
     : "none uploaded yet";
@@ -104,6 +106,7 @@ export function buildContextBlock(overrides: TurnContext = {}): string {
     `<policies>${policies}</policies>`,
     `<student>${c.studentName}; courses: ${courses}</student>`,
     `<pset>${pset}</pset>`,
+    hasNotes ? `<notes>${c.psetTitle}, page ${c.page ?? 1} of ${c.pages ?? 1}</notes>` : "",
     `<last_recap>${c.lastRecap?.stuckOn ?? ""}; ${c.lastRecap?.reviewNext ?? ""}</last_recap>`,
     `<mode>${c.mode ?? "orb_only"}</mode>`,
     `<hint_state>question=${c.hintState?.question ?? ""} rung=${c.hintState?.rung ?? 0} attempts_since_last_hint=${c.hintState?.attempts ?? 0}</hint_state>`,
@@ -111,7 +114,7 @@ export function buildContextBlock(overrides: TurnContext = {}): string {
     `<retrieved>${c.retrieved ?? ""}</retrieved>`,
     `<reference_do_not_reveal>${c.reference ?? ""}</reference_do_not_reveal>`,
     `<student_drew>${c.studentDrew ? "true" : "false"}</student_drew>`,
-    hasPset ? `<desk>${PAGE_ON_DESK}</desk>` : `<no_context_yet>${NOTHING_LOADED}</no_context_yet>`,
+    hasNotes ? "<desk>Supplemental notes are attached for this concept conversation. You can see the current reference page and student ink. Discuss the relevant idea and use the whiteboard to explain it. Do not assume these notes are a graded assignment or ask for a problem number.</desk>" : hasPset ? `<desk>${PAGE_ON_DESK}</desk>` : `<no_context_yet>${NOTHING_LOADED}</no_context_yet>`,
   ]
     .filter(Boolean)
     .join("\n");

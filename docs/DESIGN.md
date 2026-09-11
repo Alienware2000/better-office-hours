@@ -55,9 +55,9 @@ Rules: an animation plays only when the tutor says what to watch for; it pauses 
 
 ### Modes, chosen by what the student says
 - Pset mode: the student names homework. The workspace pane shows a drop zone for the pset PDF (or the pset the Grok Bot already collected, if it matches). Once loaded, the tutor starts.
-- Concept mode: the student names an idea to learn or notes to go over. The workspace becomes the full-size whiteboard and the tutor teaches at the board. Lecture notes are retrieved into context.
-- Something else: the orb asks one clarifying question and picks the closer mode.
-The shell is the same in every mode. Only the workspace pane changes.
+- Concept mode: the student names an idea to learn or notes to go over. The desk starts on the full-size whiteboard and the tutor teaches at the board. The student can attach supplemental notes as a PDF and switch between Notes and Whiteboard without leaving the conversation. Course retrieval is a separate context source when available.
+- Something else: open the same desk on the whiteboard, ask one clarifying question, and adapt to the work.
+The shell is the same in every mode. Each desk has Whiteboard and PDF views, with the orb and captions alongside. Homework starts at PDF upload; concept and other requests start at the board. While viewing a PDF, the tutor can draw on a smaller board in the agent pane. The board is primarily for the tutor to explain, and the student can annotate or work through an idea on the same surface. iPad and Apple Pencil are an intended use of this shared desk, with device-specific feel to be tested.
 
 ### Interaction rules
 - Voice is the only way to address the agent. Mouse and trackpad are for pointing, drawing, paging, and leaving, never for talking to the tutor.

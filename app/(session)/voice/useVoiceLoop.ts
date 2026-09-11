@@ -4,17 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionEvent } from "@/lib/agent/events";
 import { detectMode } from "@/lib/agent/intent";
 import { parseAgentTurn, takeSpeechChunks, type ChatMessage } from "@/lib/agent/tags";
-import { getLivePage } from "@/lib/pdf/live-page";
+import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
 import { getLiveBoard } from "@/lib/whiteboard/live-board";
 import { isDrawCommand } from "@/lib/whiteboard/geometry";
-import { getBoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
+import { getBoardState, restoreBoard, type BoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
 import { CHIPS, pickGreeting, type OrbState } from "./constants";
 import { isJunkSpeech, isPutAwayPsetPhrase, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
 
 type Health = { grok: boolean; elevenlabs: boolean };
 type WorkKind = "lobby" | "pset" | "concept";
-type WorkSnapshot = { history: ChatMessage[]; turns: Turn[] };
+type WorkSnapshot = { history: ChatMessage[]; turns: Turn[]; board: BoardState };
 
 // PROMPT.md asks for two or three sentences under about seventy words. Capping
 // at two cut the tutor's closing question, which is the whole point of a turn.
@@ -113,10 +113,14 @@ export function useVoiceLoop() {
         parkedRef.current[prev] = {
           history: historyRef.current,
           turns: turnsRef.current,
+          board: structuredClone({ ...getBoardState(), playing: false }),
         };
       }
 
       kindRef.current = next;
+      resetBoard();
+      setLivePage(null);
+      if (next === "concept") openBoard();
 
       if (next === "lobby") {
         historyRef.current = greetingMessages();
@@ -128,6 +132,7 @@ export function useVoiceLoop() {
       if (restore) {
         const parked = parkedRef.current[next];
         if (parked) {
+          restoreBoard(parked.board);
           historyRef.current = parked.history;
           turnsRef.current = parked.turns;
           setTurns(parked.turns);
@@ -239,7 +244,7 @@ export function useVoiceLoop() {
   }, []);
 
   const applyTurn = useCallback((turn: AgentTurn) => {
-    if (turn.mode === "pset") {
+    if (turn.mode === "pset" && getLivePage()?.documentKind !== "notes") {
       if (kindRef.current === "lobby") adoptKind("pset", false);
       setLayout("pset");
     }
@@ -283,11 +288,14 @@ export function useVoiceLoop() {
   // Leaving the desk parks that work. The tutor is back in the lobby and
   // cannot see the pset until the student sits down again.
   const exitWorkspace = useCallback(() => {
+    stopPlayback();
+    turnAbortRef.current?.abort();
+    turnAbortRef.current = null;
     adoptKind("lobby", false);
     setLayout("orb_only");
     setPointer(undefined);
     setHighlight(undefined);
-  }, [adoptKind, setLayout]);
+  }, [adoptKind, setLayout, stopPlayback]);
 
   const enterWorkspace = useCallback(() => {
     adoptKind("pset", true);
@@ -577,6 +585,7 @@ export function useVoiceLoop() {
 
   const interrupt = useCallback(() => {
     if (pausedRef.current) {
+      setError(null);
       pausedRef.current = false;
       setPaused(false);
       setInputEnabledRef.current(true);
@@ -640,6 +649,7 @@ export function useVoiceLoop() {
         : new BroadcastChannel("better-office-hours-voice");
 
     const setInputEnabled = (enabled: boolean) => {
+      if (enabled && audioContext?.state === "suspended") void audioContext.resume();
       stream?.getAudioTracks().forEach((track) => {
         track.enabled = enabled;
       });
@@ -680,7 +690,7 @@ export function useVoiceLoop() {
     channel?.addEventListener("message", (event) => {
       const data = event.data as { type?: string; tabId?: string };
       if (data.type === "claim" && data.tabId !== tabId) {
-        suspendVoice("Voice moved to the active tab.");
+        if (!pausedRef.current) suspendVoice("Voice is active in another tab. Tap the orb to continue here.");
       }
     });
     document.addEventListener("visibilitychange", handleVisibility);
@@ -755,8 +765,10 @@ export function useVoiceLoop() {
         },
       });
       setInputEnabled(!pausedRef.current);
-      claimTab();
+      // A newly opened, paused tab must not steal an active conversation.
+      if (!pausedRef.current) claimTab();
       audioContext = new AudioContext();
+      if (!pausedRef.current) await audioContext.resume();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
@@ -802,7 +814,7 @@ export function useVoiceLoop() {
 
       if (pausedRef.current) {
         setOrb("idle");
-      } else {
+      } else if (!hasStartedRef.current && layoutRef.current === "orb_only") {
         hasStartedRef.current = true;
         setOrb("speaking");
         addTurn("tutor", greetingRef.current);
@@ -814,6 +826,8 @@ export function useVoiceLoop() {
           }
         }
         if (!cancelled && !playingRef.current) setOrb("listening");
+      } else if (!playingRef.current && !turnAbortRef.current) {
+        setOrb("listening");
       }
     };
 
