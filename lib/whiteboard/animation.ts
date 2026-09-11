@@ -1,4 +1,5 @@
 import type { AnimationSpec, AnimShape, DrawCommand, Pt } from "../types";
+import { curvePath, curvePoint } from "./curve";
 import { interpretCommand, type ShapeGroup } from "./geometry";
 import { typesetMath } from './math-layout';
 import type { DiagramCommand } from './diagram-command';
@@ -153,12 +154,8 @@ export function sampleFrames(frames: Frame[], time: number): Frame {
   return mix(a, b, u) as Frame;
 }
 
-// Point-index interpolation preserves time sampling supplied by the tutor.
-export function pathPoint(points: Pt[], progress: number): Pt {
-  const index = clamp(progress) * (points.length - 1);
-  const i = Math.min(points.length - 2, Math.floor(index));
-  return mix(points[i], points[i + 1], index - i) as Pt;
-}
+// The visible prefix and its attached objects use exactly the same interpolant.
+export const pathPoint = curvePoint;
 
 export type AnimGroup = ShapeGroup & { opacity: number };
 export function animationFrame(
@@ -261,16 +258,10 @@ export function animationFrame(
         break;
       }
       case "path": {
-        const progress = clamp(Number(f.drawn));
-        const end = progress * (s.points.length - 1);
-        const points = [
-          ...s.points.slice(0, Math.floor(end) + 1),
-          pathPoint(s.points, progress),
-        ];
         command = {
           op: "curve",
           id: s.id,
-          points,
+          points: s.points,
           color: "muted",
           label: s.label,
         };
@@ -279,9 +270,9 @@ export function animationFrame(
     }
     const op = interpretCommand(command, 0);
     if (op?.kind === "draw") {
-      // Animated trajectories use the same sampled polyline for drawing and Follow.
+      // Paths reveal a prefix of the full spline. Bars keep their sharp corners.
       if ((s.kind === "path" || s.kind === "bar") && command.op === "curve") {
-        const d = command.points
+        const d = s.kind === "path" ? curvePath(s.points, Number(f.drawn)) : command.points
           .map((p, i) => `${i ? "L" : "M"} ${p.x} ${p.y}`)
           .join(" ");
         op.group.drawables = op.group.drawables.map((m) =>

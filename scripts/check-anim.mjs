@@ -153,6 +153,49 @@ console.log(
 console.log(
   "PASS: validation, interpolation, holds, Follow, pause/freeze, seek, focus, replay, clear, streaming parser.",
 );
+// Sparse, nonuniform, turning, and repeated samples exercise the shared path.
+const { curvePath, curvePoint } = load("lib/whiteboard/curve.ts");
+const { interpretCommand } = load("lib/whiteboard/geometry.ts");
+for (const points of [
+  [{x:.1,y:.8},{x:.3,y:.3},{x:.7,y:.2},{x:.9,y:.7}],
+  [{x:.2,y:.8},{x:.2,y:.4},{x:.2,y:.4},{x:.2,y:.1}],
+  [{x:.1,y:.5},{x:.8,y:.5}],
+  [{x:.2,y:.3},{x:.8,y:.3},{x:.8,y:.7},{x:.2,y:.3}],
+]) {
+  const spec = {id:'curve-regression',duration:4,shapes:[
+    {kind:'path',id:'track',points,label:'path',keyframes:[{t:0,drawn:0},{t:3,drawn:1},{t:4,drawn:1}]},
+    {kind:'dot',id:'body',keyframes:[{t:0,at:{follow:{pathId:'track'}}}]},
+    {kind:'arrow',id:'attached',keyframes:[{t:0,from:{follow:{pathId:'track'}},to:{follow:{pathId:'track',offset:{x:.02,y:0}}}}]},
+  ]};
+  assert.ok(validateAnimation(spec));
+  for (let i=0;i<points.length;i++) {
+    const actual=curvePoint(points,i/(points.length-1));
+    assert.ok(Math.hypot(actual.x-points[i].x,actual.y-points[i].y)<1e-12,'Declared samples retain exact timing');
+  }
+  const labelPositions=[];
+  for (let k=0;k<=100;k++) {
+    const progress=k/100, at=curvePoint(points,progress);
+    const segment=Math.min(points.length-2,Math.floor(progress*(points.length-1)));
+    for (const axis of ['x','y']) assert.ok(at[axis]>=Math.min(points[segment][axis],points[segment+1][axis])-1e-12 && at[axis]<=Math.max(points[segment][axis],points[segment+1][axis])+1e-12,'No overshoot');
+    const frame=animationFrame(spec,progress*3);
+    const body=frame.groups.find(g=>g.id==='body').source.center;
+    assert.ok(Math.hypot(body.x-at.x,body.y-at.y)<1e-12,'Follow uses visible curve');
+    const arrow=frame.groups.find(g=>g.id==='attached').source;
+    assert.ok(Math.hypot(arrow.from.x-at.x,arrow.from.y-at.y)<1e-12);
+    assert.ok(Math.abs(arrow.to.x-arrow.from.x-.02)<1e-12,'Offset remains attached');
+    labelPositions.push(frame.groups.find(g=>g.id==='track').drawables.find(m=>m.kind==='text').at);
+  }
+  assert.ok(labelPositions.every(p=>p.x===labelPositions[0].x&&p.y===labelPositions[0].y),'Path annotation stays fixed during reveal');
+  assert.deepEqual(animationFrame(spec,3),animationFrame(spec,4),'Final hold stays unchanged');
+  const staticPath=interpretCommand({op:'curve',id:'track',points},0).group.drawables[0].d;
+  assert.equal(curvePath(points),staticPath,'Static and animated geometry match');
+  assert.equal(animationFrame(spec,4).groups[0].drawables[0].d,staticPath);
+}
+for (let i=0;i<=100;i++) {
+  const p=curvePoint([{x:.1,y:.5},{x:.3,y:.5},{x:.5,y:.5},{x:.7,y:.5}],i/100);
+  assert.ok(Math.abs(p.x-(.1+.6*i/100))<1e-12,'Uniform straight samples retain constant speed');
+}
+console.log('PASS: bounded smooth paths, sample timing, attached vectors, duplicate holds, static continuity, stable labels.');
 if (process.argv.includes("--unit")) process.exit(0);
 const response = await fetch(
   `${process.env.BASE ?? "http://localhost:3100"}/api/agent/llm`,
