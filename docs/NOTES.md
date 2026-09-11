@@ -39,7 +39,7 @@ Verification: build, TypeScript, and focused lint pass. Browser playback complet
 Hussein owns this lane. No implementation or database schema exists yet. Begin with the isolated ingestion/chunking/retrieval slice in LANES.md, using existing shared types and synthetic test data. No automatic Canvas access or live voice integration in the first PR. Initial schema and endpoint/auth decisions must be explicit review items.
 
 ## recap
-Hussein owns this lane. The Recap type and tag exist; the spoken close flow, storage, and card do not. Begin with the card and validation/persistence interface slice in LANES.md. The student summarizes first. David coordinates the voice hook and authenticated session integration after review.
+Hussein owns this lane and **may begin now** while David's PR #6 / stress-test branch awaits review. The Recap type and tag exist; the spoken close flow, storage, and card do not. First PR: isolated card + validation/persistence interface per LANES.md, branched from `origin/main`. The student summarizes first. David coordinates the voice hook and authenticated session integration after that card PR is reviewed.
 
 ## shell
 Hussein owns this lane. The live homepage already renders VoiceSession and the adaptive desk. Root layout is minimal; there is no auth/session provider. Do not recreate the old empty scaffold or replace the working orb/captions. Begin with the auth/shell slice in LANES.md and keep shared entry, package, and identity-contract changes visible in the PR. README now explains the vision and actual implementation separately.
