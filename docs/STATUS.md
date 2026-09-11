@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 05:01 ET
+Updated: 2026-09-11 14:25 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,10 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Voice authentication follow-up: reproduced the synthesis failure as an ElevenLabs HTTP 401 invalid_api_key response. The server was loading the local configuration correctly. David supplied a replacement key, which was saved only in ignored .env.local. A real request through localhost:3100 returned conversational v3 audio (HTTP 200), and Chrome decoded and played the complete response at the existing 1.08 rate. No credential values were logged or committed.
+
+TTS now reports safe, distinct authentication, quota, permission, configuration, busy, and connection errors. Malformed input returns 400; cancelled provider calls remain separate. Logs retain status/category/model without arbitrary provider text. The route regression covers the observed modern and legacy error shapes, safe diagnostics, no automatic retries or model changes, and unchanged v3/Flash settings. Build, focused lint, TTS checks, and voice lifecycle checks pass. Next: David can resume voice on localhost:3100 and review PR #5. Deployment credentials were not changed; this recovery is verified locally.
 
 Diagram composition follow-up: DRAW now accepts local optional diagram metadata for a circle tangent to a straight support, a vector/line attached to a circle or line anchor, support hatching, subtle body fills, stroke hierarchy, and preferred arrow-label side. Geometry resolves from explicit IDs, never words or topic heuristics. Changing a support updates its dependent body and vectors together; missing, cyclic, or out-of-bounds attachments stay hidden and are reported as unresolved in tutor provenance. Their original commands remain available for revision and cannot reference archived pages. Invalid metadata is rejected; the observed flat-field model spelling normalizes. No frozen shared types or human prompt/pedagogy edits.
 
