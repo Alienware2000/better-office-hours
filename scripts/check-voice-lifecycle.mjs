@@ -104,7 +104,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
       if (url.endsWith('/health')) return startup.health ?? Response.json({ grok: true, elevenlabs: true });
       if (url.endsWith('/stt')) return (sttCount++ ? sttNext : stt).promise; // Deliberately ignores abort.
       if (url.endsWith('/llm') && JSON.parse(options.body).visualRepair && repairResponse) return repairResponse;
-      if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: llmText } }] })}\n\ndata: [DONE]\n\n`);
+      if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: typeof llmText === 'function' ? llmText(JSON.parse(options.body)) : llmText } }] })}\n\ndata: [DONE]\n\n`);
       if (url.endsWith('/tts') && !initializing && deferredTts) return deferredTts;
       if (url.endsWith('/tts')) return !initializing && failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
       throw new Error(`Unexpected request: ${url}`);
@@ -173,6 +173,19 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     setAudioState: value => { inputAudioState.value = value; },
     suspendAudio: () => { inputAudioState.value = 'suspended'; },
     cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
+}
+
+{
+  const test = await mount({ llmText: request => request.deep ? '[TEACH move=consolidate visual=none] Zero, from rest. Go ahead with your substitution.' : '[THINK]' });
+  await test.hook.sendUtterance('Zero');
+  const calls = test.requests.filter(request => request.url.endsWith('/llm'));
+  assert.equal(calls.length, 2, 'A silent handoff still starts exactly one reasoning pass');
+  assert.equal(JSON.parse(calls[1].body).deep, true);
+  assert.ok(JSON.parse(calls[1].body).messages.every(message => !message.content.includes('THINK')), 'Internal routing never enters spoken history');
+  const speech = test.requests.filter(request => request.url.endsWith('/tts')).map(request => JSON.parse(request.body).text).join(' ');
+  assert.equal(speech, 'Zero, from rest. Go ahead with your substitution.', 'Only the substantive response is synthesized');
+  assert.equal(test.states[0], 'listening');
+  test.cleanup();
 }
 
 // Startup uses simulated permissions/devices, including providers that ignore abort.

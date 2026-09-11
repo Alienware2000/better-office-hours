@@ -23,6 +23,7 @@ import {
 } from "@/lib/whiteboard/store";
 import { BoardInkBar, type BoardTool } from "./BoardInkBar";
 import { useBoardInk } from "./useBoardInk";
+import { useBoardFollow } from './useBoardFollow';
 import { inkBounds, inkPath } from "@/lib/whiteboard/ink-path";
 import "./whiteboard.css";
 
@@ -31,13 +32,11 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
   const [tool, setTool] = useState<BoardTool>("pen");
   const [color, setColor] = useState<StudentInk>("blue");
   const paperRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const followRef = useRef(true);
-  const [readingEarlier, setReadingEarlier] = useState(false);
   const ink = useBoardInk(tool, color);
   const reduceMotion = useReducedMotion() ?? false;
   const board = getBoardState();
   const isOpen = expanded || board.open;
+  const { scrollRef, followRef, readingEarlier, latest, reveal, scrollHandlers } = useBoardFollow(board.pageId, active && isOpen, reduceMotion);
   const pendingKey = board.groups
     .filter((group) => group.appear === "pending" && !group.unresolved)
     .map((group) => `${group.id}:${group.version ?? 0}`)
@@ -85,12 +84,6 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
   }, [pendingKey, reduceMotion, board.pageId]);
 
   useEffect(() => {
-    if (followRef.current && scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.querySelector<HTMLElement>('.board-current')?.offsetTop ?? 0, behavior: reduceMotion ? 'instant' : 'smooth' });
-    }
-  }, [board.pageId, isOpen, reduceMotion]);
-
-  useEffect(() => {
     setBoardSnapshotProvider(() => {
       const current = getBoardState();
       if (!active) return null;
@@ -107,7 +100,7 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
       return { imageUrl: snap?.imageUrl ?? "", ...metadata, studentImageUrl };
     });
     return () => { setBoardSnapshotProvider(null); setLiveBoard(null); };
-  }, [active]);
+  }, [active, followRef]);
 
   useEffect(() => {
     if (reduceMotion) pauseAnimation();
@@ -136,9 +129,8 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
     if (!scroll || !followRef.current || !enteringId) return;
     const group = Array.from(scroll.querySelectorAll<SVGGElement>('.board-current [data-board-group]')).find(el => el.dataset.boardGroup === enteringId);
     if (!group) return;
-    const bounds = group.getBoundingClientRect(), viewport = scroll.getBoundingClientRect();
-    if (bounds.bottom > viewport.bottom - 16) scroll.scrollBy({ top: bounds.bottom - viewport.bottom + 24, behavior: reduceMotion ? 'instant' : 'smooth' });
-  }, [enteringId, pendingKey, board.pageId, reduceMotion]);
+    reveal(group);
+  }, [enteringId, pendingKey, board.pageId, followRef, reveal, scrollRef]);
 
   const selectedStrokes = (ink.preview ?? board.student).filter(s => ink.selected.includes(s.id));
   const selectionBounds = selectedStrokes.length ? inkBounds(selectedStrokes.flatMap(s => s.points)) : null;
@@ -167,16 +159,11 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
           </div>
           <div className="board-page-controls">
             {board.earlierPages.length > 0 && <span className="board-page-count">{readingEarlier ? 'Earlier notes' : `Page ${board.pageId}`}</span>}
-            {readingEarlier && <button className="board-latest" type="button" onClick={() => { followRef.current = true; setReadingEarlier(false); scrollRef.current?.scrollTo({ top: scrollRef.current.querySelector<HTMLElement>('.board-current')?.offsetTop ?? 0, behavior: reduceMotion ? 'instant' : 'smooth' }); }}>Latest ↓</button>}
+            {readingEarlier && <button className="board-latest" type="button" onClick={latest}>Latest ↓</button>}
             {onExpand && <button className="board-expand" type="button" aria-label="Expand whiteboard" title="Expand whiteboard" onClick={onExpand}><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4M4 4l5 5m11-5-5 5M4 20l5-5m11 5-5-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg></button>}
           </div>
         </div>
-        <div className="board-scroll" ref={scrollRef} onScroll={event => {
-          const el = event.currentTarget;
-          const nearEnd = el.scrollTop >= (el.querySelector<HTMLElement>('.board-current')?.offsetTop ?? 0) - 48;
-          followRef.current = nearEnd;
-          setReadingEarlier(!nearEnd);
-        }}>
+        <div className="board-scroll" ref={scrollRef} {...scrollHandlers}>
           {board.earlierPages.map(page => <div className="board-note-page" key={page.id}>
             <div className="board-page-divider">Page {page.id} · Earlier notes</div>
             <div className="board-canvas board-archived" aria-label={`Earlier board page ${page.id}`}>

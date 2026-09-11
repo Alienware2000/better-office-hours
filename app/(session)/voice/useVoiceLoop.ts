@@ -412,6 +412,7 @@ export function useVoiceLoop() {
         animControlRef.current = "";
       });
       const visualSource = getLivePage();
+      const requestedAt = performance.now();
       const response = await fetch("/api/agent/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -474,6 +475,7 @@ export function useVoiceLoop() {
               console.info('Tutor visual playback ' + JSON.stringify({ request: response.headers.get('x-tutor-request'), deep, beats: visuals.length, page: board.pageId, groups: board.groups?.length, animation: Boolean(board.animation), revision: board.revision }));
             }
             heard = [heard, trimmed].filter(Boolean).join(" ");
+            if (!captionStarted && process.env.NODE_ENV !== 'production') console.info('Tutor speech playback ' + JSON.stringify({ request: response.headers.get('x-tutor-request'), deep, firstAudioMs: Math.round(performance.now() - requestedAt) }));
             if (!captionStarted) { addTurn("tutor", heard); captionStarted = true; }
             else reviseLastTutorTurn(heard);
             if (!historyMessage) {

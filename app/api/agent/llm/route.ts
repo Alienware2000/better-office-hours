@@ -87,10 +87,12 @@ export async function POST(req: Request) {
       };
       let raw = '';
       let firstVisualMs: number | null = null;
+      let firstSpeechMs: number | null = null;
       try {
         for await (const content of streamGrok(history, event, deep, upstream.signal, visualRepair)) {
           raw += content;
           if (firstVisualMs === null && /\[(?:DRAW|ANIM) /.test(raw)) firstVisualMs = Date.now() - started;
+          if (firstSpeechMs === null && parseAgentTurn(raw).speech) firstSpeechMs = Date.now() - started;
           send({
             id,
             object: "chat.completion.chunk",
@@ -101,7 +103,7 @@ export async function POST(req: Request) {
         }
         if (process.env.NODE_ENV !== 'production') {
           const turn = parseAgentTurn(raw);
-          console.info('Tutor visual response ' + JSON.stringify({ request: id, deep, visualRepair, elapsedMs: Date.now() - started, firstVisualMs, think: turn.think === true, teaching: turn.teaching, commands: turn.board?.commands.length ?? 0, animation: Boolean(turn.board?.animation), control: Boolean(turn.board?.animControl) }));
+          console.info('Tutor visual response ' + JSON.stringify({ request: id, deep, visualRepair, elapsedMs: Date.now() - started, firstSpeechMs, firstVisualMs, speechWords: turn.speech.trim() ? turn.speech.trim().split(/\s+/).length : 0, think: turn.think === true, teaching: turn.teaching, commands: turn.board?.commands.length ?? 0, animation: Boolean(turn.board?.animation), control: Boolean(turn.board?.animControl) }));
         }
         send({
           id,

@@ -124,7 +124,7 @@ for (const speech of ['What do you picture happening?', 'Let us look at that. Wh
   const routed = parseAgentTurn(conceptRoute(JSON.stringify({ kind: 'orient', speech })));
   assert.equal(routed.think, true, 'A bad acknowledgement cannot discard a teaching handoff');
   assert.ok(!routed.speech.includes('?'), 'The acknowledgement cannot quiz before the picture');
-  assert.ok(routed.speech.split(/\s+/).length <= 12, 'Keep the handoff brief');
+  assert.equal(routed.speech, '', 'Handoffs add no repetitive waiting speech');
 }
 const unchecked = parseAgentTurn(conceptRoute(JSON.stringify({ kind: 'check_work', speech: "Yes that's valid. Why did you pick that height?" })));
 assert.equal(unchecked.think, true);
@@ -162,7 +162,7 @@ chunks = ['{"kind":"lesson","speech":"Let us build a picture of that."}'];
 result = '';
 for await (const text of streamGrok(history)) result += text;
 assert.ok(parseAgentTurn(result).think);
-assert.equal(requests.at(-1).request.model, GROK_MODEL, 'First acknowledgement stays fast');
+assert.equal(requests.at(-1).request.model, GROK_MODEL, 'Routing stays fast');
 assert.equal(requests.at(-1).request.messages.filter(m => m.role === 'system').length, 1);
 assert.ok(requests.at(-1).request.messages[0].content.length < 4000, 'The router does not load the full drawing/animation prompt');
 setLiveBoard(null);
@@ -179,7 +179,7 @@ chunks = [raw.slice(0, -1)];
 await assert.rejects(async () => { for await (const text of streamGrok(history, null, true)) void text; });
 if (fakeKey === undefined) delete process.env.XAI_API_KEY;
 else process.env.XAI_API_KEY = fakeKey;
-console.log('PASS: actual streaming adapter, concept/notes/homework/lobby routing, fast first speech, deep handoff, cancellation, and truncated-response failure.');
+console.log('PASS: actual streaming adapter, concept/notes/homework/lobby routing, compact routing, silent deep handoff, cancellation, and truncated-response failure.');
 
 // Continue an actual scene through structured controls, without a silent repair
 // replacing it with a static sketch after the learner interrupts.

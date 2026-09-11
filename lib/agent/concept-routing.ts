@@ -23,7 +23,7 @@ Choose exactly one kind:
 - clarify_topic: the actual subject/problem is still unidentified and one question is necessary to know what the learner wants to work on. Once they select it, including selecting a part in the same sentence as expressing confusion, use orient/lesson/check_work. Never ask for the first step, method, equation, or another attempt here.
 - logistics: greetings, upload receipt, audio/session logistics, or a brief social acknowledgement with no unresolved request for learning help. Do not choose a problem for the student, summarize its setup, or advance the lesson.
 - definition: only an explicitly requested brief standalone definition that needs no explanation, demonstration, or evaluation of graded work. Confusion about meaning needs lesson/orient, not a terse definition and a quiz.
-For orient/lesson/check_work, speech must be empty. The app provides a brief waiting cue while the reasoning tutor builds the visual and teaches next. Do not draft a question, explanation, diagnosis, fact, formula, prediction, or claim that a drawing is already visible. For clarify_topic, ask only the one missing selection question. For logistics or definition, answer briefly using only the provided context or the requested standalone definition. Never give a graded answer, complete solution, invented course detail, or bracket tag. When uncertain whether teaching support is needed, hand off. This is a semantic decision across subjects, never a topic keyword rule.`;
+For orient/lesson/check_work, speech must be empty. The reasoning tutor responds next without a spoken waiting cue. Do not draft a question, explanation, diagnosis, fact, formula, prediction, or claim that a drawing is already visible. For clarify_topic, ask only the one missing selection question. For logistics or definition, answer briefly using only the provided context or the requested standalone definition. Never give a graded answer, complete solution, invented course detail, or bracket tag. When uncertain whether teaching support is needed, hand off. This is a semantic decision across subjects, never a topic keyword rule.`;
 
 export function conceptRoutingMessages(history: ChatMessage[], context: unknown): ChatMessage[] {
   return [
@@ -39,17 +39,14 @@ export function parseConceptRoute(raw: string): { kind: RouteKind; speech: strin
     throw new Error('The tutor could not prepare a response. Please try again.');
   }
   const handoff = ['orient', 'lesson', 'check_work'].includes(value.kind!);
-  let speech = value.speech.replace(/\[[^\]\r\n]*\]/g, '').trim();
-  if (handoff) {
-    // Routing has not verified the work. Even a short generated "that's valid"
-    // is unsafe here; these are waiting cues, never topic-specific teaching.
-    speech = value.kind === 'check_work' ? 'Let me check that.' : "Let's look at it together.";
-  }
+  const speech = value.speech.replace(/\[[^\]\r\n]*\]/g, '').trim();
+  // Never speak an unverified draft or a repetitive waiting line.
+  if (handoff) return { kind: value.kind as RouteKind, speech: '', handoff: true };
   if (!speech) throw new Error('The tutor could not prepare a response. Please try again.');
   return { kind: value.kind as RouteKind, speech, handoff };
 }
 
 export function conceptRoute(raw: string): string {
   const route = parseConceptRoute(raw);
-  return route.speech + (route.handoff ? ' [THINK]' : '');
+  return route.handoff ? '[THINK]' : route.speech;
 }
