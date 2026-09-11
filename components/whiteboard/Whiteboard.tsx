@@ -8,7 +8,7 @@ import { projectileFixture } from "@/components/scenes/projectile";
 import { boardStyle } from "@/lib/whiteboard/style";
 import type { StudentInk } from "@/lib/whiteboard/colors";
 import { STUDENT_HEX } from "@/lib/whiteboard/colors";
-import { getLiveBoard, setLiveBoard, setBoardSnapshotProvider } from "@/lib/whiteboard/live-board";
+import { boardProvenance, getLiveBoard, setLiveBoard, setBoardSnapshotProvider } from "@/lib/whiteboard/live-board";
 import { snapshotBoard } from "@/lib/whiteboard/snapshot";
 import {
   advanceAnimation, loadAnimation, pauseAnimation, playAnimation, seekAnimation, focusAnimation,
@@ -84,16 +84,18 @@ export function Whiteboard({ active = true, expanded = false }: { active?: boole
   useEffect(() => {
     setBoardSnapshotProvider(() => {
       const current = getBoardState();
-      if (!active || !current.open) return null;
+      if (!active) return null;
+      const metadata = { ...boardProvenance(current), open: current.open, studentShapesSince: current.studentSince };
       const surface = paperRef.current?.querySelector('.board-surface');
       const rect = surface?.getBoundingClientRect();
-      if (!rect || rect.width < 8 || rect.height < 8) return null;
+      if (!rect || rect.width < 8 || rect.height < 8) return { ...metadata, imageUrl: "" };
       const snap = snapshotBoard(
         current.groups.filter(g => g.appear === 'done'), current.student,
         rect.width, rect.height,
         current.animation ? { spec: current.animation, time: current.time, focus: current.focus } : undefined,
       );
-      return snap ? { ...snap, studentShapesSince: current.studentSince, open: true } : null;
+      const studentImageUrl = current.student.length ? snapshotBoard([], current.student, rect.width, rect.height)?.imageUrl : undefined;
+      return { imageUrl: snap?.imageUrl ?? "", ...metadata, studentImageUrl };
     });
     return () => { setBoardSnapshotProvider(null); setLiveBoard(null); };
   }, [active]);

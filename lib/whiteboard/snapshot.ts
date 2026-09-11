@@ -55,11 +55,13 @@ export function snapshotBoard(
       for (const mark of group.drawables) {
         if (mark.kind === "text") {
           ctx.save();
-          ctx.scale(1 / w, 1 / h);
+          // Match SVG's preserveAspectRatio=none: horizontal glyph metrics use
+          // board width, vertical metrics use height even on a compact board.
+          ctx.scale(1 / h, 1 / h);
           ctx.fillStyle = mark.color;
-          ctx.font = `500 ${(mark.fontSize ?? boardTextSize(mark.text, mark.size, mark.at.x)) * h}px ${!mark.heading && isMathText(mark.text) ? MATH_FONT : LABEL_FONT}`;
+          ctx.font = `500 ${(mark.fontSize ?? boardTextSize(mark.text, mark.size, mark.at.x)) * h}px ${(mark.math ?? (!mark.heading && isMathText(mark.text))) ? MATH_FONT : LABEL_FONT}`;
           ctx.textAlign = "left";
-          let x = mark.at.x * w - (mark.textAnchor === "start" ? 0 : ctx.measureText(mark.text).width / 2);
+          let x = mark.at.x * h - (mark.textAnchor === "start" ? 0 : ctx.measureText(mark.text).width / 2);
           for (const run of textRuns(mark.text, mark.color)) {
             ctx.fillStyle = run.color;
             ctx.fillText(run.text, x, mark.at.y * h);

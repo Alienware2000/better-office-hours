@@ -15,7 +15,7 @@ const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(
 
 async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null, repairResponse = null } = {}) {
   const effects = [], states = [], requests = [], recordings = [];
-  let audioContext;
+  const inputAudioState = { value: 'running' };
   const stt = deferred();
   const sttNext = deferred();
   let sttCount = 0;
@@ -35,20 +35,6 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     },
     useEffect: effect => effects.push(effect),
   };
-  class Recorder {
-    static isTypeSupported() { return true; }
-    state = 'inactive';
-    mimeType = 'audio/webm';
-    constructor() { recordings.push(this); }
-    start() { this.state = 'recording'; }
-    stop() {
-      this.state = 'inactive';
-      queueMicrotask(() => {
-        this.ondataavailable?.({ data: new Blob(['a'.repeat(1500)]) });
-        this.onstop?.();
-      });
-    }
-  }
   const noOp = () => {};
   const board = new Proxy({}, { get: (_, key) => key === 'getBoardState' ? () => ({ playing: false }) : key === 'applyDrawCommands' ? commands => marks.push(...commands) : noOp });
   const imports = {
@@ -76,11 +62,9 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     structuredClone, queueMicrotask, setTimeout, clearTimeout,
     crypto: { randomUUID: () => 'test-tab' },
     performance: { now: () => now },
-    MediaRecorder: Recorder,
     navigator: { mediaDevices: { getUserMedia: async () => ({ getAudioTracks: () => [track], getTracks: () => [track] }) } },
     AudioContext: class {
-      constructor() { audioContext = this; }
-      state = 'running';
+      get state() { return inputAudioState.value; }
       createMediaStreamSource() { return { connect: noOp }; }
       createAnalyser() { return { fftSize: 2048, getFloatTimeDomainData: data => data.fill(loud && track.enabled ? 0.1 : 0) }; }
       resume() { return Promise.resolve(); }
@@ -113,12 +97,17 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     return loaded.exports;
   }
   imports['./speech'] = load('app/(session)/voice/speech.ts');
+  const { SpeechAudioCapture } = load('app/(session)/voice/audio-capture.ts');
+  imports['./audio-capture'] = { SpeechAudioCapture: class extends SpeechAudioCapture {
+    start() { this.current = {state:'recording'}; recordings.push(this.current); super.start(); }
+    discard() { if(this.current) this.current.state='inactive'; super.discard(); }
+  } };
   imports['@/lib/whiteboard/geometry'] = load('lib/whiteboard/geometry.ts');
   const hook = load('app/(session)/voice/useVoiceLoop.ts').useVoiceLoop();
   const cleanups = effects.map(effect => effect());
   await settle();
   hook.interrupt(); // Activate voice without relying on a rendered health update.
-  const tick = (volume, elapsed) => { loud = volume; now += elapsed; probabilityCallback(typeof volume === 'number' ? volume : volume ? .98 : .01); frame(); };
+  const tick = (volume, elapsed) => { loud = volume; now += elapsed; probabilityCallback(typeof volume === 'number' ? volume : volume ? .98 : .01, new Float32Array(Math.max(1,Math.round(elapsed*16))).fill(volume ? .25 : 0)); frame(); };
   async function record() {
     tick(true, 1000);
     for (let i = 0; i < 20; i++) tick(true, 20);
@@ -130,7 +119,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     assert.equal(recordings.length, 1, 'One recording before the first transcription');
   }
   return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks,
-    suspendAudio: () => { audioContext.state = 'suspended'; },
+    suspendAudio: () => { inputAudioState.value = 'suspended'; },
     cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
 

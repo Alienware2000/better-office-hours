@@ -6,7 +6,7 @@ export function BoardText({ mark, entering = false }: { mark: Extract<Drawable, 
   return <text className={`board-label${entering ? ' is-writing' : ''}${mark.heading ? ' is-heading' : ''}`}
     x={mark.at.x} y={mark.at.y} fill={mark.color}
     fontSize={(mark.fontSize ?? boardTextSize(mark.text, mark.size, mark.at.x))}
-    style={{ fontFamily: !mark.heading && isMathText(mark.text) ? MATH_FONT : LABEL_FONT }} textAnchor={mark.textAnchor ?? "middle"}>
+    style={{ fontFamily: (mark.math ?? (!mark.heading && isMathText(mark.text))) ? MATH_FONT : LABEL_FONT }} textAnchor={mark.textAnchor ?? "middle"}>
     {textRuns(mark.text, mark.color).map((run, i) => <tspan key={i} fill={run.color}>{run.text}</tspan>)}
   </text>;
 }

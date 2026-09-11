@@ -8,7 +8,7 @@ import {
 import { describeEvent, type SessionEvent } from "@/lib/agent/events";
 import { loadTutorPrompt } from "@/lib/agent/prompt";
 import { getLivePage } from "@/lib/pdf/live-page";
-import { getLiveBoard } from "@/lib/whiteboard/live-board";
+import { describeBoard, getLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
 
 // Fast lane. grok-4.6 reasons before it answers, which put the first spoken
@@ -88,7 +88,7 @@ export function buildGrokMessages(
     : `\n<when_to_think>${WHEN_TO_THINK}</when_to_think>`;
   const visual = wantsVisualHelp(history)
     ? '\n<visual_help>The student wants help picturing the idea. If a diagram, relationship, or symbolic equation helps, open the board and compose one small visual with DRAW, or ANIM for change over time. Preserve the hint ladder and prediction before explanation. Do not merely promise to draw. Use general symbolic relationships or parallel examples, not a graded solution.</visual_help>' : '';
-  const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${boardNote}${BOARD_NARRATION}${visual}${voice}${eventBlock}${materialNote}${lane}`;
+  const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${boardNote}${BOARD_NARRATION}${visual}${voice}${eventBlock}${materialNote}${describeBoard(board)}${lane}`;
   return [{ role: "system", content: system }, ...rest];
 }
 
@@ -144,10 +144,10 @@ function toApiMessages(
         {
           type: "text",
           text: [
-            "This is the whiteboard right now.",
-            board.studentShapesSince
-              ? "The student drew on it; their ink is in the image. Use these marks as context for their current request; existing ink is not a new request to speak."
-              : "Your earlier strokes are in the image.",
+            "App-provided combined whiteboard preview. This is NOT a student submission. Read board_ownership for the current tutor-created items and their IDs.",
+            board.studentStrokeCount === 0
+              ? "The student has written NOTHING on this board. All visible notes and diagrams are yours."
+              : "Tutor-created notes and diagrams remain yours even when student ink is also present. Only the separately labeled student-ink image contains student work. Do not infer authorship from this combined image.",
             "Coordinates are normalized 0 to 1, origin at the top left.",
             "Use DRAW text for short equations as well as DRAW geometry. Leave student ink intact; never clear their work without a request.",
           ].join(" "),
@@ -155,6 +155,10 @@ function toApiMessages(
         { type: "image_url", image_url: { url: board.imageUrl } },
       ],
     });
+    if (board.studentStrokeCount && board.studentImageUrl) messages.push({ role: "user", content: [
+      { type: "text", text: "App-provided STUDENT INK ONLY, at the same coordinates as the combined board. All tutor-generated notes have been removed from this image. These are the only board marks that can be attributed to the student. Existing ink is context, not a new request." },
+      { type: "image_url", image_url: { url: board.studentImageUrl } },
+    ] });
   }
 
   return messages;

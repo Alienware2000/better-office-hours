@@ -2,7 +2,7 @@
 export async function createSpeechDetector(
   stream: MediaStream,
   audioContext: AudioContext,
-  onProbability: (probability: number) => void,
+  onProbability: (probability: number, frame: Float32Array) => void,
 ) {
   const { MicVAD } = await import('@ricky0123/vad-web');
   const detector = await MicVAD.new({
@@ -18,7 +18,7 @@ export async function createSpeechDetector(
       ort.env.wasm.numThreads = 1;
       ort.env.logLevel = 'error';
     },
-    onFrameProcessed: probability => onProbability(probability.isSpeech),
+    onFrameProcessed: (probability, frame) => onProbability(probability.isSpeech, frame),
   });
   try {
     await detector.start();

@@ -1,16 +1,26 @@
 import type { Drawable, ShapeGroup } from './geometry';
 import { boardStyle, boardTextSize } from './style';
+import { isMathText, LABEL_FONT, MATH_FONT } from './text';
 
 type TextMark = Extract<Drawable, { kind: 'text' }>;
 type Box = { left: number; right: number; top: number; bottom: number };
 const margin = .055;
 const gap = .025;
-const width = (text: string, size: number) => text.length * size * .65;
+let measure: CanvasRenderingContext2D | null = null;
+const width = (text: string, size: number, math = isMathText(text)) => {
+  if (typeof document !== 'undefined') measure ??= document.createElement('canvas').getContext('2d');
+  if (measure) {
+    measure.font = `500 100px ${math ? MATH_FONT : LABEL_FONT}`;
+    return measure.measureText(text).width / 100 * size;
+  }
+  // Server/test fallback. Spaces and superscripts are not full-width letters.
+  return [...text].reduce((sum, char) => sum + (/\s/.test(char) ? .27 : /[il.,:;!|₀-₉²³]/.test(char) ? .32 : /[MW@]/.test(char) ? .95 : /[=+−×]/.test(char) ? .75 : .57), 0) * size;
+};
 const intersects = (a: Box, b: Box) => a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;
 
 export function writingBounds(mark: TextMark): Box {
   const size = mark.fontSize ?? boardTextSize(mark.text, mark.size, mark.at.x);
-  const half = width(mark.text, size) / 2;
+  const half = width(mark.text, size, mark.math ?? (!mark.heading && isMathText(mark.text))) / 2;
   const left = mark.textAnchor === "start" ? mark.at.x : mark.at.x - half;
   return { left, right: left + half * 2, top: mark.at.y - size, bottom: mark.at.y + size * .25 };
 }
@@ -21,18 +31,29 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   if (group.drawables.length !== 1 || group.drawables[0].kind !== 'text') return group;
   const mark = group.drawables[0];
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
+  const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
   const fontSize = heading ? .057 : mark.size === 'm' ? .085 : .068;
-  const maxCharacters = Math.floor((1 - margin * 2) / (fontSize * .65));
+  const available = 1 - margin * 2;
+  const fits = (text: string) => width(text, fontSize, math) <= available;
   const lines: string[] = [];
   let line = '';
-  // Keep a short assignment such as a = ? on the same line.
-  for (const word of mark.text.match(/\S+\s*=\s*\S+|\S+/g) ?? []) {
-    if (line && line.length + word.length + 1 > maxCharacters) { lines.push(line); line = ''; }
-    // Even an unbroken model token must stay inside the paper.
-    let rest = word;
-    while (rest.length > maxCharacters) { lines.push(rest.slice(0, maxCharacters)); rest = rest.slice(maxCharacters); }
-    line = line ? `${line} ${rest}` : rest;
+  // Keep a product such as 2 a Δy together. Only long expressions need a
+  // continuation, preferably at a relation or additive operator.
+  const tokens = !heading && isMathText(mark.text)
+    ? mark.text.split(/\s+(?=[=+−]|-(?!\d))/)
+    : mark.text.split(/\s+/);
+  for (const token of tokens) {
+    const words = fits(token) ? [token] : token.split(/\s+/);
+    for (const word of words) {
+      if (line && !fits(`${line} ${word}`)) { lines.push(line); line = ''; }
+      let rest = '';
+      for (const char of word) {
+        if (!fits(rest + char)) { lines.push(rest); rest = ''; }
+        rest += char;
+      }
+      line = line ? `${line} ${rest}` : rest;
+    }
   }
   if (line) lines.push(line);
   const occupied: Box[] = groups.filter(g => g.id !== group.id).flatMap(g => g.drawables.filter((d): d is TextMark => d.kind === 'text').map(writingBounds));
@@ -40,7 +61,7 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
     if (!stroke.points.length) continue;
     occupied.push({ left: Math.min(...stroke.points.map(p => p.x)), right: Math.max(...stroke.points.map(p => p.x)), top: Math.min(...stroke.points.map(p => p.y)), bottom: Math.max(...stroke.points.map(p => p.y)) });
   }
-  const half = Math.max(...lines.map(text => width(text, fontSize)), 0) / 2;
+  const half = Math.max(...lines.map(text => width(text, fontSize, math)), 0) / 2;
   const x = note ? margin + half : Math.max(margin + half, Math.min(1 - margin - half, mark.at.x));
   const height = (lines.length - 1) * fontSize * 1.45;
   const firstY = Math.max(margin + fontSize, mark.at.y);
@@ -50,7 +71,7 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   for (const y of candidates) {
     const bounds = { left: x - half, right: x + half, top: y - fontSize, bottom: y + height + fontSize * .25 };
     if (bounds.bottom > 1 - margin || occupied.some(box => intersects(bounds, box))) continue;
-    return { ...group, drawables: lines.map((text, i) => ({ ...mark, key: `${mark.key}-line-${i}`, text, fontSize, heading, color: heading ? boardStyle.colors.muted : mark.color, textAnchor: note ? 'start' as const : 'middle' as const, at: { x: note ? margin : x, y: y + i * fontSize * 1.45 } })) };
+    return { ...group, drawables: lines.map((text, i) => ({ ...mark, key: `${mark.key}-line-${i}`, text, fontSize, heading, math, color: heading ? boardStyle.colors.muted : mark.color, textAnchor: note ? 'start' as const : 'middle' as const, at: { x: note ? margin : x, y: y + i * fontSize * 1.45 } })) };
   }
   // Keep the existing board intact when full. The tutor can remove/replace its
   // earlier groups; never erase student work or squeeze writing to make it fit.

@@ -1,6 +1,11 @@
 /** Speech-only notation expansion. Never apply this to captions or board data. */
 export function normalizeSpokenText(input: string): string {
+  const smallNumbers = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const numberName = (n: number): string => n < 20 ? smallNumbers[n] : `${['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'][Math.floor(n / 10)]}${n % 10 ? ` ${smallNumbers[n % 10]}` : ''}`;
   let text = input
+    // Numeric references followed by a full stop can be read as decimals by
+    // conversational TTS. Spell out references without altering decimal values.
+    .replace(/\b(page|problem|question|phase|step|lecture|figure|equation)\s+(\d{1,2})(?!\d|\.\d)/gi, (_, label, value) => `${label} ${numberName(Number(value))}`)
     .replace(/\\frac\{(m|cm|km)\}\{s(?:\^\{?2\}?)?\}/g, (raw, unit) => `${unit === "cm" ? "centimeters" : unit === "km" ? "kilometers" : "meters"} per second${raw.includes("2") ? " squared" : ""}`)
     .replace(/\\(?:mathrm|text|operatorname)\{([^{}]+)\}/g, '$1')
     .replace(/\\(?:left|right)/g, '')

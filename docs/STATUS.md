@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 02:50 ET
+Updated: 2026-09-11 03:18 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,12 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Board authorship/capture follow-up: local LiveBoard now carries a revision, tutor item IDs/text, entering/visible status, student stroke count, and a separate student-only image when ink exists. Runtime context identifies tutor-created notes explicitly and asks for updates by ID, including ownership of stale notes. A changed reserved `topic` starts a fresh tutor note; DRAW clear and topic replacement preserve student ink. Generic text IDs remain ordinary updates. Human PROMPT, PEDAGOGY, and shared lib/types.ts remain unchanged.
+
+Writing now measures glyph widths, keeps products together, and retains the math font on continuations. The reported equation fits on one readable line in the actual compact board at 1440px and 1000px viewports. Snapshot text uses matching SVG aspect scaling. Speech-only reference normalization spells out page/problem numbers, so the live page-one probe no longer says "point" for the full stop.
+
+Mic capture now consumes the existing detector's 16kHz PCM frames with a bounded 320ms local pre-roll, preserving opening sounds from before detection. It sends one WAV per utterance fragment and keeps the existing ordered continuation/cancellation handling. STT gets at most 24 vocabulary terms from recent teaching/page text, with no numbers or suggested answers, and retains verbatim speech. Provider keyterms add 20% to base STT cost. Live TTS/STT and an actual Chrome VAD -> buffered WAV -> Scribe test preserved the full physics sentence. These used synthetic audio, not David's mic. Two live stale-board probes revised tutor notes without blaming the student; wording and composition remain model-dependent. Build, focused lint, teaching/lifecycle/workspace/TTS/animation checks pass. Retest this PR #5 slice with real quiet speech and background sound before merge.
 
 Missing-board/mic follow-up: general symbolic relations already spoken now render at audio start when DRAW is omitted, with duplicate suppression and no numerical-answer fallback. A substantive example/equation/visual request with no renderable scene gets one general visual-only repair, bounded to 6s, while speech proceeds. The repair cannot speak, navigate, point, clear, or remove work; interruptions invalidate late results. It remains model-dependent and may time out. Common circle `at`, point arrays, and rectangle commands normalize into existing contracts. Empty text no longer counts as a rendered visual.
 

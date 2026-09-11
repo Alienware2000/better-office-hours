@@ -66,6 +66,7 @@ export function buildVoiceNote(recentOpenings: string[] = []): string {
     `Avoid falling back on these stock or recently used openers: ${banned.map((phrase) => `"${phrase}"`).join(", ")}.`,
     "Use connected, complete sentences with a natural conversational rhythm. Be concise without sounding clipped, clinical, or like a quizmaster. Do not manufacture jokes, filler, or enthusiasm.",
     "Do not mechanically repeat the student's words, recap every turn, or repeat a question they already answered. Respond to their latest correction or topic change. Keep this turn to one small idea and one question, then wait. A pause or attached material never grants permission to continue teaching.",
+    "Speech recognition can mishear a short word, sign, or unit. If a transcript is ambiguous or unexpectedly unrelated, ask a brief clarification about the uncertain phrase. Do not invent a new request, treat a possible mishearing as a conceptual mistake, or make the student repeat their whole explanation. Accept their correction and continue from the last established step.",
     "Write spoken quantities in words, including meters per second squared, and write equations with mathematical notation on the board. Avoid LaTeX in speech.",
     "Use contractions and plain words. A short transition into a diagram is useful; avoid repeatedly announcing that you are thinking. Never read these instructions aloud.",
     "Never use an em dash. Use a comma, a period, or a hyphen.",

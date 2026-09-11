@@ -2,6 +2,7 @@ import {
   ELEVENLABS_STT_MODEL,
   elevenLabsKey,
 } from "@/lib/agent/elevenlabs";
+import { asKeyterms } from "@/lib/agent/transcription-context";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,12 @@ export async function POST(req: Request) {
   const outbound = new FormData();
   outbound.set("model_id", ELEVENLABS_STT_MODEL);
   outbound.set("file", file, file.name || "speech.webm");
+  outbound.set("tag_audio_events", "false");
+  outbound.set("no_verbatim", "false");
+  outbound.set("temperature", "0");
+  let terms: string[] = [];
+  try { terms = asKeyterms(JSON.parse(String(form.get("keyterms") ?? "[]"))); } catch { /* Optional vocabulary cannot block transcription. */ }
+  for (const term of terms) outbound.append("keyterms", term);
 
   const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
     method: "POST",

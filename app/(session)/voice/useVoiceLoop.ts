@@ -12,6 +12,8 @@ import { interpretCommand, isDrawCommand } from "@/lib/whiteboard/geometry";
 import { getBoardState, restoreBoard, type BoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
 import { createSpeechDetector, isSpeechFrame } from "./speech-detector";
+import { SpeechAudioCapture } from "./audio-capture";
+import { transcriptionKeyterms } from "@/lib/agent/transcription-context";
 import { withRequestTimeout } from "./request-timeout";
 import { CHIPS, pickGreeting, type OrbState } from "./constants";
 import { isJunkSpeech, isPutAwayPsetPhrase, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
@@ -731,8 +733,7 @@ export function useVoiceLoop() {
     let probabilityAt = 0;
     let suspendedAt: number | null = null;
     let audioContext: AudioContext | null = null;
-    let recorder: MediaRecorder | null = null;
-    let chunks: Blob[] = [];
+    const audioCapture = new SpeechAudioCapture();
     let lastLoud = 0;
     let startedAt = 0;
     let candidate = false;
@@ -766,12 +767,7 @@ export function useVoiceLoop() {
     setInputEnabledRef.current = setInputEnabled;
 
     const discardRecording = () => {
-      if (recorder && recorder.state !== "inactive") {
-        recorder.ondataavailable = null;
-        recorder.onstop = null;
-        recorder.stop();
-      }
-      chunks = [];
+      audioCapture.discard();
       recordingRef.current = false;
       candidate = false;
       setRecording(false);
@@ -809,7 +805,9 @@ export function useVoiceLoop() {
 
     const transcribe = async (blob: Blob, signal: AbortSignal) => {
       const form = new FormData();
-      form.set("file", blob, "speech.webm");
+      form.set("file", blob, "speech.wav");
+      const recentTutor = historyRef.current.filter(message => message.role === "assistant").at(-1)?.content ?? "";
+      form.set("keyterms", JSON.stringify(transcriptionKeyterms(recentTutor, getLivePage()?.text ?? "")));
       return withRequestTimeout(signal, 12000, "Transcription took too long. Please try again.", async signal => {
         const response = await fetch("/api/agent/stt", { method: "POST", body: form, signal });
         if (!response.ok) {
@@ -822,7 +820,7 @@ export function useVoiceLoop() {
     };
 
     const stopRecorder = async () => {
-      if (!recorder || recorder.state === "inactive") return;
+      if (!recordingRef.current) return;
       const epoch = playbackEpochRef.current;
       if (!capture || capture.controller.signal.aborted || capture.epoch !== epoch) {
         capture = { controller: new AbortController(), epoch, pending: 0, parts: [] };
@@ -836,20 +834,11 @@ export function useVoiceLoop() {
       const current = () => !cancelled && !pausedRef.current &&
         !controller.signal.aborted && epoch === playbackEpochRef.current;
       setOrb("thinking");
-      const finishedRecorder = recorder;
-      const finishedChunks = chunks;
-      const done = new Promise<Blob>((resolve) => {
-        finishedRecorder.onstop = () => {
-          resolve(new Blob(finishedChunks, { type: finishedRecorder.mimeType || "audio/webm" }));
-          if (recorder === finishedRecorder) chunks = [];
-        };
-      });
-      finishedRecorder.stop();
+      const blob = audioCapture.finish();
       recordingRef.current = false;
       setRecording(false);
       const meaningful = voicedMs >= 160;
       try {
-        const blob = await withRequestTimeout(controller.signal, 3000, "The recording could not be finished. Please try again.", async () => done);
         if (!current() || !meaningful || blob.size < 1200) return;
         const text = await transcribe(blob, controller.signal);
         // A paused tab or a different desk must never receive an old recording,
@@ -892,18 +881,9 @@ export function useVoiceLoop() {
 
     const startRecorder = () => {
       if (!stream || recordingRef.current || pausedRef.current) return;
-      chunks = [];
-      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : undefined;
-      recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
-      const recordingChunks = chunks;
-      recorder.ondataavailable = (event) => {
-        if (event.data.size) recordingChunks.push(event.data);
-      };
+      audioCapture.start();
       candidate = true;
       voicedMs = 0;
-      recorder.start();
       recordingRef.current = true;
       startedAt = performance.now();
       setRecording(false);
@@ -942,8 +922,10 @@ export function useVoiceLoop() {
       const inputStream = stream;
       const inputContext = audioContext;
       detector = await withRequestTimeout(undefined, 20000, "The microphone could not get ready. Try the microphone again.", async signal => {
-        const created = await createSpeechDetector(inputStream, inputContext, probability => {
+        const created = await createSpeechDetector(inputStream, inputContext, (probability, frame) => {
           if (cancelled || signal.aborted) return;
+          if (pausedRef.current) audioCapture.discard();
+          else audioCapture.push(frame);
           speechProbability = probability;
           probabilityAt = performance.now();
         });

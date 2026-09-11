@@ -16,6 +16,7 @@ export type BoardGroup = ShapeGroup & {
 };
 
 export type BoardState = {
+  revision: number;
   open: boolean;
   groups: BoardGroup[];
   student: BoardStroke[];
@@ -29,6 +30,7 @@ export type BoardState = {
 };
 
 const empty = (): BoardState => ({
+  revision: 0,
   open: false,
   groups: [],
   student: [],
@@ -39,9 +41,11 @@ const empty = (): BoardState => ({
 });
 
 let state: BoardState = empty();
+let revision = 0;
 const listeners = new Set<() => void>();
 
 function emit() {
+  state = { ...state, revision: ++revision };
   listeners.forEach((fn) => fn());
 }
 
@@ -75,7 +79,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
     if (!op) continue;
     next = { ...next, seq: next.seq + 1 };
     if (op.kind === "clear") {
-      next = { ...next, groups: [], animation: null, playing: false, time: 0, focus: null, pulseId: null, student: [], studentSince: "" };
+      next = { ...next, groups: [], animation: null, playing: false, time: 0, focus: null, pulseId: null };
       continue;
     }
     if (op.kind === "remove") {
@@ -89,6 +93,13 @@ export function applyDrawCommands(commands: DrawCommand[]) {
     if (op.kind === "highlight") {
       next = { ...next, pulseId: op.id };
       continue;
+    }
+    // A new reserved topic begins a new tutor note. Never relabel old givens
+    // as the next phase, and never remove the student's separate ink layer.
+    const previousTopic = next.groups.find(group => group.id === "topic");
+    const words = (group: ShapeGroup) => group.drawables.flatMap(mark => mark.kind === "text" ? [mark.text] : []).join(" ").replace(/\s+/g, " ").trim().toLowerCase();
+    if (op.group.id === "topic" && previousTopic && words(previousTopic) !== words(op.group)) {
+      next = { ...next, groups: [], animation: null, playing: false, time: 0, focus: null, pulseId: null };
     }
     const existing = next.groups.findIndex((group) => group.id === op.group.id);
     const laidOut = layoutWriting(op.group, next.groups, next.student);
