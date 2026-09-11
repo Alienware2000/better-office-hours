@@ -1,5 +1,6 @@
 import type { DrawCommand, Pt } from '@/lib/types';
 import { interpretCommand, type ShapeGroup } from './geometry';
+import { closedBody } from './body';
 import { diagramOptions } from './diagram-command';
 
 const inside = (p: Pt) => Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1;
@@ -7,6 +8,7 @@ const add = (a: Pt, b: Pt): Pt => ({ x: a.x + b.x, y: a.y + b.y });
 const sub = (a: Pt, b: Pt): Pt => ({ x: a.x - b.x, y: a.y - b.y });
 
 function anchor(command: DrawCommand, name: 'center' | 'start' | 'end'): Pt | null {
+  if (command.op === 'curve' && name === 'center') return closedBody(command)?.center ?? null;
   if (command.op === 'circle') return name === 'center' ? command.center : null;
   if (command.op === 'line' || command.op === 'arrow') return name === 'start' ? command.from : name === 'end' ? command.to : { x: (command.from.x + command.to.x) / 2, y: (command.from.y + command.to.y) / 2 };
   return null;

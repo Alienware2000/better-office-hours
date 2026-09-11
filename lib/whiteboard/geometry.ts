@@ -1,3 +1,4 @@
+import { closedBody } from "./body";
 import { curvePath, curveTrace } from "./curve";
 import type { Color, DrawCommand, Pt } from "@/lib/types";
 import { boardLabel } from "./style";
@@ -139,23 +140,25 @@ export function interpretCommand(
   if (command.op === "curve") {
     const points = (Array.isArray(command.points) ? command.points : []).slice(0, 256).map(pt).filter((p): p is Pt => Boolean(p));
     if (points.length < 2) return null;
+    const d = diagram.interpolation === "linear" ? points.map((p, i) => `${i ? "L" : "M"} ${p.x} ${p.y}`).join(" ") : curvePath(points);
     const drawables: Drawable[] = [
-      { kind: "path", key: `${id}-p`, d: curvePath(points), color },
+      { kind: "path", key: `${id}-p`, d, color },
     ];
     if (diagram.fill && Math.hypot(points[0].x - points.at(-1)!.x, points[0].y - points.at(-1)!.y) < .001)
-      drawables.unshift(...bodyFill(id, curvePath(points) + ' Z', color, diagram.fill));
+      drawables.unshift(...bodyFill(id, d + ' Z', color, diagram.fill));
     if (command.label) {
+      const body = closedBody({ ...command, points });
       const mid = points[Math.floor(points.length / 2)];
       drawables.push({
         kind: "text",
         key: `${id}-l`,
-        at: { x: clamp(mid.x + 0.02, 0.04, 0.96), y: clamp(mid.y - 0.04, 0.04, 0.96) },
+        at: body ? { x: body.center.x, y: clamp(Math.min(...points.map(p => p.y)) - .04, .04, .96) } : { x: clamp(mid.x + 0.02, 0.04, 0.96), y: clamp(mid.y - 0.04, 0.04, 0.96) },
         text: label(command.label),
         size: "s",
         color,
       });
     }
-    return finish(drawables, [curveTrace(points)], { ...command, points });
+    return finish(drawables, [diagram.interpolation === "linear" ? points : curveTrace(points)], { ...command, points });
   }
 
   if (command.op === "circle") {

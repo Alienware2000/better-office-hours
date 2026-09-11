@@ -196,6 +196,61 @@ for (let i=0;i<=100;i++) {
   assert.ok(Math.abs(p.x-(.1+.6*i/100))<1e-12,'Uniform straight samples retain constant speed');
 }
 console.log('PASS: bounded smooth paths, sample timing, attached vectors, duplicate holds, static continuity, stable labels.');
+// A model-authored contour stays recognizable as the same object moves.
+const { closedBody } = load('lib/whiteboard/body.ts');
+const { composeDiagram } = load('lib/whiteboard/diagram-compose.ts');
+const outline = {op:'curve',id:'vessel',label:'vessel',color:'accent',points:[{x:.2,y:.5},{x:.3,y:.4},{x:.4,y:.5},{x:.35,y:.6},{x:.25,y:.6},{x:.2,y:.5}],diagram:{fill:'tint',interpolation:'linear',weight:'strong'}};
+const contourBody = closedBody(outline);
+assert.ok(contourBody);
+const staticGroup=interpretCommand(outline,0).group;
+assert.ok(staticGroup.drawables.find(m=>m.kind==='path').d.includes(' L '));
+assert.ok(!staticGroup.drawables.find(m=>m.kind==='path').d.includes(' C '));
+const attached=composeDiagram([staticGroup,interpretCommand({op:'arrow',id:'pointer',from:{x:0,y:0},to:{x:.08,y:0},diagram:{attach:{to:'vessel',anchor:'center'}}},0).group]);
+assert.deepEqual(attached[1].geometry[0][0],contourBody.center);
+store.resetBoard();
+store.applyDrawCommands([{op:'line',id:'background',from:{x:.1,y:.8},to:{x:.9,y:.8}},outline]);
+store.addStudentStroke({id:'student-contour',tool:'pen',color:'blue',points:[{x:.15,y:.85},{x:.3,y:.87}]});
+const originalPage=store.getBoardState().pageId;
+const moving={id:'vessel-motion',duration:2,shapes:[{kind:'dot',id:'vessel',keyframes:[{t:0,at:contourBody.center},{t:2,at:{x:contourBody.center.x+.2,y:contourBody.center.y-.1}}]}]};
+assert.ok(store.loadAnimation(moving));
+const retained=store.getBoardState().animation;
+assert.deepEqual(retained.shapes[0].appearance,contourBody.appearance);
+assert.equal(retained.shapes[0].label,'vessel');
+assert.equal(store.getBoardState().pageId,originalPage);
+assert.equal(store.getBoardState().student.length,1);
+assert.ok(store.getBoardState().groups.some(g=>g.id==='background'));
+assert.ok(!store.getBoardState().groups.some(g=>g.id==='vessel'));
+for (const time of [0,.4,1,1.6,2]) {
+  const group=animationFrame(retained,time).groups[0];
+  assert.equal(group.source.op,'curve','Body never degrades into a circle');
+  for (let i=0;i<outline.points.length;i++) {
+    assert.ok(Math.abs(group.source.points[i].x-outline.points[i].x-.1*time)<1e-12);
+    assert.ok(Math.abs(group.source.points[i].y-outline.points[i].y+.05*time)<1e-12);
+  }
+  assert.equal(group.source.diagram.interpolation,'linear');
+  assert.equal(group.source.color,'accent');
+}
+assert.ok(validateAnimation(JSON.parse(JSON.stringify(retained))),'Restored/provenance appearance validates');
+assert.ok(store.loadAnimation(moving));
+assert.deepEqual(store.getBoardState().animation.shapes[0].appearance,contourBody.appearance,'Same-scene revisions retain appearance');
+for (const appearance of [{...contourBody.appearance,radius:Infinity},{...contourBody.appearance,points:[{x:3,y:0}]},{...contourBody.appearance,fill:'url(evil)'},{...contourBody.appearance,interpolation:'script'}]) {
+  assert.equal(validateAnimation({...moving,shapes:[{...moving.shapes[0],appearance}]}),null);
+}
+assert.equal(closedBody({...outline,points:outline.points.slice(0,-1)}),null,'Open curves stay curves');
+assert.equal(closedBody({...outline,diagram:{interpolation:'linear'}}),null,'Only explicitly filled bodies inherit an outline');
+store.resetBoard();
+assert.ok(store.loadAnimation(moving));
+assert.equal(store.getBoardState().animation.shapes[0].appearance,undefined,'No cross-page or cross-session inheritance');
+// New scenes must not inherit objects from a page they are about to archive.
+store.resetBoard();
+store.loadAnimation({id:'prior',duration:1,shapes:[{kind:'dot',id:'prior-dot',keyframes:[{t:0,at:{x:.1,y:.1}}]}]});
+store.applyDrawCommands([outline]);
+store.loadAnimation(moving);
+assert.equal(store.getBoardState().animation.shapes[0].appearance,undefined);
+const offBoard={...retained,shapes:[{...retained.shapes[0],keyframes:[{t:0,at:{x:-.2,y:.5}},{t:2,at:contourBody.center}]}]};
+assert.equal(animationFrame(offBoard,0).groups.length,0,'Off-board contour does not become a clamped/distorted shape');
+assert.equal(animationFrame(offBoard,2).groups.length,1,'Contour returns intact on re-entry');
+console.log('PASS: rigid contour motion, appearance/label/scale inheritance, center attachment, state round trip, validation, and ink isolation.');
 if (process.argv.includes("--unit")) process.exit(0);
 const response = await fetch(
   `${process.env.BASE ?? "http://localhost:3100"}/api/agent/llm`,

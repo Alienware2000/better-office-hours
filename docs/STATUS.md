@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 15:48 ET
+Updated: 2026-09-11 16:04 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, continuation of 179544c with merged origin/main
@@ -19,6 +19,12 @@ Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. D
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Recognizable-body follow-up on PR #10: closed filled DRAW curves can retain their outline, color, fill, stroke weight, label property, and default size when ANIM reuses their ID as a dot. The dot's at is the outline bounding-box center; vertices translate rigidly, and no rotation is inferred. Local validated appearance metadata survives scene revisions and LiveBoard/session round trips. New unrelated scenes do not inherit archived body geometry. Optional diagram.interpolation=linear keeps angular contours sharp; smooth remains the curve default. Static vectors can attach to a closed filled outline's center. Separate text annotations remain independent. The paper UI, toolbar, human prompt/pedagogy, and shared lib/types.ts are unchanged.
+
+Validation: build, focused lint, animation/body, structured-lesson, diagram, teaching/repair, workspace, and ink regressions pass. Three real reasoning-model setup responses were rendered in Chrome on :3102: rocket and rectangular block used recognizable filled outlines, while the boat still used a circle. A real follow-up rocket response moved the same outline upward with the pad, current page, and student ink intact. Inspected desktop and compact rendering. This was an ungraded concept probe, not the uploaded rocket PDF; model commands were replayed into the actual board with microphone/voice disabled. It verifies generated geometry and state, not speech synchronization or real-device latency. Full setup response times were 16.7 to 21.1s; the successful motion response took 19.3s total, with no first-visual timing claim.
+
+The first motion probe changed topic before animating, correctly archiving the source picture but defeating continuity and leaving a generic dot. Runtime guidance now explicitly says to retain the topic when continuing a picture; the second probe respected it. This is still model-dependent, not a mechanical guarantee against inappropriate title changes. Moving-label collisions, grouped multi-part objects, automatic rotation, general physical correctness, and planning latency remain open. Partly off-board contours are withheld until wholly back in bounds rather than distorted by vertex clamping. Inspect /tmp/boh-contour-launch.png, block.png, boat.png, motion.png, motion-compact.png (all with the boh-contour- prefix), their JSON responses, and /tmp/boh-contour-render.cjs. Review PR #10; leave Hussein's PRs #6/#8/#9 open.
 
 Smooth-path follow-up: DRAW curves and ANIM paths now share bounded cubic geometry. Animated reveals trim the full curve without reshaping earlier strokes; Follow dots/vectors use that exact curve, retaining each declared point's progress/time, repeated-point holds, and two-point linear motion. Endpoint extrapolation avoids introducing easing into uniformly sampled straight motion. Path annotations stay at their full-path position instead of walking along a changing point list. Bars retain sharp corners. The model's runtime schema explanation now distinguishes point-index timing from distance and playback holds from physical rest. Human prompt/pedagogy and frozen shared types are unchanged.
 

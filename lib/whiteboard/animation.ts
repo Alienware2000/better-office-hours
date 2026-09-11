@@ -1,3 +1,4 @@
+import { validAppearance, type BodyDot } from "./body";
 import type { AnimationSpec, AnimShape, DrawCommand, Pt } from "../types";
 import { curvePath, curvePoint } from "./curve";
 import { interpretCommand, type ShapeGroup } from "./geometry";
@@ -55,6 +56,7 @@ export function validateAnimation(input: unknown): AnimationSpec | null {
   for (const s of input.shapes) {
     if (!object(s) || typeof s.id !== "string" || ids.has(s.id)) return null;
     ids.add(s.id);
+    if (s.appearance !== undefined && (s.kind !== "dot" || !validAppearance(s.appearance))) return null;
     if (s.label !== undefined && typeof s.label !== "string") return null;
     let valid = false;
     switch (s.kind) {
@@ -199,7 +201,7 @@ export function animationFrame(
     // transition to a Follow reference, including a change of followed path.
     const f = s.kind === "arrow" || s.kind === "dot"
       ? sampleFrames(s.keyframes.map(frame => ({
-          opacity: 1, r: 0.012, color: "accent", ...frame,
+          opacity: 1, r: (s as BodyDot).appearance?.radius ?? 0.012, color: "accent", ...frame,
           ...("from" in frame ? { from: resolve(frame.from), to: resolve(frame.to) } : {}),
           ...("at" in frame ? { at: resolve(frame.at) } : {}),
         })), t)
@@ -225,7 +227,22 @@ export function animationFrame(
           label: s.label,
         };
         break;
-      case "dot":
+      case "dot": {
+        const appearance = (s as BodyDot).appearance;
+        if (appearance) {
+          const at = resolve(f.at);
+          // Missing radius keeps the original outline's scale. Rotation is not
+          // inferred from velocity: an object's orientation is a separate fact.
+          const keyedRadius = s.keyframes.some(frame => frame.r !== undefined);
+          const r = keyedRadius ? clamp(Number(f.r), .006, .45) : appearance.radius;
+          const points = appearance.points.map(p => ({ x: at.x + p.x * r, y: at.y + p.y * r }));
+          // Hide a partly off-board body instead of clamping its vertices and
+          // distorting its shape. The complete geometry returns on re-entry.
+          if (points.some(p => p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1)) continue;
+          command = { op: 'curve', id: s.id, points, label: s.label, color: appearance.color,
+            diagram: { fill: appearance.fill, interpolation: appearance.interpolation, weight: appearance.weight } };
+          break;
+        }
         command = {
           op: "circle",
           id: s.id,
@@ -235,6 +252,7 @@ export function animationFrame(
           label: s.label,
         };
         break;
+      }
       case "text":
         command = { op: "text", id: s.id, at: resolve(f.at), text: s.text };
         break;

@@ -3,6 +3,7 @@ import type { DrawCommand, Pt } from '@/lib/types';
 // Optional local DRAW metadata. The shared DrawCommand contract stays frozen;
 // the voice/board adapter resolves relationships into ordinary geometry.
 export type DiagramOptions = {
+  interpolation?: 'linear' | 'smooth';
   fill?: 'paper' | 'tint';
   weight?: 'light' | 'normal' | 'strong';
   surface?: 'left' | 'right';
@@ -20,6 +21,7 @@ export function diagramOptions(command: DrawCommand): DiagramOptions | null {
   const input: unknown = (command as DiagramCommand).diagram;
   if (input === undefined) return {};
   if (!object(input)) return null;
+  if (input.interpolation !== undefined && (command.op !== 'curve' || !['linear', 'smooth'].includes(String(input.interpolation)))) return null;
   if (input.fill !== undefined && !['paper', 'tint'].includes(String(input.fill))) return null;
   if (input.weight !== undefined && !['light', 'normal', 'strong'].includes(String(input.weight))) return null;
   for (const key of ['surface', 'labelSide']) if (input[key] !== undefined && !['left', 'right'].includes(String(input[key]))) return null;

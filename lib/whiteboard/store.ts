@@ -1,6 +1,7 @@
 import { layoutWriting } from "./writing";
 import { layoutDiagram } from './diagram-layout';
 import { composeDiagram } from './diagram-compose';
+import { closedBody, type BodyDot } from "./body";
 import { validateAnimation } from "./animation";
 import type { AnimationSpec, DrawCommand } from "@/lib/types";
 import type { StudentInk } from "./colors";
@@ -207,13 +208,18 @@ export function loadAnimation(input: unknown) {
   const validated = validateAnimation(input);
   if (!validated) return false;
   const animation: AnimationSpec = { ...validated, shapes: validated.shapes.map(shape => {
-    if (shape.kind === 'axes' || shape.kind === 'text' || shape.label !== undefined) return shape;
-    const source = state.groups.find(group => group.id === shape.id)?.source;
+    if (shape.kind === 'axes' || shape.kind === 'text') return shape;
+    const source = !state.animation || state.animation.id === validated.id
+      ? state.groups.find(group => group.id === shape.id && !group.unresolved)?.source : undefined;
     const previous = state.animation?.id === validated.id ? state.animation.shapes.find(item => item.id === shape.id) : undefined;
     const label = source && 'label' in source ? source.label : previous && 'label' in previous ? previous.label : undefined;
     // Changing an object's representation should retain its established name.
     // An explicit empty label still lets the tutor remove it deliberately.
-    return label === undefined ? shape : { ...shape, label };
+    const labeled = shape.label !== undefined || label === undefined ? shape : { ...shape, label };
+    if (labeled.kind !== 'dot') return labeled;
+    const appearance = (labeled as BodyDot).appearance ?? (source ? closedBody(source)?.appearance : undefined) ??
+      (previous?.kind === 'dot' ? (previous as BodyDot).appearance : undefined);
+    return appearance ? { ...labeled, appearance } : labeled;
   }) };
   // Reusing scene/object IDs explicitly continues this figure. Unrelated
   // animations still get a fresh page, preserving earlier work and ink.
