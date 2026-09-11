@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 16:44 ET
+Updated: 2026-09-11 17:00 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, continuation of 179544c with merged origin/main
@@ -19,6 +19,12 @@ Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. D
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Microphone startup follow-up: David reported Preparing microphone, then Microphone unavailable, and subsequently confirmed it was working again. The failing in-app browser logged a running AudioContext with an ended microphone track just after the detector started. This establishes a disconnected source, not its cause; no Chrome comparison or new real-device recording was performed. The working session was left alone after his recovery report. The server remains available on http://localhost:3102.
+
+Input acquisition and AudioContext resume now begin directly from the existing Start/retry/chip action, rather than acquiring input on page mount. The initial orb says Tap to start; startup exposes bounded permission (15s), configuration (8s), audio resume (5s), and detector (20s) failures. Late permission grants and detectors are released, ended tracks are rejected before readiness, and a chip's tutor request waits for input to become usable. Existing listening thresholds and capture behavior are unchanged. Expanded simulated lifecycle checks cover these cases plus retry actually accepting the next utterance; focused lint, request-deadline/workspace regressions, TypeScript, and a production build pass. The build ran in a separate copy to preserve the live dev session. These are startup safeguards, not proof of the original disconnect's cause or of hardware reliability. Development hot reload can still interrupt an active audio session; keep source stable during live tests.
+
+Next: continue annotation placement/association and staged emphasis below, preserving the simple paper diagrams and toolbar. PR #10 includes this startup safeguard; review separately from Hussein's still-open #6/#8/#9. Do not resume microphone tuning without fresh failure evidence.
 
 David clarified the visual priority with his app screenshot and Sketchplanations references: simple diagrams are already good; focus on informative labels, callouts, written notes, consistent color, and equations that supplement a spoken explanation at the right teaching step. Detailed object silhouettes are optional, not the objective. Runtime diagram/structured-lesson guidance now reflects this; no shape library, topic trigger, UI redesign, or disclosure-guard change. The existing silhouette capability remains available without being favored. Structured-lesson, teaching/disclosure regressions, and focused lint pass. This is a guidance change, not a new annotation-layout engine or proof of improved model behavior.
 

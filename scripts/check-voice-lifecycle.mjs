@@ -15,7 +15,7 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false } = {}) {
+async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, startup = {} } = {}) {
   const effects = [], states = [], requests = [], recordings = [];
   const inputAudioState = { value: 'running' };
   const stt = deferred();
@@ -27,7 +27,11 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
   let now = 1000, loud = false, frame, stateIndex = 0;
   const listeners = new Map();
   let probabilityCallback = () => {};
+  let mediaRequests = 0;
+  let initializing = true;
+  let closedContexts = 0, destroyedDetectors = 0;
   const track = { enabled: true, muted: false, readyState: 'live', stop() { this.readyState = 'ended'; } };
+  const inputStream = { getAudioTracks: () => [track], getTracks: () => [track] };
   const react = {
     useRef: value => ({ current: value }),
     useCallback: callback => callback,
@@ -43,7 +47,12 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
   const imports = {
     react,
     './speech-detector': {
-      createSpeechDetector: async (_stream, _context, callback) => { probabilityCallback = callback; return { destroy: async () => {} }; },
+      createSpeechDetector: async (_stream, _context, callback) => {
+        probabilityCallback = callback;
+        if (startup.detector) await startup.detector;
+        if (startup.ended === 'detector') track.stop();
+        return { destroy: async () => { destroyedDetectors++; } };
+      },
       isSpeechFrame: (probability, recording, playback) => probability >= (playback ? .85 : recording ? .35 : .65),
     },
     '@/lib/agent/intent': { detectMode: () => null },
@@ -60,7 +69,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     Audio: class {
       paused = false;
       constructor() { audio.push(this); }
-      play() { if (!deferPlaying) this.onplaying?.(); if (!manualAudio) queueMicrotask(() => this.onended?.()); return Promise.resolve(); }
+      play() { if (initializing || !deferPlaying) this.onplaying?.(); if (initializing || !manualAudio) queueMicrotask(() => this.onended?.()); return Promise.resolve(); }
       pause() { this.paused = true; }
     },
     structuredClone, queueMicrotask,
@@ -72,13 +81,19 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     clearTimeout: timer => { timers.delete(timer); clearTimeout(timer); },
     crypto: { randomUUID: () => 'test-tab' },
     performance: { now: () => now },
-    navigator: { mediaDevices: { getUserMedia: async () => ({ getAudioTracks: () => [track], getTracks: () => [track] }) } },
+    navigator: { mediaDevices: { getUserMedia: async () => {
+      mediaRequests++;
+      track.readyState = 'live';
+      if (startup.media) await startup.media;
+      if (startup.ended === 'permission') track.stop();
+      return inputStream;
+    } } },
     AudioContext: class {
       get state() { return inputAudioState.value; }
       createMediaStreamSource() { return { connect: noOp }; }
       createAnalyser() { return { fftSize: 2048, getFloatTimeDomainData: data => data.fill(loud && track.enabled ? 0.1 : 0) }; }
-      resume() { return Promise.resolve(); }
-      close() { return Promise.resolve(); }
+      resume() { return startup.resume ?? Promise.resolve(); }
+      close() { closedContexts++; return Promise.resolve(); }
     },
     requestAnimationFrame: callback => { frame = callback; return 1; },
     cancelAnimationFrame: noOp,
@@ -86,12 +101,12 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     window: { matchMedia: () => ({ matches: false }), addEventListener: (name, cb) => listeners.set(name, cb), removeEventListener: noOp, setTimeout },
     fetch: async (url, options) => {
       requests.push({ url, ...options });
-      if (url.endsWith('/health')) return Response.json({ grok: true, elevenlabs: true });
+      if (url.endsWith('/health')) return startup.health ?? Response.json({ grok: true, elevenlabs: true });
       if (url.endsWith('/stt')) return (sttCount++ ? sttNext : stt).promise; // Deliberately ignores abort.
       if (url.endsWith('/llm') && JSON.parse(options.body).visualRepair && repairResponse) return repairResponse;
       if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: llmText } }] })}\n\ndata: [DONE]\n\n`);
-      if (url.endsWith('/tts') && deferredTts) return deferredTts;
-      if (url.endsWith('/tts')) return failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
+      if (url.endsWith('/tts') && !initializing && deferredTts) return deferredTts;
+      if (url.endsWith('/tts')) return !initializing && failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
       throw new Error(`Unexpected request: ${url}`);
     },
   };
@@ -118,7 +133,17 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
   const hook = load('app/(session)/voice/useVoiceLoop.ts').useVoiceLoop();
   const cleanups = effects.map(effect => effect());
   await settle();
-  hook.interrupt(); // Activate voice without relying on a rendered health update.
+  assert.equal(mediaRequests, 0, "Mounting never opens the microphone");
+  if (autoStart) {
+    hook.interrupt(); // Explicit user activation begins acquisition.
+    await settle();
+    assert.equal(states[9], true, 'Explicit activation makes the input ready');
+    assert.equal(states[10], false, 'Startup settles before conversation');
+    assert.equal(requests.filter(r => r.url.endsWith('/tts')).length, 1, 'Start speaks the initial greeting once');
+    requests.length = 0;
+    audio.length = 0;
+    initializing = false;
+  }
   const tick = (volume, elapsed, detectorFrame = true) => { loud = volume; now += elapsed; if (detectorFrame) probabilityCallback(typeof volume === 'number' ? volume : volume ? .98 : .01, new Float32Array(Math.max(1,Math.round(elapsed*16))).fill(volume ? .25 : 0)); frame(); };
   async function record() {
     tick(true, 1000);
@@ -132,6 +157,13 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
   }
   return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks,
     track,
+    resourceCounts: () => ({ mediaRequests, closedContexts, destroyedDetectors }),
+    expireStartup: milliseconds => {
+      const pending = [...timers].find(([, entry]) => entry.milliseconds === milliseconds);
+      assert.ok(pending, `A ${milliseconds}ms startup deadline is pending`);
+      const [timer, entry] = pending;
+      clearTimeout(timer); timers.delete(timer); entry.callback();
+    },
     expireTranscription: () => {
       const pending = [...timers].find(([, entry]) => entry.milliseconds === 12000);
       assert.ok(pending, 'An STT deadline is pending');
@@ -142,6 +174,98 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     suspendAudio: () => { inputAudioState.value = 'suspended'; },
     cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
+
+// Startup uses simulated permissions/devices, including providers that ignore abort.
+{
+  const permission = deferred();
+  const test = await mount({ autoStart: false, startup: { media: permission.promise } });
+  assert.equal(test.states[10], false, 'An unopened page is idle, not preparing');
+  test.hook.interrupt();
+  test.hook.interrupt();
+  assert.equal(test.resourceCounts().mediaRequests, 1, 'Repeated starts share one permission request');
+  assert.equal(test.states[10], true);
+  assert.equal(test.requests.some(r => r.url.endsWith('/tts')), false, 'Greeting waits for usable input');
+  permission.resolve();
+  await settle();
+  assert.equal(test.states[9], true);
+  assert.equal(test.states[10], false);
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1);
+  test.track.stop();
+  test.tick(false, 100);
+  await settle();
+  assert.equal(test.states[9], false);
+  test.hook.retryMicrophone();
+  await settle();
+  assert.equal(test.states[9], true, 'Retry acquires usable input');
+  assert.equal(test.states[4], false, 'Retry resumes the conversation');
+  assert.equal(test.resourceCounts().mediaRequests, 2);
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1, 'Retry does not repeat the greeting');
+  await test.record();
+  test.stt.resolve(Response.json({ text: 'Can you hear me now?' }));
+  await settle();
+  assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, 1, 'Replacement input handles the next utterance');
+  test.cleanup();
+}
+for (const [phase, milliseconds, message] of [
+  ['media', 15000, /permission is still pending/],
+  ['health', 8000, /configuration could not load/],
+  ['resume', 5000, /audio could not start/],
+  ['detector', 20000, /could not get ready/],
+]) {
+  const pending = deferred();
+  const test = await mount({ autoStart: false, startup: { [phase]: pending.promise } });
+  test.hook.interrupt();
+  await settle();
+  test.expireStartup(milliseconds);
+  await settle();
+  assert.equal(test.states[9], false, `${phase}: never claims ready`);
+  assert.equal(test.states[10], false, `${phase}: exits preparing`);
+  assert.equal(test.states[4], true, `${phase}: returns control to the learner`);
+  assert.match(test.states[3], message);
+  pending.resolve(phase === 'health' ? Response.json({ grok: true, elevenlabs: true }) : undefined);
+  await settle();
+  assert.equal(test.track.readyState, 'ended', `${phase}: releases even a late microphone grant`);
+  assert.equal(test.resourceCounts().closedContexts, 1, `${phase}: closes failed audio context`);
+  if (phase === 'detector') assert.equal(test.resourceCounts().destroyedDetectors, 1, 'Late detector is destroyed');
+  assert.equal(test.requests.some(r => r.url.endsWith('/tts')), false, `${phase}: late completion cannot speak`);
+  test.cleanup();
+}
+for (const ended of ['permission', 'detector']) {
+  const test = await mount({ autoStart: false, startup: { ended } });
+  test.hook.interrupt();
+  await settle();
+  assert.equal(test.states[9], false, `${ended}: rejects an ended track before reporting readiness`);
+  assert.equal(test.states[10], false);
+  assert.match(test.states[3], /disconnected the microphone during startup/);
+  assert.equal(test.resourceCounts().closedContexts, 1);
+  test.cleanup();
+}
+{
+  const permission = deferred();
+  const test = await mount({ autoStart: false, startup: { media: permission.promise } });
+  test.hook.interrupt();
+  permission.reject(new DOMException('Denied', 'NotAllowedError'));
+  await settle();
+  assert.match(test.states[3], /Microphone access is blocked/);
+  assert.equal(test.states[10], false);
+  test.cleanup();
+}
+for (const action of ['ready', 'pause', 'unmount']) {
+  const permission = deferred();
+  const test = await mount({ autoStart: false, startup: { media: permission.promise } });
+  await test.hook.sendUtterance('Explain a concept');
+  assert.equal(test.requests.some(r => r.url.endsWith('/llm')), false, 'A chip waits for microphone readiness');
+  if (action === 'pause') test.hook.pauseVoice();
+  if (action === 'unmount') test.cleanup();
+  permission.resolve();
+  await settle();
+  assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, action === 'ready' ? 1 : 0, `${action}: only an active selection proceeds`);
+  assert.equal(test.requests.some(r => r.url.endsWith('/tts')), false, 'A chip skips the lobby greeting');
+  if (action === 'pause') assert.equal(test.states[4], true);
+  if (action === 'unmount') assert.equal(test.track.readyState, 'ended', 'Unmount releases late permission grants');
+  else test.cleanup();
+}
+console.log('PASS: explicit startup, bounded permission/configuration/audio/detector waits, ended-track rejection, late resource cleanup, deferred chips, and one-click retry.');
 
 for (const action of ['pause', 'resume', 'leave', 'enter', 'remove', 'hide', 'unmount']) {
   const test = await mount();

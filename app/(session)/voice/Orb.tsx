@@ -9,6 +9,7 @@ export function Orb({
   onInterrupt,
   onPause,
   inputReady = true,
+  inputStarting = false,
   inputError = false,
   onRetry,
 }: {
@@ -19,6 +20,7 @@ export function Orb({
   onInterrupt: () => void;
   onPause: () => void;
   inputReady?: boolean;
+  inputStarting?: boolean;
   inputError?: boolean;
   onRetry: () => void;
 }) {
@@ -38,8 +40,8 @@ export function Orb({
         className="orb-control"
         aria-label={label}
         onClick={onInterrupt}
-        disabled={!inputReady}
-        aria-disabled={!inputReady || (!paused && !recording)}
+        disabled={inputStarting || inputError}
+        aria-disabled={inputStarting || inputError || (inputReady && !paused && !recording)}
       >
         <span
           aria-hidden

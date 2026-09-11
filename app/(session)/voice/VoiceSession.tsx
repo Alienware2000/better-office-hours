@@ -20,6 +20,7 @@ export function VoiceSession() {
     level,
     recording,
     inputReady,
+    inputStarting,
     retryMicrophone,
     error,
     paused,
@@ -142,13 +143,14 @@ export function VoiceSession() {
                 paused={paused}
                 recording={recording}
                 inputReady={inputReady}
+                inputStarting={inputStarting}
                 inputError={!inputReady && Boolean(error)}
                 onRetry={retryMicrophone}
                 onInterrupt={interrupt}
                 onPause={pauseVoice}
               />
             </motion.div>
-            <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error))}</p>
+            <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error), inputStarting)}</p>
 
             <div className="chip-row">
               {chips.map((chip) => (
@@ -295,13 +297,14 @@ export function VoiceSession() {
                     paused={paused}
                     recording={recording}
                     inputReady={inputReady}
+                inputStarting={inputStarting}
                     inputError={!inputReady && Boolean(error)}
                     onRetry={retryMicrophone}
                     onInterrupt={interrupt}
                     onPause={pauseVoice}
                   />
                 </motion.div>
-                <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error))}</p>
+                <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error), inputStarting)}</p>
                 <Captions turns={turns} />
                 {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
                 {error ? (
@@ -316,8 +319,8 @@ export function VoiceSession() {
   );
 }
 
-function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean): string {
-  if (!inputReady) return inputError ? "Microphone unavailable" : "Preparing microphone";
+function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean): string {
+  if (!inputReady) return inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to start";
   if (paused) return "Tap to start";
   if (recording) return "Listening · tap when finished";
   if (state === "speaking") return "Speaking";
