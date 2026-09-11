@@ -127,3 +127,18 @@ const withInk=layoutWriting(writing('ink-test','a = ?',.45),[],[{points:[{x:0,y:
 assert.ok(writingBounds(withInk.drawables[0]).top > .55,'Student ink reserves space');
 assert.equal(layoutWriting(writing('full','a = ?',.45),[],[{points:[{x:0,y:0},{x:1,y:1}]}]),null,'A full board preserves existing work');
 console.log('PASS: screenshot writing sequence wraps, avoids overlap, preserves size, updates IDs, and respects student ink.');
+
+const source = {page:0,textRegions:[{label:'A given quantity',bbox:{x:.18,y:.4,w:.22,h:.02}},{label:'Another quantity',bbox:{x:.18,y:.45,w:.25,h:.02}}]};
+const guided = visualBeats('[HIGHLIGHT page=1 anchor=0] Notice this quantity. [HIGHLIGHT page=1 anchor=1] Then compare this one.', source);
+assert.deepEqual(guided[0].turn.highlight.bbox,source.textRegions[0].bbox);
+assert.deepEqual(guided[1].turn.highlight.bbox,source.textRegions[1].bbox);
+assert.equal(guided[1].speechBefore,'Notice this quantity.');
+for (const tag of ['[HIGHLIGHT page=2 anchor=0]','[HIGHLIGHT page=1 anchor=99]','[HIGHLIGHT page=1 anchor=-1]','[HIGHLIGHT page=1 anchor=0.5]']) assert.equal(parseAgentTurn(tag,source).highlight,undefined,'Unresolvable anchor cannot point at guessed coordinates');
+assert.equal(parseAgentTurn('[HIGHLIGHT page=1 anchor=0]').highlight,undefined);
+const topic = layoutWriting(writing('topic','Constant acceleration',.13),[],[]);
+const note1 = layoutWriting(writing('given-1','a = +3 m/s²',.45),[topic],[]);
+const note2 = layoutWriting(writing('given-2','s = 600 m',.58),[topic,note1],[]);
+assert.ok(topic.drawables[0].heading);
+assert.equal(note1.drawables[0].textAnchor,'start');
+assert.equal(note1.drawables[0].at.x,note2.drawables[0].at.x,'Given quantities form aligned note rows');
+console.log('PASS: measured anchor IDs, invalid/page-mismatched targets, ordered highlight beats, and aligned note hierarchy.');

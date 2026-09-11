@@ -315,3 +315,18 @@ console.log('PASS: low-confidence noise endpoint, quiet one-time upload receipt,
   test.cleanup();
 }
 console.log('PASS: suspended microphone audio has a bounded recovery path.');
+
+{
+  const bbox0={x:.1,y:.2,w:.3,h:.02}, bbox1={x:.1,y:.4,w:.3,h:.02};
+  const test=await mount({livePage:{psetId:'page-a',page:0,textRegions:[{label:'first',bbox:bbox0},{label:'second',bbox:bbox1}]},llmText:'[HIGHLIGHT page=1 anchor=0] Notice the first given. [HIGHLIGHT page=1 anchor=1] Now the second given.',manualAudio:true});
+  const speaking=test.hook.sendUtterance('Explain the givens');
+  await settle();
+  assert.equal(JSON.stringify(test.states[7]?.bbox),JSON.stringify(bbox0),'First measured highlight accompanies first speech');
+  test.audio[0].onended();
+  await settle();
+  assert.equal(JSON.stringify(test.states[7]?.bbox),JSON.stringify(bbox1),'Second highlight waits for preceding speech');
+  test.hook.pauseVoice();
+  await speaking;
+  test.cleanup();
+}
+console.log('PASS: actual voice queue advances measured PDF highlights with spoken sentences.');

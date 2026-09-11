@@ -22,6 +22,8 @@ export type Drawable =
       at: Pt;
       text: string;
       size: "s" | "m";
+      textAnchor?: "start" | "middle";
+      heading?: boolean;
       fontSize?: number; // Resolved standalone writing size, shared by SVG and snapshots.
       color: string;
     };

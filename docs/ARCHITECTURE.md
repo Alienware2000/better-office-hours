@@ -238,6 +238,7 @@ Inline tag grammar the model uses:
 
 ```
 [POINT page=1 x=0.42 y=0.31 label="launch angle"]
+[HIGHLIGHT page=1 anchor=3]  // measured text fragment in this request
 [HIGHLIGHT page=1 x=0.40 y=0.28 w=0.20 h=0.06]
 [BOARD open]
 [DRAW {...DrawCommand JSON...}]
@@ -246,6 +247,8 @@ Inline tag grammar the model uses:
 [RECAP]         // signals the session close sequence
 [THINK]         // hand this turn to the reasoning lane, see 3.5
 ```
+
+Anchor IDs are indices of the supplied LivePage textRegions, scoped to that request and page. The voice queue resolves them to the existing highlight bbox; invalid or page-mismatched IDs produce no highlight. Coordinates remain available for figures without text anchors. Highlights advance with narration, and the PDF margin cue stays clear of text.
 
 Parsed into:
 

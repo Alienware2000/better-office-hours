@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 02:02 ET
+Updated: 2026-09-11 02:21 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,10 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+PDF guidance/note follow-up: toolbar rows keep their height and wrap controls on narrow desks, fixing the clipped top. HIGHLIGHT now accepts a measured text anchor ID scoped to the page supplied with the request. The speech queue resolves IDs and advances highlights in narration order; invalid or page-mismatched IDs are ignored. A small fixed-size margin cue replaces the laser glow/tail/label and stays beside highlighted text across zoom/resize. Highlight scrolling reveals the start of a passage. Board topic headings and given/note/definition rows use consistent typography and left alignment, shared with snapshots. Runtime guidance asks for a short heading, separate givens, and deliberate PDF highlighting.
+
+Validation: production build, focused lint outside legacy PDF ref-access issues, teaching/lifecycle/animation checks pass. Browser verified full toolbar bounds at 1440/1024/700px, highlight/cue geometry at 100% and 125%, and note styling. The narrow retarget check explicitly brought the passage back into view after resizing; user scrolling can still hide the cue. A live Grok probe emitted a valid anchor highlight and topic/given rows without a computed answer. Visual composition remains model-dependent; general diagram collision avoidance, advanced typesetting, and board pagination remain open. Temporary browser fixture route was removed. Retest PR #5 before merge.
 
 Writing/tone follow-up: standalone DRAW text now wraps at a fixed readable size and finds space clear of existing text and student ink. Placement is stored, so SVG and tutor snapshots agree and earlier lines stay still. Reproduced the screenshot sequence in expanded and compact boards; compact writing measured 22px or larger in the tested 1440px desktop viewport. Same-ID updates reuse their space. Full boards keep existing work and reject additional writing with a console diagnostic; automatic pagination and avoiding arbitrary diagram paths are still open. v3 stability is now 1 for steadier delivery, with voice and playback rate retained. Actual synthesis returned valid audio; subjective tone still needs David’s retest. Regression checks, focused lint, and production build pass.
 

@@ -73,7 +73,7 @@ export function PdfViewer({
   zoomRef.current = zoom;
   const [fitWidth, setFitWidth] = useState(0);
   const [panning, setPanning] = useState(false);
-  const [laser, setLaser] = useState<{ x: number; y: number; label?: string } | null>(
+  const [laser, setLaser] = useState<{ x: number; y: number } | null>(
     null,
   );
   const onReadyRef = useRef(onReady);
@@ -416,7 +416,7 @@ export function PdfViewer({
     const stack = hostRef.current;
     if (!active || !stack) return;
     const target = pointer ?? (highlight ? {
-      page: highlight.page, x: highlight.bbox.x + highlight.bbox.w / 2,
+      page: highlight.page, x: highlight.bbox.x,
       y: highlight.bbox.y + highlight.bbox.h / 2,
     } : null);
     if (!target) return;
@@ -429,34 +429,37 @@ export function PdfViewer({
     return () => cancelAnimationFrame(frame);
   }, [pointer, highlight, active, reduceMotion]);
 
-  // The laser lives on the visible frame, not on a single page sheet, so it
-  // can travel between problems instead of unmounting and appearing again.
+  // The cue lives on the visible frame and follows measured page geometry.
   useEffect(() => {
     const frame = frameRef.current;
     const stack = hostRef.current;
-    if (!frame || !pointer) {
+    const target = highlight ? { page: highlight.page, x: highlight.bbox.x, y: highlight.bbox.y + highlight.bbox.h / 2 } : pointer;
+    if (!frame || !target) {
       setLaser(null);
       return;
     }
 
     const update = () => {
       const sheet = frame.querySelector<HTMLElement>(
-        `[data-page="${Math.max(0, pointer.page - 1)}"]`,
+        `[data-page="${Math.max(0, target.page - 1)}"]`,
       );
       if (!sheet) return;
       const frameBox = frame.getBoundingClientRect();
       const sheetBox = sheet.getBoundingClientRect();
       if (frameBox.width < 1 || frameBox.height < 1) return;
-      const x =
-        (sheetBox.left - frameBox.left + pointer.x * sheetBox.width) / frameBox.width;
-      const y =
-        (sheetBox.top - frameBox.top + pointer.y * sheetBox.height) / frameBox.height;
-      // Off the visible frame: hide rather than pin a laser to the margin.
+      const anchor = highlight?.bbox ?? pages[target.page - 1]?.textRegions.find(region => {
+        const b = region.bbox;
+        return target.x >= b.x && target.x <= b.x + b.w && target.y >= b.y && target.y <= b.y + b.h;
+      })?.bbox;
+      // Park beside a measured text fragment, never on top of its letters.
+      const x = (sheetBox.left - frameBox.left + (anchor?.x ?? target.x) * sheetBox.width - 7) / frameBox.width;
+      const y = (sheetBox.top - frameBox.top + (anchor ? anchor.y + anchor.h / 2 : target.y) * sheetBox.height) / frameBox.height;
+      // Off the visible frame: hide the cue until the passage is visible.
       if (x < -0.04 || x > 1.04 || y < -0.04 || y > 1.04) {
         setLaser(null);
         return;
       }
-      setLaser({ x, y, label: pointer.label });
+      setLaser({ x, y });
     };
 
     update();
@@ -464,13 +467,13 @@ export function PdfViewer({
     const observer = new ResizeObserver(update);
     observer.observe(frame);
     if (stack) observer.observe(stack);
-    const sheet = frame.querySelector<HTMLElement>(`[data-page="${Math.max(0, pointer.page - 1)}"]`);
+    const sheet = frame.querySelector<HTMLElement>(`[data-page="${Math.max(0, target.page - 1)}"]`);
     if (sheet) observer.observe(sheet);
     return () => {
       stack?.removeEventListener("scroll", update);
       observer.disconnect();
     };
-  }, [pointer, zoom]);
+  }, [pointer, highlight, zoom, pages]);
 
   if (error) {
     return <p className="p-6 text-sm text-zinc-500">{error}</p>;
@@ -610,7 +613,6 @@ export function PdfViewer({
           <Pointer
             x={laser.x}
             y={laser.y}
-            label={laser.label}
             reduceMotion={reduceMotion}
           />
         ) : null}

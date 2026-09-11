@@ -403,13 +403,14 @@ export function useVoiceLoop() {
         animAppliedRef.current = "";
         animControlRef.current = "";
       });
+      const visualSource = getLivePage();
       const response = await fetch("/api/agent/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: historyRef.current,
           stream: true,
-          livePage: getLivePage(),
+          livePage: visualSource,
           liveBoard: getLiveBoard(),
           event,
           deep,
@@ -467,7 +468,7 @@ export function useVoiceLoop() {
         const partial = parseAgentTurn(raw);
         // Both static marks and animation share the speech queue. A tag waits
         // for its preceding words rather than drawing the whole reply upfront.
-        const beats = visualBeats(raw);
+        const beats = visualBeats(raw, visualSource);
         for (const beat of beats.slice(beatsApplied)) {
           const pending = beat.speechBefore.slice(emitted).trim();
           if (pending) { enqueueSpeech(pending); emitted = beat.speechBefore.length; }

@@ -57,9 +57,9 @@ export function snapshotBoard(
           ctx.save();
           ctx.scale(1 / w, 1 / h);
           ctx.fillStyle = mark.color;
-          ctx.font = `500 ${(mark.fontSize ?? boardTextSize(mark.text, mark.size, mark.at.x)) * h}px ${isMathText(mark.text) ? MATH_FONT : LABEL_FONT}`;
+          ctx.font = `500 ${(mark.fontSize ?? boardTextSize(mark.text, mark.size, mark.at.x)) * h}px ${!mark.heading && isMathText(mark.text) ? MATH_FONT : LABEL_FONT}`;
           ctx.textAlign = "left";
-          let x = mark.at.x * w - ctx.measureText(mark.text).width / 2;
+          let x = mark.at.x * w - (mark.textAnchor === "start" ? 0 : ctx.measureText(mark.text).width / 2);
           for (const run of textRuns(mark.text, mark.color)) {
             ctx.fillStyle = run.color;
             ctx.fillText(run.text, x, mark.at.y * h);
