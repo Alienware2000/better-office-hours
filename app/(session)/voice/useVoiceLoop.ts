@@ -421,6 +421,7 @@ export function useVoiceLoop() {
       let heard = "";
       let historyMessage: ChatMessage | null = null;
       let spoken: Promise<void> = Promise.resolve();
+      let preparationQueue: Promise<unknown> = Promise.resolve();
 
       // Shortness is a tutor instruction, never a silent client-side audio cut.
       const enqueueSpeech = (chunk: string) => {
@@ -429,7 +430,7 @@ export function useVoiceLoop() {
         const previousText = saidSoFar;
         saidSoFar = [saidSoFar, trimmed].filter(Boolean).join(" ");
         const audioSignal = abortRef.current?.signal;
-        const prepared = withRequestTimeout(audioSignal, 15000, "Voice playback took too long. Please try again.", async signal => {
+        const prepared = preparationQueue.then(() => withRequestTimeout(audioSignal, 15000, "Voice playback took too long. Please try again.", async signal => {
           const response = await fetch("/api/agent/tts", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: trimmed, previousText }), signal,
@@ -439,7 +440,8 @@ export function useVoiceLoop() {
             throw new Error(typeof failure.error === "string" ? failure.error : "Voice playback failed");
           }
           return { blob: await response.blob() };
-        }).catch((error: unknown) => ({ error }));
+        })).catch((error: unknown) => ({ error }));
+        preparationQueue = prepared;
         spoken = enqueueSpeechTask(async () => {
           if (playbackEpoch !== playbackEpochRef.current || signal.aborted) return;
           if (speechFailure) throw speechFailure;

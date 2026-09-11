@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 01:37 ET
+Updated: 2026-09-11 01:42 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,8 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Voice follow-up: reproduced v3's HTTP 400 rejection of previous_text on a second sentence. The route now omits that unsupported parameter for v3 while preserving it for Flash. Three consecutive real app requests passed with prior sentence context supplied by the client. A route regression test covers both models. Audio preparation is serialized per model pass to avoid unbounded simultaneous requests. Runtime wording allows warmth and specific acknowledgement without repeated stock openers; human PROMPT and PEDAGOGY remain unchanged. Sentence grouping was evaluated and withheld because it made interruption history less accurate. Sentence-level captions/playback remain.
 
 Current voice/desk slice is PR #5 (PR #6 is Hussein's context PR, verified on GitHub). Conversational v3 is now the default TTS model after David funded the account and real synthesis plus browser decoding passed. Scribe v2 remains STT. This upgrades speech synthesis, not managed realtime turn-taking. Flash is available through ELEVENLABS_TTS_MODEL as an explicit rollback.
 

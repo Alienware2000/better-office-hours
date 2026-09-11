@@ -4,6 +4,8 @@ Each lane keeps a few lines here: what works, what is stubbed, what other lanes 
 
 ## voice
 
+v3 integration gotcha: previous_text/next_text are rejected by the provider, despite ordinary TTS parameter documentation listing them. The earlier one-sentence smoke test missed this. Only Flash receives previous_text now. scripts/check-tts.mjs exercises the actual route with both models. Three sequential live requests passed. Keep sentence playback boundaries for interruption/history integrity until audio alignment is available; a grouping experiment was withheld after the lifecycle regression caught unplayed words in history. Tone softening is runtime-only and still needs David's listening review.
+
 Latest voice/board pass: default TTS is eleven_v3_conversational, with stability 0.5 and an explicit Flash rollback via ELEVENLABS_TTS_MODEL. The quota initially blocked synthesis; after David upgraded, direct synthesis, STT round trip, and actual browser decoding passed. Requests surface quota errors clearly. This is not ElevenAgents managed turn-taking: local VAD and batch Scribe v2 remain. No key values are stored in docs.
 
 Teaching surface: BoardText shares symbol colors and math font choices with snapshots and ANIM. General text lines allow 64 characters, arrow labels stay short. Opening the board after student speech does not seed content. MODE tags only enter a desk from the lobby. Local LivePage adds optional measured textRegions, passed through the voice route for highlighting; shared lib/types.ts is untouched. Browser anchor test initially selected a nonexistent ninth fragment in its synthetic fixture twice; corrected the fixture target, then zoom/resize checks passed. No test routes remain in the app.

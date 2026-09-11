@@ -27,7 +27,9 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         text,
         model_id: ELEVENLABS_TTS_MODEL,
-        previous_text: normalizeSpokenText(body.previousText ?? "") || undefined,
+        // Conversational v3 rejects previous_text, including on a valid second sentence.
+        previous_text: ELEVENLABS_TTS_MODEL === "eleven_v3_conversational"
+          ? undefined : normalizeSpokenText(body.previousText ?? "") || undefined,
         voice_settings: ELEVENLABS_TTS_MODEL === "eleven_v3_conversational" ? { stability: 0.5 } : {
           stability: 0.42,
           similarity_boost: 0.75,
@@ -42,6 +44,9 @@ export async function POST(req: Request) {
   if (!response.ok || !response.body) {
     const detail = await response.text();
     const quota = detail.includes('quota_exceeded');
+    let code = 'upstream_error';
+    try { code = JSON.parse(detail).detail?.code ?? code; } catch { /* Non-JSON provider response. */ }
+    console.error('Voice synthesis rejected', { status: response.status, code, model: ELEVENLABS_TTS_MODEL });
     return Response.json({ error: quota
       ? "Voice credits are exhausted. Add ElevenLabs quota to continue."
       : "Voice synthesis failed. Please try again." }, { status: quota ? 429 : 502 });
