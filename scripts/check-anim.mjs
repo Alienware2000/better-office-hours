@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+const external = createRequire(import.meta.url);
 // Deterministic runtime checks plus a live generated ANIM through :3100.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -17,7 +19,7 @@ function load(file) {
       target: ts.ScriptTarget.ES2022,
     },
   }).outputText;
-  const require = (name) =>
+  const require = (name) => name.startsWith('@mathjax/') ? external(name) :
     load(
       (name.startsWith("@/")
         ? path.join(root, name.slice(2))

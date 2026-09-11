@@ -40,9 +40,11 @@ export function detectMode(
   current: LayoutState = "orb_only",
 ): Extract<LayoutState, "pset" | "concept"> | null {
   const said = text.toLowerCase().replace(/’/g, "'");
-  if (PSET.some((pattern) => pattern.test(said))) return "pset";
+  if (/\b(?:switch|change) (?:the )?(?:topic|subject)\b|\b(?:work on|do|discuss) something else\b/.test(said)) return "concept";
+  const namesHomework = PSET.some((pattern) => pattern.test(said));
+  if (namesHomework && (current !== "concept" || /^(?:homework|hw|p[ -]?set|problem set)[.!?]?$/.test(said.trim()) || /\b(?:work on|want to do|switch to|go back to|return to|help (?:me )?with)\b/.test(said))) return "pset";
   if (current === "pset") {
-    if (/\bexplain a concept\b/.test(said) || /\bteach me\b/.test(said) || /\blecture\b/.test(said)) {
+    if (/^explain a concept[.!?]?$/.test(said.trim())) {
       return "concept";
     }
     return null;

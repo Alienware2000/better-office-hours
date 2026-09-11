@@ -10,6 +10,24 @@ Keep the existing adaptive desk in `app/(session)/voice/VoiceSession.tsx`. All t
 
 Hussein can start the isolated context, recap, and shell slices in LANES.md from main. David reviews their PRs before merging. Root entry/layout, package files, environment names, and schema are shared touchpoints; do not overwrite another lane's integration to make an isolated slice run.
 
+## Student turn ownership
+
+Current capture uses the existing local detector's mono 16kHz PCM frames, a bounded 320ms pre-roll, and WAV encoding. Only completed, confirmed utterance fragments go to STT; pause/discard clears the local buffer. STT may receive up to 24 vocabulary terms from recent tutor/page text, excluding numeric answers. Continued fragments share ordered cancellation-scoped transcription state. The quiet endpoint is 1.5s. The older MediaRecorder startup/finalization path is removed.
+
+The local LiveBoard adapter extends the frozen BoardSnapshot contract with revision, tutor item IDs/text and entering/visible status, student stroke count, and an optional student-only JPEG. The combined image is not a student submission. Current item IDs let the model revise its actual notes rather than relying on spoken history. A changed reserved `topic` heading archives the current page and begins a new tutor note; DRAW clear removes only tutor content. Student ink survives on its original page through topic changes and remains on the working page through clear. Session reset still resets the whole board. These extensions are internal to the voice/whiteboard lanes; lib/types.ts remains frozen.
+
+Board UI separates tutor and student SVG layers and labels both authors. Blue is the initial student color. Student-only selection, movement, recoloring, deletion, undo, and redo operate on local BoardState; its past/future stacks are bounded to 30 edits and restored with each parked desk. They never restore or modify tutor groups. `useBoardInk` keeps gesture previews outside the store until pointer release. Both ink surfaces use coalesced samples, frame-batched previews, shared quadratic paths, and segment-distance hit testing with measured pixel radii. PDF history remains viewer-local. Earlier board pages are read-only local scrollback; only the current working page is edited or sent as the main board image. Local LiveBoard also includes earlier topic summaries and whether the student scrolled back. New writing does not pull readers out of history. Group reveal timing follows grapheme count and wraps sequentially, while the complete SVG text layout stays fixed. These are local implementation types, not additions to the frozen shared contracts.
+
+Attachments and ink update live context without starting speech. Readiness callbacks remain for desk compatibility, but only a student utterance or initial greeting starts spoken interaction. The current voice loop waits about 1.5s of non-speech to submit recorded speech, or accepts an orb tap to finish. The orb never cancels a turn; the separate Pause control and Escape stop voice without leaving the desk. During playback, browser echo cancellation plus sustained Silero speech probability can interrupt. This needs real-device validation and is not semantic endpoint detection or speaker identification. Background vocals can still be classified as speech.
+
+The speech queue prepares upcoming TTS audio and plays one chunk at a time. Captions and assistant history advance at sentence start, not model token arrival. There is no silent client word/sentence cap. Completed visual tags are queued after their preceding words. Short symbolic equations use existing DRAW text, with bounded line length and shared SVG/snapshot sizing; no new shared contract is required. The speech-only normalizer expands common SI notation while the board retains written symbols. A partially interrupted sentence is not word-aligned.
+
+Speech detection uses pinned `@ricky0123/vad-web` 0.0.30 with Silero v5 and ONNX Runtime WASM, on the client. This voice repair changes the shared package manifests and adds predev/prebuild asset preparation. `scripts/prepare-voice-assets.mjs` copies the installed model, worklet, and WASM assets to ignored `public/voice-assets`; no runtime CDN or microphone audio leaves the browser for detection. The STT service still receives completed recordings. Initialize and retry failures are visible. Recording finalization, STT, TTS, and model generation have deadlines, with late completions ignored.
+
+At spoken desk entry, live board context falls back to current store availability/provenance until React mounts the image provider. Concept and homework desks use a local structured routing decision on the fast model. Greetings/brief definitions remain direct; substantive explanations and attempted work use the existing reasoning handoff. The reasoning response declares a teaching move and up to three narrated beats. The server translates complete beats incrementally into the existing TEACH/DRAW/ANIM/POINT/HIGHLIGHT stream, so the client keeps its playback ordering, disclosure guard, PDF anchor resolution, authorship, and cancellation. Diagram content is generated per turn; there is no topic-to-scene mapping. Supplemental notes and homework setups share this transport and retain the existing graded-work disclosure limits. These are internal voice-lane types, not changes to lib/types.ts.
+
+Narrated visual commands release on the audio playing event, after synthesis and browser buffering, with playback-epoch cancellation. The deep stream has a 30s first-progress deadline, a 20s idle deadline after progress, and a 60s overall ceiling; ordinary services retain their existing fixed deadlines. Development request IDs correlate generated visual counts and first-visual timing with applied page revisions. LiveBoard also carries a validated current animation spec, time, and playing state. Structured beats accept existing resume/focus controls. Reusing a scene ID revises its current page; reusing static geometry IDs replaces those objects with their animated forms while preserving the backdrop, labels, and student ink. A separate scene starts a new page. These remain local voice/whiteboard contracts.
+
 ## 1. System shape
 
 ```
@@ -161,6 +179,10 @@ type StudentAnnotation = {
 
 ### 3.3 Whiteboard (whiteboard lane)
 
+Optional local DRAW `diagram` metadata is defined in `lib/whiteboard/diagram-command.ts`, separate from the frozen shared types. `contact: {with, t, side}` binds a circle to a straight line's surface at a fractional point; `attach: {to, anchor, offset?}` translates a line/arrow start to a circle center or line/arrow center/start/end, preserving its vector. `fill`, `weight`, `surface`, and `labelSide` control bounded rendering styles. The parser normalizes observed flat spellings. ShapeGroup retains a canonical source command and unresolved flag. The store resolves a dependency graph on each DRAW batch before annotation layout; missing/cyclic/out-of-bounds references produce no geometry, and references are scoped to the current page. No label-based physical inference or new animation schema. Local TutorItem includes a bounded source-layout string and unresolved status. SVG and snapshots use common fill/arrowhead/width/alpha semantics. Initial marks reveal; settled geometry revisions apply atomically with dependents.
+
+The existing DRAW text string accepts plain notation or LaTeX; no shared field was added. `math-layout.ts` imports MathJax Base/AMS plus the TeX font directly and typesets synchronously in the app. Only bounded path/rectangle primitives and affine transforms are retained, with measured width/ascent/descent. Local Drawable mathDrawing metadata stores the result. BoardText renders those paths; snapshotBoard fills the same paths into canvas without asynchronous image decoding or external fonts. Existing non-LaTeX notes can resolve through the same renderer. Plain prose stays in the ordinary text renderer. Cache size, source length, and primitive count are bounded; unsupported input falls back to text. No custom macros, links, HTML, external package loading, or full document compilation. Package dependencies @mathjax/src and @mathjax/mathjax-tex-font are pinned to 4.1.3 as part of David's math-rendering request. The shared types below remain unchanged.
+
 The tutor draws through a small command set that the whiteboard lane maps onto SVG geometry with animated stroke-in.
 
 ```ts
@@ -224,12 +246,18 @@ type BoardSnapshot = {
 
 ### 3.4 Agent turn (voice lane produces, workspace and whiteboard lanes consume)
 
-Each model turn returns speech plus UI commands. The model emits tags inline; the voice lane strips them before TTS and dispatches them.
+Each model turn returns speech plus UI commands. Local stream metadata `[TEACH move=... visual=...]` precedes substantive output. `TeachingTurn` extends AgentTurn internally with an optional teaching choice; shared lib/types.ts is unchanged. The move is elicit, orient, hint, consolidate, or explain; visual is none, notes, diagram, or animation. The model selects these from conversation context, without a client keyword classifier or extra planning request. Elicit/orient (and absent, invalid, or late metadata) cannot reveal new symbolic relationships through DRAW text or diagram/animation labels. The filter is a bounded notation guard, not a proof of pedagogical or mathematical correctness. Metadata is stripped from speech. Hint counters are omitted unless actually available; runtime context asks the model to infer progress from conversation rather than receiving an invented zero each turn.
+
+There is no automatic copying of speech into equations. If the selected visual is missing or not renderable, the client can request `visualRepair: true` once. Its last assistant message includes the chosen TEACH tag, and the parser inherits that original move so repair output cannot grant itself more disclosure. Only at most five renderable static DRAW commands are used; clear/remove, speech, navigation, and other actions are ignored. A static diagram is acceptable recovery for invalid animation. Cancellation uses the active playback epoch; initial speech proceeds while recovery runs, with a 6s timeout.
+
+Static ShapeGroup metadata now stores geometry traces used only for annotation collision checks. Label layout preserves physical geometry, chooses nearby placements clear of shapes/labels/student ink when possible, and stores resolved font/position data for both SVG and snapshots. It retains labels using the least-crowded candidate when no clear position exists. Moving labels retain their attachment and smaller stable size; no per-frame label solver is used. Notes retain their larger hierarchy, with simple Unicode powers/subscripts and separate aligned given rows.
 
 Inline tag grammar the model uses:
 
 ```
+[TEACH move=elicit visual=none]  // local metadata, not a shared AgentTurn field
 [POINT page=1 x=0.42 y=0.31 label="launch angle"]
+[HIGHLIGHT page=1 anchor=3]  // measured text fragment in this request
 [HIGHLIGHT page=1 x=0.40 y=0.28 w=0.20 h=0.06]
 [BOARD open]
 [DRAW {...DrawCommand JSON...}]
@@ -238,6 +266,8 @@ Inline tag grammar the model uses:
 [RECAP]         // signals the session close sequence
 [THINK]         // hand this turn to the reasoning lane, see 3.5
 ```
+
+Anchor IDs are indices of the supplied LivePage textRegions, scoped to that request and page. The voice queue resolves them to the existing highlight bbox; invalid or page-mismatched IDs produce no highlight. Coordinates remain available for figures without text anchors. Highlights advance with narration, and the PDF margin cue stays clear of text.
 
 Parsed into:
 
@@ -370,3 +400,11 @@ GOOGLE_CLIENT_SECRET=
 ## 7. Grok Bot task spec
 
 Bot name: Course Pack Collector. Future task text lives in `grokbot/TASK.md`; this collector is not running and requires a separate assignment from David. Two phases. Phase 1: read the Canvas dashboard and each course's Assignments page, POST a `StudentProfile` to `/api/ingest/profile`. Phase 2: for each course (or the one named), collect syllabus, lectures, psets, solutions, exam reviews, name files by kind and number, POST to `/api/ingest`. Report what was collected and anything it could not access. Rehearse once with Duo before recording the README GIF.
+
+### Voice and teaching surface update
+
+Speech synthesis defaults to ElevenLabs conversational v3; set ELEVENLABS_TTS_MODEL=eleven_flash_v2_5 to roll back. Local VAD, batch Scribe v2, Grok, and the queued audio/visual lifecycle remain. Managed realtime turn-taking is separate work. No dependency or shared type changes in this slice.
+
+Local LivePage metadata now includes optional textRegions: bounded PDF.js text fragments with normalized BBox geometry. PdfViewer publishes them, the LLM route validates numeric coordinates, and the runtime exposes them as measured anchors. These locate fragments, not individual glyphs inside a long fragment. Image-only PDFs still rely on vision. Active-session MODE commands cannot replace student intent.
+
+BoardText is the common SVG typography renderer for DRAW and ANIM. The snapshot canvas uses the same font family, sizing, and deterministic symbol colors. This supports plain notation and Base/AMS LaTeX math, with shared vector glyphs for SVG and snapshots. It does not perform symbolic algebra or compile full LaTeX documents. Student ink stays independent of tutor revisions.

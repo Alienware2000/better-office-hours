@@ -49,3 +49,6 @@ Untitled/
 
 # local harness files
 CLAUDE.md
+
+# Generated from pinned voice dependencies during dev/build
+/public/voice-assets/

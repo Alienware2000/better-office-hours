@@ -1,3 +1,5 @@
+import { hitInk, inkPath } from '@/lib/whiteboard/ink-path';
+
 export type InkTool = "hand" | "pen" | "highlighter" | "eraser";
 
 export type InkColor = "ink" | "gold" | "rust";
@@ -28,14 +30,10 @@ export function pointsToSvg(points: InkPoint[]) {
 
 export function hitStroke(stroke: InkStroke, point: InkPoint, radius?: number) {
   const reach = radius ?? (stroke.tool === "highlighter" ? 0.04 : 0.022);
-  return stroke.points.some((existing) => {
-    const dx = existing.x - point.x;
-    const dy = existing.y - point.y;
-    return dx * dx + dy * dy <= reach * reach;
-  });
+  return hitInk(stroke.points, point, {x:reach,y:reach});
 }
 
-export function paintInkOnImage(imageUrl: string, strokes: InkStroke[]): Promise<string> {
+export function paintInkOnImage(imageUrl: string, strokes: InkStroke[], cssWidth?: number): Promise<string> {
   if (!strokes.length) return Promise.resolve(imageUrl);
 
   return new Promise((resolve) => {
@@ -53,19 +51,13 @@ export function paintInkOnImage(imageUrl: string, strokes: InkStroke[]): Promise
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       for (const stroke of strokes) {
-        if (stroke.points.length < 2) continue;
-        ctx.beginPath();
+        if (!stroke.points.length) continue;
+        ctx.save();
         ctx.strokeStyle = INK_HEX[stroke.color];
         ctx.globalAlpha = stroke.tool === "highlighter" ? 0.42 : 0.92;
-        ctx.lineWidth =
-          stroke.tool === "highlighter"
-            ? Math.max(10, image.width * 0.028)
-            : Math.max(2, image.width * 0.004);
-        ctx.moveTo(stroke.points[0].x * image.width, stroke.points[0].y * image.height);
-        for (let i = 1; i < stroke.points.length; i++) {
-          ctx.lineTo(stroke.points[i].x * image.width, stroke.points[i].y * image.height);
-        }
-        ctx.stroke();
+        ctx.lineWidth = strokeWidth(stroke.tool) * image.width / (cssWidth && cssWidth > 0 ? cssWidth : image.width);
+        ctx.stroke(new Path2D(inkPath(stroke.points.map(point => ({ x: point.x * image.width, y: point.y * image.height })))));
+        ctx.restore();
       }
       ctx.globalAlpha = 1;
       resolve(canvas.toDataURL("image/jpeg", 0.72));
