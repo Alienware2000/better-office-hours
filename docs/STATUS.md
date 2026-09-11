@@ -2,13 +2,15 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 23:40 ET
-By: Project handoff
+Updated: 2026-09-10 23:46 ET
+By: Voice lane
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `main`, approved integration baseline from `lane/whiteboard`
+Branch: `lane/voice-polish`, from approved main baseline
 Review: David explicitly approved merging the accumulated desk work to main. PRs #1 and #2 are included in this integration. Hussein's subsequent work requires new lane PRs and David's review.
 
 ## Now
+
+Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David should review this voice PR and try pause/resume and Leave while a recording is processing. This slice does not enable hands-free barge-in or establish real-device latency.
 
 One adaptive desk now handles homework, concepts, and other requests. The orb and captions keep the same position. Every desk offers Whiteboard and PDF views: homework starts at Attach pset, concepts and Something else start on the large board with Attach notes available. While viewing a PDF, tutor drawings use the smaller board alongside it. A tutor pointer switches to the attached PDF view. Supplemental notes use the existing upload, highlighting, and ink tools, with their own concept-session state and model context.
 
@@ -25,6 +27,8 @@ Whiteboard state parks separately with homework and concept sessions and restore
 5. Hussein may start the context, recap, or shell first slice in LANES.md on a new lane branch from main. Open a PR for David; do not merge it or run ahead into another slice. Canvas/Grok Bot operation and live cross-lane integrations still need a separate assignment.
 
 ## Validation
+
+- Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. Existing hook ref-access/immutability lint failures remain; the new harness passes lint.
 
 - `npm run build` and `npx tsc --noEmit` pass.
 - `node scripts/check-workspace.mjs` passes intent routing, separate board restoration, notes context, and notes event checks.
