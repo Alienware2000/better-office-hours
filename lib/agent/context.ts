@@ -39,6 +39,16 @@ const NOTHING_LOADED = [
   "If the student wants to work on homework, ask which assignment it is and ask them to upload the PDF so you can see it.",
 ].join(" ");
 
+// Once a page is on the desk, this must beat both the empty-context line and
+// any earlier turn that asked them to upload. The tutor is looking at their
+// screen, not waiting on a file.
+const PAGE_ON_DESK = [
+  "The student's assignment is open on the desk next to you. You can see the current page, its text, and any ink they drew.",
+  "Do not ask them to upload a PDF, which assignment it is, or whether you can see the problems.",
+  "If an earlier turn asked for an upload, that request is already satisfied.",
+  "Treat the visible page as the work in front of both of you: name the problem or heading that is on screen, and stay with that problem until they move.",
+].join(" ");
+
 // A general "vary your phrasing" instruction gets ignored: the tutor opened
 // three separate sessions with "Got it, physics homework." Naming the exact
 // phrases it already used is what actually moves it.
@@ -101,7 +111,7 @@ export function buildContextBlock(overrides: TurnContext = {}): string {
     `<retrieved>${c.retrieved ?? ""}</retrieved>`,
     `<reference_do_not_reveal>${c.reference ?? ""}</reference_do_not_reveal>`,
     `<student_drew>${c.studentDrew ? "true" : "false"}</student_drew>`,
-    hasPset ? "" : `<no_context_yet>${NOTHING_LOADED}</no_context_yet>`,
+    hasPset ? `<desk>${PAGE_ON_DESK}</desk>` : `<no_context_yet>${NOTHING_LOADED}</no_context_yet>`,
   ]
     .filter(Boolean)
     .join("\n");

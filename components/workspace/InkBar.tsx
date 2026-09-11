@@ -8,11 +8,13 @@ export function InkBar({
   color,
   onTool,
   onColor,
+  children,
 }: {
   tool: InkTool;
   color: InkColor;
   onTool: (tool: InkTool) => void;
   onColor: (color: InkColor) => void;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="ink-bar" role="toolbar" aria-label="Ink tools">
@@ -55,6 +57,7 @@ export function InkBar({
           />
         ))}
       </div>
+      {children}
     </div>
   );
 }

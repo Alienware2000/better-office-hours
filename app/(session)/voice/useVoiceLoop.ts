@@ -504,18 +504,24 @@ export function useVoiceLoop() {
       claimTabRef.current();
       if (health?.grok && health.elevenlabs && !hasStartedRef.current) {
         hasStartedRef.current = true;
-        setOrb("speaking");
-        addTurn("tutor", greetingRef.current);
-        void speakRef
-          .current(greetingRef.current)
-          .then(() => {
-            if (!pausedRef.current) setOrb("listening");
-          })
-          .catch((err) => {
-            if ((err as Error).name !== "AbortError") {
-              setError((err as Error).message);
-            }
-          });
+        // Paper already on the desk: skip the empty-room greeting so the
+        // pset_ready turn can speak about what is actually on screen.
+        if (getLivePage()) {
+          setOrb("listening");
+        } else {
+          setOrb("speaking");
+          addTurn("tutor", greetingRef.current);
+          void speakRef
+            .current(greetingRef.current)
+            .then(() => {
+              if (!pausedRef.current) setOrb("listening");
+            })
+            .catch((err) => {
+              if ((err as Error).name !== "AbortError") {
+                setError((err as Error).message);
+              }
+            });
+        }
       } else {
         setOrb(health?.grok && health.elevenlabs ? "listening" : "idle");
       }

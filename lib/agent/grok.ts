@@ -35,9 +35,16 @@ export function buildGrokMessages(
 ): ChatMessage[] {
   const live = getLivePage();
   const extra = live
-    ? `\n<pset_page>${live.page + 1}</pset_page>\n<pset_text>${live.text.slice(0, 4000)}</pset_text>\n<question_regions>${live.questionRegions
-        .map((region) => `${region.label}@${region.bbox.x.toFixed(2)},${region.bbox.y.toFixed(2)}`)
-        .join("; ")}</question_regions>`
+    ? `\n${[
+        `<pset_page>${live.page + 1}</pset_page>`,
+        `<pset_text>${live.text.slice(0, 4000)}</pset_text>`,
+        `<question_regions>${live.questionRegions
+          .map(
+            (region) =>
+              `${region.label}@${region.bbox.x.toFixed(2)},${region.bbox.y.toFixed(2)}`,
+          )
+          .join("; ")}</question_regions>`,
+      ].join("\n")}`
     : "";
   const context = buildContextBlock(
     live
@@ -46,6 +53,7 @@ export function buildGrokMessages(
           page: live.page + 1,
           pages: live.pages,
           mode: "pset",
+          studentDrew: (live.studentMarks ?? 0) > 0,
         }
       : {},
   );
@@ -92,7 +100,8 @@ function toApiMessages(
         {
           type: "text",
           text: [
-            `This is page ${live.page + 1} of the problem set, on screen right now.`,
+            `This is the student's screen right now: page ${live.page + 1} of the assignment on their desk.`,
+            "You can see this page. Do not ask them to upload it or which assignment it is.",
             live.studentMarks
               ? `The student drew ${live.studentMarks === 1 ? "a mark" : `${live.studentMarks} marks`} on this page; the ink is in the image. Respond to what they marked.`
               : "",

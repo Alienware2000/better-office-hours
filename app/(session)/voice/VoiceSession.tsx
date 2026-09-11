@@ -35,15 +35,15 @@ export function VoiceSession() {
   const split = layout === "pset";
   const deskKept = split || Boolean(pset);
   const reduceMotion = useReducedMotion();
-  const splitRef = useRef(split);
-  splitRef.current = split;
   const announcedReady = useRef<string | null>(null);
-  const pendingReady = useRef<{ title: string; pages: number } | null>(null);
+  const [deskReady, setDeskReady] = useState<{ title: string; pages: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     bindDiscardPset(() => {
       announcedReady.current = null;
-      pendingReady.current = null;
+      setDeskReady(null);
       setPset(null);
     });
     return () => bindDiscardPset(() => {});
@@ -62,12 +62,12 @@ export function VoiceSession() {
     [sendEvent],
   );
 
+  // sendEvent no-ops while paused, so do not mark the pset announced until
+  // the student is actually listening. Otherwise the tutor never sees the page.
   useEffect(() => {
-    if (!split || !pset || !pendingReady.current) return;
-    const info = pendingReady.current;
-    pendingReady.current = null;
-    announceReady(info, pset.id);
-  }, [announceReady, pset, split]);
+    if (paused || !split || !pset || !deskReady) return;
+    announceReady(deskReady, pset.id);
+  }, [announceReady, deskReady, paused, pset, split]);
 
   useEffect(() => {
     if (!split) return;
@@ -147,11 +147,7 @@ export function VoiceSession() {
                 active={split}
                 onExit={exitWorkspace}
                 onRemove={putAwayPset}
-                onPsetReady={(info) => {
-                  if (!pset) return;
-                  if (splitRef.current) announceReady(info, pset.id);
-                  else pendingReady.current = info;
-                }}
+                onPsetReady={setDeskReady}
               />
             </motion.section>
 

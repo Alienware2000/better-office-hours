@@ -33,9 +33,10 @@ export function describeEvent(event: SessionEvent): string {
     const named = event.title ? `, titled "${event.title}"` : "";
     const count = event.pages && event.pages > 1 ? ` It has ${event.pages} pages.` : "";
     return [
-      `The student just uploaded their problem set${named} and it is now open on screen next to you.${count}`,
-      "You can see page one. Speak now, without waiting to be asked.",
-      "Say in one short line that you can see it, referring to something actually on the page so it is clear you read it, then ask which problem they want to start with or whether they would rather walk the set from the top.",
+      `The student just put their problem set${named} on the desk next to you.${count}`,
+      "You can see the current page, the same way someone sitting beside them would. Speak now, without waiting to be asked.",
+      "Do not ask them to upload a PDF or which assignment it is. That is already in front of you.",
+      "In one short line, refer to something actually on the page (a heading, a problem number, a figure) so it is clear you can see their work, then ask which problem they want to start with or whether they would rather walk the set from the top.",
       "Do not summarize the whole document and do not start solving anything.",
     ].join(" ");
   }

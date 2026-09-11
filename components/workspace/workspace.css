@@ -7,6 +7,8 @@
   background-image:
     radial-gradient(rgba(48, 36, 24, 0.045) 0.7px, transparent 0.7px);
   background-size: 3px 3px;
+  container-type: inline-size;
+  container-name: desk;
 }
 
 .paper {
@@ -82,9 +84,23 @@
 .page-stack {
   min-height: 0;
   flex: 1 1 auto;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-  padding: 0.5rem 1.5rem 3rem;
+  overflow: auto;
+  padding: 0.5rem 1.25rem 3rem;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+}
+
+.page-stack.is-hand,
+.page-stack.is-hand .page-sheet,
+.page-stack.is-hand img {
+  cursor: grab;
+}
+
+.page-stack.is-panning,
+.page-stack.is-panning .page-sheet,
+.page-stack.is-panning img {
+  cursor: grabbing;
+  user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -97,11 +113,14 @@
   }
 }
 
+.page-zoom {
+  margin: 0 auto 1.75rem;
+  flex-shrink: 0;
+}
+
 .page-sheet {
   position: relative;
-  width: fit-content;
-  max-width: 100%;
-  margin: 0 auto 1.75rem;
+  width: 100%;
   background: #fffcf6;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.65) inset,
@@ -110,7 +129,8 @@
 
 .page-sheet img {
   display: block;
-  max-width: 100%;
+  width: 100%;
+  height: auto;
   background: #fffcf6;
   user-select: none;
   -webkit-user-drag: none;
@@ -163,14 +183,26 @@
 
 .pdf-tools {
   display: flex;
+  flex-wrap: nowrap;
   justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
   padding: 0 0.25rem 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pdf-tools::-webkit-scrollbar {
+  display: none;
 }
 
 .ink-bar {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 0.2rem;
+  max-width: 100%;
   border: 1px solid rgba(48, 36, 24, 0.12);
   border-radius: 9999px;
   background: rgba(255, 252, 246, 0.94);
@@ -214,9 +246,40 @@
   color: #fffcf6;
 }
 
-.ink-tool:hover:not(.is-on) {
+.ink-tool:hover:not(.is-on):not(:disabled) {
   background: rgba(48, 36, 24, 0.06);
   color: #1c1917;
+}
+
+.ink-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.view-zoom,
+.view-pages {
+  min-width: 2.6rem;
+  padding: 0 0.2rem;
+  border: 0;
+  background: transparent;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: #57534e;
+  text-align: center;
+}
+
+.view-zoom {
+  cursor: pointer;
+}
+
+.view-zoom:hover {
+  color: #1c1917;
+}
+
+.ink-tool.view-mark {
+  font-size: 1.05rem;
+  line-height: 1;
 }
 
 .ink-swatch {
@@ -409,5 +472,43 @@
 
   .page-stack {
     padding: 0.75rem 0.5rem 2rem;
+  }
+}
+
+@container desk (max-width: 34rem) {
+  .desk {
+    padding: 1rem;
+  }
+
+  .ink-tool {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+
+  .ink-swatch {
+    width: 0.95rem;
+    height: 0.95rem;
+    margin: 0 0.1rem;
+  }
+
+  .view-zoom,
+  .view-pages {
+    min-width: 2.2rem;
+    font-size: 0.62rem;
+  }
+
+  .page-stack {
+    padding: 0.45rem 0.65rem 2rem;
+  }
+}
+
+@container desk (max-width: 24rem) {
+  .desk {
+    padding: 0.65rem;
+  }
+
+  .pdf-bar {
+    gap: 0.45rem;
+    padding-bottom: 0.55rem;
   }
 }

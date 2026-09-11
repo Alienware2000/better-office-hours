@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 17:55 ET
+Updated: 2026-09-10 20:25 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/workspace` (tracks `origin/lane/workspace`)
@@ -12,16 +12,16 @@ PR: https://github.com/Alienware2000/better-office-hours/pull/1 (open against `m
 
 David likes the look: cream, black orb, live captions. Keep that direction. Minimal, not colorful, not old.
 
-He is iterating in person at checkpoints. Do not start the whiteboard until he says the pointer, highlight, Leave, ink bar, Remove, and session parking feel right on a real PDF.
+He is iterating in person at checkpoints. Do not start the whiteboard until he says the pointer, highlight, Leave, ink, zoom, Remove, and session parking feel right on a real PDF.
 
-This pass: one paper on the desk. **Remove** puts the PDF away and starts a fresh homework session (drop zone, captions cleared, tutor no longer sees the old page). On-screen captions are live (last four lines), not a selectable chat log. Dev server: `http://localhost:3100`. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
+This pass: the tutor should feel like it can see the desk (assignment and problem on screen, no "please upload" after the PDF is there). Zoom should pan like a document, and the split should fit laptop and stacked widths. Dev server: `http://localhost:3100`. Do not commit `.env.local`, `CLAUDE.md`, or `.data/psets`.
 
 ## What to try next (human)
 
-1. Reload `http://localhost:3100`. Homework, drop a PDF. Confirm **Remove** next to the title. The drop zone should return, captions should empty, and a new file should feel like a new session.
-2. Draw, then Leave, then Homework. The same paper should still be there. Remove is the way to switch problems, not Leave.
-3. Confirm captions only keep the latest few lines, and that clicking them does not select like a chat thread.
-4. Ask about a visible problem. Confirm the laser still glides.
+1. Reload `http://localhost:3100`. Homework, drop a pset. Confirm the paper fills the desk at 100% with no crop.
+2. If the orb still says Tap to start, tap it after the PDF is up. The tutor should name something on the page, not ask you to upload.
+3. Zoom with − / +, pinch or Ctrl-scroll. Drag with the hand tool to pan. Click the percent to fit again. Draw at 150% and confirm ink and the laser still land.
+4. Narrow the window toward stacked (640px). The bar should still fit. Leave still parks. Remove still puts the paper away.
 
 ## After that approval
 
@@ -42,7 +42,7 @@ Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback
 - Silently edit `lib/types.ts`. `[THINK]` already landed with ARCHITECTURE.md 3.4 and 3.5. Student ink is workspace-local; do not replace `StudentAnnotation` in this slice.
 - Put a reasoning model on the spoken (fast) turn. Measured: non-reasoning 0.6s, `grok-4.6` default 26s.
 - Restore CSS transform choreography for the orb, or a gradient-stroked laser path.
-- Add chat boxes or command buttons for talking to the tutor. Voice is the only input. Mouse is for pointing, drawing, paging, Leave, and Remove.
+- Add chat boxes or command buttons for talking to the tutor. Voice is the only input. Mouse is for pointing, drawing, paging, zoom, Leave, and Remove.
 - Commit secrets.
 
 ## Done (this branch)
@@ -50,8 +50,8 @@ Dedicated mobile design. Current rule: laptop and iPad primary, stacked fallback
 - Spec, scaffold, types, own voice loop (ElevenLabs STT / Grok / ElevenLabs TTS). Not ConvAI yet; localhost cannot receive ElevenLabs server callbacks.
 - Voice starts paused. Orb tap starts, orb tap stops and cancels queued speech. Hidden tab and second tab suspend voice. Mic off while the tutor speaks. Acoustic barge-in removed because it heard the speakers and answered itself.
 - Two model lanes. Fast: `grok-4.20-0309-non-reasoning`. Reasoning: `grok-4.6` at low effort when the fast lane emits `[THINK]`. Lead-in audio covers most of the wait.
-- Honest context: no hardcoded "Problem Set 3". Layout follows speech (`lib/agent/intent.ts`). Tutor speaks when the PDF is ready (`pset_ready` event).
-- PDF workspace: upload, PDF.js, laser pointer, marker highlight, student ink, Remove to switch papers, live captions.
+- Honest context: no hardcoded "Problem Set 3". Layout follows speech (`lib/agent/intent.ts`). Tutor speaks when the PDF is ready (`pset_ready` event). That event waits until the orb is listening, and a live page tells the tutor not to ask for an upload.
+- PDF workspace: upload, PDF.js, fit-width zoom with pan, laser pointer, marker highlight, student ink, Remove to switch papers, live captions.
 - Leave / Escape parks the desk and the homework session. Remove throws that paper away. Homework chip restores a parked desk. Parked viewer does not keep the pset in Grok's view.
 
 ## Lanes
