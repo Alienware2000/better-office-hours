@@ -2,10 +2,10 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 15:45 ET
+Updated: 2026-09-11 15:48 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/voice-stress-fixes`, from main
+Branch: `lane/drawing-continuity`, continuation of 179544c with merged origin/main
 Review: David explicitly approved merging his PRs #5 and #7. Hussein owns PRs #6 (context), #8 (recap, based on lane/context), and #9 (shell); keep all three open until David reviews them and gives separate merge approval.
 
 ## Hussein PRs remain open (read this first)
@@ -19,6 +19,12 @@ Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. D
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Smooth-path follow-up: DRAW curves and ANIM paths now share bounded cubic geometry. Animated reveals trim the full curve without reshaping earlier strokes; Follow dots/vectors use that exact curve, retaining each declared point's progress/time, repeated-point holds, and two-point linear motion. Endpoint extrapolation avoids introducing easing into uniformly sampled straight motion. Path annotations stay at their full-path position instead of walking along a changing point list. Bars retain sharp corners. The model's runtime schema explanation now distinguishes point-index timing from distance and playback holds from physical rest. Human prompt/pedagogy and frozen shared types are unchanged.
+
+Validation: production build, focused lint, animation, diagrams, teaching/repair, workspace, and ink checks pass. Chrome on this worktree's separate localhost:3102 preview checked the SVG path endpoint against a moving object's center across eight frames (maximum error below 0.00000003 board units), actual snapshot geometry, current-page/ink/earlier-page preservation, and desktop/compact rendering. Inspected curved, straight, turning, and repeated-point examples. These are deterministic mechanics tests with microphone and model requests disabled, not new real-model or voice-latency evidence. Local artifacts: /tmp/boh-curve-visual.cjs, /tmp/boh-curve-desktop.png, /tmp/boh-curve-compact.png, /tmp/boh-curve-snapshot.jpg, and the straight/turning/vertical PNGs. The original :3100 server was untouched.
+
+Next: review the drawing-continuity PR. Moving labels can still cross other annotations, as observed in the curved test; a stable scene-wide annotation plan is a useful next improvement. Rich object silhouettes and reasoning latency also remain open. Bounded interpolation preserves supplied sample values and timing, not exact physics between sparse samples. PR #5 is now merged; Hussein's PRs remain open and were not changed.
 
 Merge handoff: PR #7 was merged into main and its overlapping documentation reconciled into the voice branch without dropping newer work. PR #5 has David's explicit merge approval. All implementation changes were already committed and pushed; this integration changes documentation only. The tested voice/whiteboard baseline includes 5cef623 and fresh-task handoff 179544c. Continue diagram work from this integrated baseline. GitHub PR state records merge completion. No Hussein implementation branch was changed.
 
