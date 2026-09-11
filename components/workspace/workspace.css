@@ -512,3 +512,7 @@
     padding-bottom: 0.55rem;
   }
 }
+
+/* A pointer label identifies the arrival, then clears the paper for reading. */
+.laser-label { animation: pointer-label-rest 2.4s ease forwards; }
+@keyframes pointer-label-rest { 0%, 65% { opacity: 1; } 100% { opacity: 0; } }

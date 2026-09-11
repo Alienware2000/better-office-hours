@@ -5,7 +5,7 @@ import { revealPageTarget } from "@/lib/pdf/coordinates";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { BBox } from "@/lib/types";
-import { detectQuestionRegions, type PdfTextItem } from "@/lib/pdf/questions";
+import { detectQuestionRegions, textRegions, type PdfTextItem } from "@/lib/pdf/questions";
 import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
 import { InkBar } from "./InkBar";
 import { LeaveButton } from "./LeaveButton";
@@ -33,6 +33,7 @@ type PageView = {
   visionUrl: string;
   text: string;
   questionRegions: { label: string; bbox: BBox }[];
+  textRegions: { label: string; bbox: BBox }[];
 };
 
 export function PdfViewer({
@@ -207,6 +208,7 @@ export function PdfViewer({
           visionUrl: snapshot(canvas),
           text: strings.join(" "),
           questionRegions: detectQuestionRegions(items),
+          textRegions: textRegions(items),
         });
       }
 
@@ -227,6 +229,7 @@ export function PdfViewer({
             imageUrl: nextPages[0].visionUrl,
             text: nextPages[0].text,
             questionRegions: nextPages[0].questionRegions,
+            textRegions: nextPages[0].textRegions,
             studentMarks: 0,
           });
         }
@@ -386,6 +389,7 @@ export function PdfViewer({
         imageUrl,
         text: page.text,
         questionRegions: page.questionRegions,
+        textRegions: page.textRegions,
         studentMarks: pageStrokes.length,
       });
       if (marksChanged) markTimer = setTimeout(() => {
@@ -459,6 +463,9 @@ export function PdfViewer({
     stack?.addEventListener("scroll", update, { passive: true });
     const observer = new ResizeObserver(update);
     observer.observe(frame);
+    if (stack) observer.observe(stack);
+    const sheet = frame.querySelector<HTMLElement>(`[data-page="${Math.max(0, pointer.page - 1)}"]`);
+    if (sheet) observer.observe(sheet);
     return () => {
       stack?.removeEventListener("scroll", update);
       observer.disconnect();

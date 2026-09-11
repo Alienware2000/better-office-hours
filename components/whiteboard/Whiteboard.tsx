@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { BoardText } from "./BoardText";
 import { AnimLayer } from "./AnimLayer";
 import { projectileFixture } from "@/components/scenes/projectile";
-import { boardStyle, boardTextSize } from "@/lib/whiteboard/style";
+import { boardStyle } from "@/lib/whiteboard/style";
 import type { StudentInk } from "@/lib/whiteboard/colors";
 import { STUDENT_HEX } from "@/lib/whiteboard/colors";
 import { getLiveBoard, setLiveBoard, setBoardSnapshotProvider } from "@/lib/whiteboard/live-board";
@@ -200,19 +201,7 @@ export function Whiteboard({ active = true, expanded = false }: { active?: boole
                   {group.drawables.map((mark) => {
                     if (mark.kind === "text") {
                       return (
-                        <text
-                          key={mark.key}
-                          className={["board-label", enter ? "is-entering" : ""]
-                            .filter(Boolean)
-                            .join(" ")}
-                          x={mark.at.x}
-                          y={mark.at.y}
-                          fill={mark.color}
-                          fontSize={boardTextSize(mark.text, mark.size, mark.at.x)}
-                          textAnchor="middle"
-                        >
-                          {mark.text}
-                        </text>
+                        <BoardText key={mark.key} mark={mark} entering={enter} />
                       );
                     }
                     return (

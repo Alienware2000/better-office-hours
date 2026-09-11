@@ -41,9 +41,10 @@ export function detectMode(
 ): Extract<LayoutState, "pset" | "concept"> | null {
   const said = text.toLowerCase().replace(/’/g, "'");
   if (/\b(?:switch|change) (?:the )?(?:topic|subject)\b|\b(?:work on|do|discuss) something else\b/.test(said)) return "concept";
-  if (PSET.some((pattern) => pattern.test(said))) return "pset";
+  const namesHomework = PSET.some((pattern) => pattern.test(said));
+  if (namesHomework && (current !== "concept" || /^(?:homework|hw|p[ -]?set|problem set)[.!?]?$/.test(said.trim()) || /\b(?:work on|want to do|switch to|go back to|return to|help (?:me )?with)\b/.test(said))) return "pset";
   if (current === "pset") {
-    if (/\bexplain a concept\b/.test(said)) {
+    if (/^explain a concept[.!?]?$/.test(said.trim())) {
       return "concept";
     }
     return null;

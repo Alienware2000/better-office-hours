@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         text,
         model_id: ELEVENLABS_TTS_MODEL,
         previous_text: normalizeSpokenText(body.previousText ?? "") || undefined,
-        voice_settings: {
+        voice_settings: ELEVENLABS_TTS_MODEL === "eleven_v3_conversational" ? { stability: 0.5 } : {
           stability: 0.42,
           similarity_boost: 0.75,
           style: 0.12,
@@ -41,13 +41,17 @@ export async function POST(req: Request) {
 
   if (!response.ok || !response.body) {
     const detail = await response.text();
-    return Response.json({ error: "TTS failed", detail }, { status: 502 });
+    const quota = detail.includes('quota_exceeded');
+    return Response.json({ error: quota
+      ? "Voice credits are exhausted. Add ElevenLabs quota to continue."
+      : "Voice synthesis failed. Please try again." }, { status: quota ? 429 : 502 });
   }
 
   return new Response(response.body, {
     headers: {
       "Content-Type": "audio/mpeg",
       "Cache-Control": "no-store",
+      "X-Voice-Model": ELEVENLABS_TTS_MODEL,
     },
   });
 }

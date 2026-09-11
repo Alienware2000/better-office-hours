@@ -39,6 +39,10 @@ function asLivePage(body: unknown): LivePage | null {
     questionRegions: Array.isArray(page.questionRegions)
       ? page.questionRegions
       : [],
+    textRegions: Array.isArray(page.textRegions) ? page.textRegions.slice(0, 180).filter(region =>
+      typeof region?.label === "string" && region.bbox &&
+      [region.bbox.x, region.bbox.y, region.bbox.w, region.bbox.h].every(n => Number.isFinite(n) && n >= 0 && n <= 1)
+    ) : [],
     studentMarks: typeof page.studentMarks === "number" ? page.studentMarks : 0,
   };
 }

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 // read as a hand moving, high enough not to lag the tutor's voice.
 const EASE = 0.11;
 const TRAIL = 22;
-const HEAD_R = 5.5;
+const HEAD_R = 3.5;
 
 // Last head, as a fraction of the host. Survives remounts so the laser keeps
 // traveling when the tutor points at a new page instead of appearing there.
@@ -67,8 +67,8 @@ export function Pointer({
       if (labelRef.current) {
         const flip = px > size.w - 140;
         labelRef.current.style.transform = flip
-          ? `translate(calc(${px}px - 100% - 12px), ${py - 10}px)`
-          : `translate(${px + 14}px, ${py - 10}px)`;
+          ? `translate(calc(${px}px - 100% - 12px), ${Math.max(2, py - 36)}px)`
+          : `translate(${px + 14}px, ${Math.max(2, py - 36)}px)`;
       }
     };
 
@@ -128,7 +128,7 @@ export function Pointer({
 
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [reduceMotion, size.h, size.w]);
+  }, [reduceMotion, size.h, size.w, x, y]);
 
   return (
     <div ref={hostRef} className="laser">
@@ -150,7 +150,7 @@ export function Pointer({
         <circle ref={headRef} className="laser-head" r={HEAD_R} />
       </svg>
       {label ? (
-        <span ref={labelRef} className="laser-label">
+        <span key={`${label}-${x}-${y}`} ref={labelRef} className="laser-label">
           {label}
         </span>
       ) : null}

@@ -14,7 +14,7 @@ Preferred first move: `lane/recap` → isolated card + validation/serialization 
 
 Read STATUS, DESIGN, ARCHITECTURE, PROMPT, PEDAGOGY where relevant, DEMO, NOTES, then this file. Create `lane/context`, `lane/recap`, or `lane/shell` from the latest `origin/main`. Do not start from the old scaffold, David's open stress-test branch, or an old lane/voice checkout. Use separate checkouts if working on multiple lanes at once.
 
-Commit and push the lane branch, then open a PR to `main`. David reviews and merges Hussein's PRs. Agents must not merge their own PRs or push directly to main without David explicitly asking. A pending mic, iPad review, or open David PR (including PR #6) does not block Hussein's first slices below. Stop at the boundary of the selected slice and report its remaining integration needs.
+Commit and push the lane branch, then open a PR to `main`. David reviews and merges Hussein's PRs. Agents must not merge their own PRs or push directly to main without David explicitly asking. A pending mic, iPad review, or open David PR (including PR #5) does not block Hussein's first slices below. Stop at the boundary of the selected slice and report its remaining integration needs.
 
 Every PR must state the problem, changed behavior, affected contracts, setup/migrations, validation, and any missing integration. Update only the relevant lane's notes and STATUS entries; preserve other agents' status. No automatic code-author attribution in commits or docs.
 

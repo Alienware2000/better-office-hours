@@ -1,6 +1,7 @@
+import { BoardText } from "./BoardText";
 import type { AnimationSpec } from "@/lib/types";
 import { animationFrame } from "@/lib/whiteboard/animation";
-import { boardStyle, boardTextSize } from "@/lib/whiteboard/style";
+import { boardStyle } from "@/lib/whiteboard/style";
 
 export function AnimLayer({
   spec,
@@ -25,17 +26,7 @@ export function AnimLayer({
         >
           {group.drawables.map((mark) =>
             mark.kind === "text" ? (
-              <text
-                key={mark.key}
-                className="board-label"
-                x={mark.at.x}
-                y={mark.at.y}
-                fill={mark.color}
-                fontSize={boardTextSize(mark.text, mark.size, mark.at.x)}
-                textAnchor="middle"
-              >
-                {mark.text}
-              </text>
+              <BoardText key={mark.key} mark={mark} />
             ) : (
               <path
                 key={mark.key}

@@ -197,7 +197,10 @@ export function useVoiceLoop() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ text, previousText }), signal,
             });
-            if (!response.ok) throw new Error("Voice playback failed");
+            if (!response.ok) {
+              const failure = await response.json().catch(() => ({}));
+              throw new Error(typeof failure.error === "string" ? failure.error : "Voice playback failed");
+            }
             return response.blob();
           });
         }
@@ -262,13 +265,13 @@ export function useVoiceLoop() {
   }, []);
 
   const applyTurn = useCallback((turn: AgentTurn) => {
-    if (turn.mode === "pset" && getLivePage()?.documentKind !== "notes") {
+    if (turn.mode === "pset" && kindRef.current === "lobby") {
       if (kindRef.current === "lobby") adoptKind("pset", false);
       setLayout("pset");
     }
     // The non-reasoning model emits [MODE concept] on ordinary pset talk
     // ("what is the angle"). That used to close the desk.
-    if (turn.mode === "concept" && layoutRef.current !== "pset") {
+    if (turn.mode === "concept" && kindRef.current === "lobby") {
       if (kindRef.current === "lobby") adoptKind("concept", false);
       setLayout("concept");
     }
@@ -431,7 +434,10 @@ export function useVoiceLoop() {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: trimmed, previousText }), signal,
           });
-          if (!response.ok) throw new Error("Voice playback failed");
+          if (!response.ok) {
+            const failure = await response.json().catch(() => ({}));
+            throw new Error(typeof failure.error === "string" ? failure.error : "Voice playback failed");
+          }
           return { blob: await response.blob() };
         }).catch((error: unknown) => ({ error }));
         spoken = enqueueSpeechTask(async () => {
@@ -521,6 +527,7 @@ export function useVoiceLoop() {
           return;
         }
       }
+      if (said && kindRef.current === "pset" && getLivePage()) openBoard();
       if (health && (!health.grok || !health.elevenlabs)) return;
 
       stopPlayback();
@@ -750,7 +757,10 @@ export function useVoiceLoop() {
       form.set("file", blob, "speech.webm");
       return withRequestTimeout(signal, 12000, "Transcription took too long. Please try again.", async signal => {
         const response = await fetch("/api/agent/stt", { method: "POST", body: form, signal });
-        if (!response.ok) throw new Error("Could not hear that");
+        if (!response.ok) {
+          const failure = await response.json().catch(() => ({}));
+          throw new Error(typeof failure.error === "string" ? failure.error : "Could not hear that");
+        }
         const data = (await response.json()) as { text?: string };
         return (data.text ?? "").trim();
       });

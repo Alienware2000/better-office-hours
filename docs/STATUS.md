@@ -2,23 +2,29 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 01:32 ET
+Updated: 2026-09-11 01:37 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
-Review: David's voice stress-test work is on PR #6 (or the open stress-fix PR on this branch) and awaits review. That does **not** block Hussein.
+Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on this branch) and awaits review. That does **not** block Hussein.
 
 ## Unblock for Hussein (read this first)
 
-**Hussein may begin the isolated recap card slice now** while PR #6 awaits review. He may also open additional lane PRs (context, recap, shell) from the latest `origin/main` without waiting for David's stress-test PR to merge.
+**Hussein may begin the isolated recap card slice now** while PR #5 awaits review. He may also open additional lane PRs (context, recap, shell) from the latest `origin/main` without waiting for David's stress-test PR to merge.
 
 - Branch from `origin/main`: `lane/recap` (or `lane/context` / `lane/shell`).
 - Follow `docs/LANES.md` for the first reviewable slice boundaries.
 - Open a PR to `main` for David to review. Do not merge your own PRs.
-- Stay in recap/context/shell directories. Do not wait on mic hardware checks or PR #6.
+- Stay in recap/context/shell directories. Do not wait on mic hardware checks or PR #5.
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Current voice/desk slice is PR #5 (PR #6 is Hussein's context PR, verified on GitHub). Conversational v3 is now the default TTS model after David funded the account and real synthesis plus browser decoding passed. Scribe v2 remains STT. This upgrades speech synthesis, not managed realtime turn-taking. Flash is available through ELEVENLABS_TTS_MODEL as an explicit rollback.
+
+Board polish: larger math typography, consistent symbolic colors, text reveal, equation focus, and bounded definitions without the old six-word truncation. The board opens when the student discusses an attached homework page. Active sessions ignore tutor MODE tags; only explicit student routing can change desks. Runtime teaching hints request written setup during homework. PDF.js text anchors reach the model for measured fragment highlights. Pointer size is reduced, labels clear after arrival, and geometry tracks page resize/zoom including reduced-motion updates.
+
+Validation: production build, TypeScript, focused lint, lifecycle/workspace/teaching/animation checks pass. Browser verified matching PDF pointer/highlight targets at 100%, 125%, and after resize, and inspected a general slope diagram. Actual app TTS returned conversational v3 audio; a physics-sentence round trip preserved the units. Live model probes still vary in layout and wording. Arbitrary LaTeX, linked Desmos-style sliders, and managed realtime turn-taking are not implemented. Review and retest PR #5 before merge.
 
 Third stress-test follow-up: fixed the reproduced lecture-mention routing bug that hid the homework PDF by opening a separate concept session. Ordinary lecture references and requests to teach a term keep the homework desk. Explicit topic changes still work. Captions retain the full active session, scroll without pulling readers down, and offer subtle Latest/Export controls. Scribe v2 replaces v1; Flash v2.5 remains TTS. Runtime source limits prohibit unsupported lecture attribution, and equation reminders request written definitions. No human prompt or shared-type edits.
 
@@ -42,13 +48,13 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 ## What to do next
 
-**Hussein (unblocked):** start `lane/recap` from `origin/main` and ship the isolated recap card PR per LANES.md. Open more lane PRs as needed. Do not wait for PR #6.
+**Hussein (unblocked):** start `lane/recap` from `origin/main` and ship the isolated recap card PR per LANES.md. Open more lane PRs as needed. Do not wait for PR #5.
 
-**David:** keep reviewing PR #6 / stress-test on real mics when ready. Hardware checks do not gate Hussein.
+**David:** keep reviewing PR #5 / stress-test on real mics when ready. Hardware checks do not gate Hussein.
 
 1. Hussein: branch `lane/recap` from latest `origin/main`, build the isolated recap card slice, open a PR to `main`.
 2. Hussein: may also open `lane/context` or `lane/shell` first-slice PRs in parallel if capacity allows; each PR stays inside its LANES.md boundary.
-3. David: review and merge Hussein's lane PRs independently of PR #6.
+3. David: review and merge Hussein's lane PRs independently of PR #5.
 4. Human mic check on the stress-test branch when convenient (headphones, then speakers): interruption, quiet voices, pauses, pronunciation, equation use, zoomed pointers. See STRESS-TEST.md.
 5. Canvas/Grok Bot operation and live cross-lane wiring still need a separate assignment; not part of the first isolated slices.
 
@@ -97,7 +103,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 | workspace | David | next workspace branch from main | adaptive PDF desk included in main |
 | whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
 | context | Hussein | `lane/context` from main | authorized now; first isolated slice in LANES.md; schema missing |
-| recap | Hussein | `lane/recap` from main | **start now**; isolated card slice while PR #6 awaits review |
+| recap | Hussein | `lane/recap` from main | **start now**; isolated card slice while PR #5 awaits review |
 | shell | Hussein | `lane/shell` from main | authorized now; first auth/shell slice; preserve VoiceSession |
 
 ## Run

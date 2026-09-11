@@ -18,11 +18,11 @@ export function isResumeConceptPhrase(text: string) {
 // Put this paper away and go back to the drop zone. Not a notebook library.
 export function isPutAwayPsetPhrase(text: string) {
   const said = text.toLowerCase();
+  if (/\b(?:not|never|don't|don’t)\b/.test(said)) return false;
   return (
-    /\b(remove|close|put away|take away|take off)\b.*\b(pdf|pset|problem set|homework|document|file|this)\b/.test(
+    /\b(remove|close|put away|take away)\b.*\b(pdf|pset|problem set|homework|document|file)\b/.test(
       said,
     ) ||
-    /\b(different|another|new)\b.*\b(pdf|pset|problem set|homework|assignment)\b/.test(said) ||
-    /\bwork on (something|a) different\b/.test(said)
+    /\b(different|another|new)\b.*\b(pdf|pset|problem set|homework|assignment)\b/.test(said)
   );
 }

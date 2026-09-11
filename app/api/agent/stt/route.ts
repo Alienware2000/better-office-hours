@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   if (!response.ok) {
     const detail = await response.text();
     return Response.json(
-      { error: "Transcription failed", detail },
+      { error: detail.includes("quota_exceeded") ? "Voice credits are exhausted. Add ElevenLabs quota to continue." : "Transcription failed. Please try again." },
       { status: 502 },
     );
   }

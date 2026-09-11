@@ -378,3 +378,11 @@ GOOGLE_CLIENT_SECRET=
 ## 7. Grok Bot task spec
 
 Bot name: Course Pack Collector. Future task text lives in `grokbot/TASK.md`; this collector is not running and requires a separate assignment from David. Two phases. Phase 1: read the Canvas dashboard and each course's Assignments page, POST a `StudentProfile` to `/api/ingest/profile`. Phase 2: for each course (or the one named), collect syllabus, lectures, psets, solutions, exam reviews, name files by kind and number, POST to `/api/ingest`. Report what was collected and anything it could not access. Rehearse once with Duo before recording the README GIF.
+
+### Voice and teaching surface update
+
+Speech synthesis defaults to ElevenLabs conversational v3; set ELEVENLABS_TTS_MODEL=eleven_flash_v2_5 to roll back. Local VAD, batch Scribe v2, Grok, and the queued audio/visual lifecycle remain. Managed realtime turn-taking is separate work. No dependency or shared type changes in this slice.
+
+Local LivePage metadata now includes optional textRegions: bounded PDF.js text fragments with normalized BBox geometry. PdfViewer publishes them, the LLM route validates numeric coordinates, and the runtime exposes them as measured anchors. These locate fragments, not individual glyphs inside a long fragment. Image-only PDFs still rely on vision. Active-session MODE commands cannot replace student intent.
+
+BoardText is the common SVG typography renderer for DRAW and ANIM. The snapshot canvas uses the same font family, sizing, and deterministic symbol colors. This supports short Unicode equations and labels, not arbitrary LaTeX or symbolic algebra. Student ink stays independent of tutor revisions.

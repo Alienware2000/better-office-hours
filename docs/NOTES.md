@@ -3,7 +3,12 @@
 Each lane keeps a few lines here: what works, what is stubbed, what other lanes need to know. The accumulated voice/workspace/whiteboard work is now the approved main baseline. Historical lane names below describe where work originated; new work starts from main. Read LANES.md before Hussein starts a slice.
 
 ## voice
-Latest follow-up: Scribe v2 is verified through the actual STT endpoint with generated physics speech; Flash v2.5 remains TTS. The full current-session transcript is scrollable/exportable with Latest to resume following. Export contains captions, so an interrupted sentence may still be included in full. No durable transcript storage is implied.
+
+Latest voice/board pass: default TTS is eleven_v3_conversational, with stability 0.5 and an explicit Flash rollback via ELEVENLABS_TTS_MODEL. The quota initially blocked synthesis; after David upgraded, direct synthesis, STT round trip, and actual browser decoding passed. Requests surface quota errors clearly. This is not ElevenAgents managed turn-taking: local VAD and batch Scribe v2 remain. No key values are stored in docs.
+
+Teaching surface: BoardText shares symbol colors and math font choices with snapshots and ANIM. General text lines allow 64 characters, arrow labels stay short. Opening the board after student speech does not seed content. MODE tags only enter a desk from the lobby. Local LivePage adds optional measured textRegions, passed through the voice route for highlighting; shared lib/types.ts is untouched. Browser anchor test initially selected a nonexistent ninth fragment in its synthetic fixture twice; corrected the fixture target, then zoom/resize checks passed. No test routes remain in the app.
+
+Earlier follow-up: Scribe v2 is verified through the actual STT endpoint with generated physics speech; Flash v2.5 remains TTS. The full current-session transcript is scrollable/exportable with Latest to resume following. Export contains captions, so an interrupted sentence may still be included in full. No durable transcript storage is implied.
 
 Voice lifecycle follow-up from `lane/voice-polish`, approved for main in PR #3: STT has an abort controller plus a playback-generation check so even an abort-ignoring late response cannot reactivate a paused session or reach another desk. Orb enters thinking when recording stops; noise/failure recovers to listening. Enter, Leave, and Remove discard unfinished input and restore microphone/orb state. `scripts/check-voice-lifecycle.mjs` runs the actual hook with deferred STT and a simulated microphone across pause/resume, desk changes, pagehide, and unmount. Real mic cadence and hands-free interruption remain follow-ups.
 
@@ -57,7 +62,7 @@ Verification: build, TypeScript, and focused lint pass. Browser playback complet
 Hussein owns this lane. No implementation or database schema exists yet. Begin with the isolated ingestion/chunking/retrieval slice in LANES.md, using existing shared types and synthetic test data. No automatic Canvas access or live voice integration in the first PR. Initial schema and endpoint/auth decisions must be explicit review items.
 
 ## recap
-Hussein owns this lane and **may begin now** while David's PR #6 / stress-test branch awaits review. The Recap type and tag exist; the spoken close flow, storage, and card do not. First PR: isolated card + validation/persistence interface per LANES.md, branched from `origin/main`. The student summarizes first. David coordinates the voice hook and authenticated session integration after that card PR is reviewed.
+Hussein owns this lane and **may begin now** while David's PR #5 / stress-test branch awaits review. The Recap type and tag exist; the spoken close flow, storage, and card do not. First PR: isolated card + validation/persistence interface per LANES.md, branched from `origin/main`. The student summarizes first. David coordinates the voice hook and authenticated session integration after that card PR is reviewed.
 
 ## shell
 Hussein owns this lane. The live homepage already renders VoiceSession and the adaptive desk. Root layout is minimal; there is no auth/session provider. Do not recreate the old empty scaffold or replace the working orb/captions. Begin with the auth/shell slice in LANES.md and keep shared entry, package, and identity-contract changes visible in the PR. README now explains the vision and actual implementation separately.

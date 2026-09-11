@@ -54,6 +54,7 @@ for (const phrase of [
   "Teach me what acceleration means",
   "Can we talk about the initial velocity?",
   "I do not understand this concept",
+  "Can you explain a concept in this equation?",
 ]) assert.equal(detectMode(phrase, "pset"), null, phrase);
 assert.equal(detectMode("Can we switch topic?", "pset"), "concept");
 const board = load("lib/whiteboard/store.ts");
@@ -98,3 +99,6 @@ assert.equal(asSessionEvent({ kind: "notes_ready" }).kind, "notes_ready");
 console.log(
   "PASS: supplemental notes retain concept context and have an allowlisted ready event.",
 );
+
+assert.equal(detectMode('This concept appeared in our homework', 'concept'), 'concept');
+assert.equal(detectMode('Go back to homework', 'concept'), 'pset');

@@ -1,3 +1,4 @@
+import { isMathText, LABEL_FONT, MATH_FONT, textRuns } from "./text";
 import { animationFrame } from "./animation";
 import { boardTextSize } from "./style";
 import type { AnimationSpec, BoardSnapshot } from "@/lib/types";
@@ -56,9 +57,14 @@ export function snapshotBoard(
           ctx.save();
           ctx.scale(1 / w, 1 / h);
           ctx.fillStyle = mark.color;
-          ctx.font = `${boardTextSize(mark.text, mark.size, mark.at.x) * h}px "Source Sans 3", system-ui, sans-serif`;
-          ctx.textAlign = "center";
-          ctx.fillText(mark.text, mark.at.x * w, mark.at.y * h);
+          ctx.font = `500 ${boardTextSize(mark.text, mark.size, mark.at.x) * h}px ${isMathText(mark.text) ? MATH_FONT : LABEL_FONT}`;
+          ctx.textAlign = "left";
+          let x = mark.at.x * w - ctx.measureText(mark.text).width / 2;
+          for (const run of textRuns(mark.text, mark.color)) {
+            ctx.fillStyle = run.color;
+            ctx.fillText(run.text, x, mark.at.y * h);
+            x += ctx.measureText(run.text).width;
+          }
           ctx.restore();
           continue;
         }

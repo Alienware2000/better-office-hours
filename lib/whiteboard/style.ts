@@ -9,7 +9,7 @@ export const boardStyle = {
     warn: "#a77726",
   } satisfies Record<Color, string>,
   stroke: 2.25,
-  label: { s: 0.048, m: 0.06 },
+  label: { s: 0.054, m: 0.075 },
   motion: {
     reveal: 0.52,
     hold: 0.65,
@@ -18,14 +18,13 @@ export const boardStyle = {
 };
 
 export function boardLabel(value: string) {
-  const equation = /[=≈∝≤≥]|[²³₀₁₂]/.test(value);
   return String(value)
     .replace(/[\u2014\u2013]/g, ", ")
     .trim()
     .split(/\s+/)
-    .slice(0, equation ? 20 : 6)
+    .slice(0, 20)
     .join(" ")
-    .slice(0, equation ? 64 : 48);
+    .slice(0, 64);
 }
 
 // Fit longer symbolic lines consistently in SVG and in the tutor's snapshot.
