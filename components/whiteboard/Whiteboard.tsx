@@ -62,11 +62,8 @@ export function Whiteboard({ active = true, expanded = false }: { active?: boole
       };
     };
     w.__bohBoard = { playFixture: (speed, angle) => loadAnimation(projectileFixture(speed, angle)), loadAnimation, pause: pauseAnimation, play: playAnimation, seek: seekAnimation, focus: focusAnimation, getState: getBoardState, openBoard, applyDrawCommands, resetBoard, addStudentStroke, getLiveBoard };
-    if (new URLSearchParams(window.location.search).get('boardFixture') === 'projectile') {
-      loadAnimation(projectileFixture());
-      pauseAnimation();
-      seekAnimation(2.1);
-    }
+    // Fixtures require an explicit developer call. URLs and component mounts
+    // must never introduce a subject into a student's conversation.
     return () => {
       delete w.__bohBoard;
     };

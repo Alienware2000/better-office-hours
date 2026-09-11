@@ -3,12 +3,14 @@
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
 Updated: 2026-09-10 23:46 ET
-By: Voice lane
+By: Whiteboard lane
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `main`, approved voice reliability integration
+Branch: `lane/whiteboard-empty-state`, from main
 Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability. Hussein's subsequent work requires new lane PRs and David's review.
 
 ## Now
+
+Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. This slice is ready for review.
 
 Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David authorized merging PR #3. Try pause/resume and Leave while a recording is processing as the remaining hardware check. This slice does not enable hands-free barge-in or establish real-device latency.
 
