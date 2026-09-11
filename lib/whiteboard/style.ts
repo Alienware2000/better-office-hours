@@ -20,6 +20,8 @@ export const boardStyle = {
 export function boardLabel(value: string) {
   return String(value)
     .replace(/[\u2014\u2013]/g, ", ")
+    .replace(/\^([23])/g, (_, digit: string) => digit === '2' ? '²' : '³')
+    .replace(/\b([a-zA-Z])_?(\d+)\b/g, (_, symbol: string, digits: string) => symbol + [...digits].map(digit => '₀₁₂₃₄₅₆₇₈₉'[Number(digit)]).join(''))
     .trim()
     .split(/\s+/)
     .slice(0, 20)

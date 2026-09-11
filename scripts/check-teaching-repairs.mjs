@@ -46,7 +46,7 @@ for (let end = 1; end <= response.length; end++) {
 parts.push(response.slice(emitted).trim());
 assert.equal(parts.join(' '), response, 'Streaming must not lose characters or cut decimals');
 assert.equal(parts.length, 4);
-const raw = 'Here is the relation. [BOARD open][DRAW {"op":"text","id":"eq","at":{"x":0.5,"y":0.3},"text":"F = ma"}] What changes?';
+const raw = '[TEACH move=explain visual=notes] Here is the relation. [BOARD open][DRAW {"op":"text","id":"eq","at":{"x":0.5,"y":0.3},"text":"F = ma"}] What changes?';
 assert.equal(visualBeats(raw).length, 2);
 assert.equal(visualBeats(raw)[1].speechBefore, 'Here is the relation.');
 assert.equal(visualBeats(raw)[1].turn.board.commands[0].text, 'F = ma');
@@ -148,13 +148,9 @@ assert.equal(note1.drawables[0].textAnchor,'start');
 assert.equal(note1.drawables[0].at.x,note2.drawables[0].at.x,'Given quantities form aligned note rows');
 console.log('PASS: measured anchor IDs, invalid/page-mismatched targets, ordered highlight beats, and aligned note hierarchy.');
 
-const {symbolicRelation,speechBoardCue}=load('lib/whiteboard/speech-cue.ts');
-for(const [speech,expected] of [['The relation is v² = u² + 2 a s, with the givens on the page.','v² = u² + 2 a s'],['v squared equals u squared plus two a s.','v² = u² + 2 a s'],['Use F = ma.','F = ma'],['The line is y = mx + b.','y = mx + b']])assert.equal(symbolicRelation(speech),expected);
-for(const speech of ['u = 60 m/s','a = -9.81 m/s²','The answer is 60.','s = 600 m','Please upload your PDF.'])assert.equal(symbolicRelation(speech),null,'No generated calculation or numeric assignment fallback');
-assert.equal(speechBoardCue('Use F = ma.','', ['F = m a']),null,'Do not duplicate an equation the model already drew');
 const circle=load('lib/whiteboard/parse-draw.ts').parseDrawCommand('{"op":"circle","id":"ball","at":[0.5,0.38],"r":0.035}');
 assert.ok(interpretCommand(circle,1),'Common model point spelling reaches actual geometry');
-console.log('PASS: generic equation safeguard, spoken notation, no numerical answer fallback, and normalized circle geometry.');
+console.log('PASS: normalized circle geometry.');
 const box=load('lib/whiteboard/parse-draw.ts').parseDrawCommand('{"op":"rect","id":"outer","at":{"x":0.25,"y":0.2},"w":0.5,"h":0.3,"label":"outer box"}');
 assert.equal(box.op,'curve','A model rectangle is normalized to the existing path contract');
 assert.ok(interpretCommand(box,1));

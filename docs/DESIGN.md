@@ -183,6 +183,9 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 
 ## 12. Decisions log
 
+- Teaching choices come from the conversation, not hardcoded phrases. A request for a picture and a learner who needs orientation can both justify a diagram. Board content follows the same hint ladder as speech: do not show a relationship while asking the learner to retrieve it. Let them attempt first, offer the smallest needed hint after struggle or a request, and record their checked ideas without confusing tutor notes with student work. A formula is appropriate support when needed, not a mandatory part of setup.
+- Diagram annotations have a distinct smaller scale and nearby collision-aware placement. Physical geometry is not altered to make room for labels. Notes retain their readable hierarchy, writing effect, author distinction, scrollback, and fixed controls.
+
 - Product is office hours broadly, not psets only. Pset mode and concept mode share one shell.
 - The app opens on the orb alone with "What do you want to work on?" The student states the request; the layout transforms to match. Three optional chips mirror the choices for tapping.
 - Voice is the primary and only input to the agent.

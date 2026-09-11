@@ -217,7 +217,7 @@ console.log('PASS: patient silence, tap-to-submit, full spoken captions, quiet u
   await nextTurn;
 }
 {
-  const test = await mount({ llmText: 'Here is the relation. [DRAW {"op":"text","id":"equation","at":{"x":0.5,"y":0.4},"text":"F = ma"}] What changes?', manualAudio: true });
+  const test = await mount({ llmText: '[TEACH move=explain visual=notes] Here is the relation. [DRAW {"op":"text","id":"equation","at":{"x":0.5,"y":0.4},"text":"F = ma"}] What changes?', manualAudio: true });
   const speaking = test.hook.sendUtterance('Show me a general equation');
   await settle();
   assert.equal(test.marks.length, 0, 'The diagram does not get ahead of its introduction');
@@ -347,16 +347,16 @@ for (const order of ['first-first','second-first']) {
   test.cleanup();
 }
 {
- const test=await mount({llmText:'The general relationship is v² = u² + 2 a s. What is unknown?',manualAudio:true});
+ const test=await mount({llmText:'[TEACH move=elicit visual=none] What equation connects these quantities?' ,manualAudio:true});
  const speaking=test.hook.sendUtterance('Remind me of the equation');await settle();
- assert.equal(test.marks[0]?.text,'v² = u² + 2 a s','A spoken formula appears even without a model DRAW tag');
+ assert.equal(test.marks.length,0,'Elicitation does not automatically copy an equation from speech or the student');
  test.hook.pauseVoice();await speaking;test.cleanup();
 }
-console.log('PASS: resumed speech survives pending STT in either completion order; a missing DRAW tag cannot hide the spoken symbolic relation.');
+console.log('PASS: resumed speech survives pending STT in either completion order; elicitation does not auto-reveal a relationship.');
 
 for(const cancel of [false,true]) {
   const repair=deferred();
-  const test=await mount({llmText:'Imagine opening a box that contains a smaller box. Each box waits for the one inside.',manualAudio:true,repairResponse:repair.promise});
+  const test=await mount({llmText:'[TEACH move=explain visual=diagram] Imagine opening a box that contains a smaller box. Each box waits for the one inside.',manualAudio:true,repairResponse:repair.promise});
   const speaking=test.hook.sendUtterance('Can you illustrate recursion?');await settle();
   assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')&&JSON.parse(r.body).visualRepair).length,1,'One bounded repair for a missing conceptual diagram');
   if(cancel)test.hook.pauseVoice();
@@ -370,12 +370,14 @@ console.log('PASS: one visual repair, no added speech or clearing, and late-resp
 
 {
   const repair=deferred();
-  const test=await mount({llmText:'[DRAW {"op":"text","id":"relation","at":{"x":0.5,"y":0.3},"text":"F = ma"}] The equation relates force and acceleration. Which quantity is missing?',manualAudio:true,repairResponse:repair.promise});
+  const test=await mount({llmText:'[TEACH move=orient visual=diagram][DRAW {"op":"text","id":"relation","at":{"x":0.5,"y":0.3},"text":"F = ma"}] Picture the object before choosing an equation. What could push it?',manualAudio:true,repairResponse:repair.promise});
   const speaking=test.hook.sendUtterance("I don't understand the setup");await settle();
   assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')&&JSON.parse(r.body).visualRepair).length,1,'A formula alone must not satisfy a request to picture the situation');
-  const content='[DRAW {"op":"circle","id":"object","center":{"x":0.5,"y":0.5},"r":0.1}][DRAW {"op":"arrow","id":"force","from":{"x":0.5,"y":0.4},"to":{"x":0.5,"y":0.2},"label":"force"}]';
+  assert.equal(test.marks.length,0,'An orientation turn cannot reveal the relation');
+  const content='[TEACH move=explain visual=notes][DRAW {"op":"text","id":"leak","at":{"x":0.5,"y":0.3},"text":"F = ma"}][DRAW {"op":"circle","id":"object","center":{"x":0.5,"y":0.5},"r":0.1}][DRAW {"op":"arrow","id":"force","from":{"x":0.5,"y":0.4},"to":{"x":0.5,"y":0.2},"label":"force"}]';
   repair.resolve(new Response(`data: ${JSON.stringify({choices:[{delta:{content}}]})}\n\ndata: [DONE]\n\n`));await settle();
   assert.ok(test.marks.some(mark=>mark.op==='circle')&&test.marks.some(mark=>mark.op==='arrow'),'Setup recovery contains actual geometry');
+  assert.ok(!test.marks.some(mark=>mark.id==='leak'),'A repair cannot override the parent teaching move');
   test.hook.pauseVoice();await speaking;test.cleanup();
 }
-console.log('PASS: setup confusion gets geometry recovery even when the primary turn already wrote an equation.');
+console.log('PASS: orientation withholds premature equations; geometry recovery cannot change the teaching move.');

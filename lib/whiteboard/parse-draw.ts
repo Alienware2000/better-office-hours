@@ -216,6 +216,10 @@ export function parseDrawCommand(body: string): DrawCommand | null {
     const point = (p: unknown) => Array.isArray(p) && p.length === 2 ? { x: p[0], y: p[1] } : p;
     for (const name of ['at', 'center', 'origin', 'from', 'to']) if (name in normalized) (normalized as Record<string, unknown>)[name] = point(value[name]);
     if (op === 'circle' && !('center' in normalized) && 'at' in normalized) Object.assign(normalized, { center: normalized.at });
+    if (op === 'circle' && !('center' in normalized)) {
+      const x = value.cx ?? value.x, y = value.cy ?? value.y;
+      if (Number.isFinite(x) && Number.isFinite(y)) Object.assign(normalized, { center: { x, y } });
+    }
     if (op === 'text' && !('at' in normalized) && 'x' in normalized && 'y' in normalized) Object.assign(normalized, { at: { x: normalized.x, y: normalized.y } });
     if ((op === 'rect' || op === 'rectangle') && 'at' in normalized && 'w' in normalized && 'h' in normalized) {
       const at = normalized.at as Pt;

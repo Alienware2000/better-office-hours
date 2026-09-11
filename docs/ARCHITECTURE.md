@@ -238,11 +238,16 @@ type BoardSnapshot = {
 
 ### 3.4 Agent turn (voice lane produces, workspace and whiteboard lanes consume)
 
-Each model turn returns speech plus UI commands. The model emits tags inline; the voice lane strips them before TTS and dispatches them. Short symbolic relations already spoken can be copied to DRAW at audio start if absent from the board. For a substantive visual request with no renderable scene, the client can call the same LLM endpoint once with `visualRepair: true`. This is a bounded visual-only pass using the current request context, not a new tutor turn. Its output is restricted client-side to at most five renderable DRAW commands or a validated ANIM; clear/remove and non-board actions are ignored. Cancellation uses the active playback epoch. The repair does not delay initial speech and may time out after 6s.
+Each model turn returns speech plus UI commands. Local stream metadata `[TEACH move=... visual=...]` precedes substantive output. `TeachingTurn` extends AgentTurn internally with an optional teaching choice; shared lib/types.ts is unchanged. The move is elicit, orient, hint, consolidate, or explain; visual is none, notes, diagram, or animation. The model selects these from conversation context, without a client keyword classifier or extra planning request. Elicit/orient (and absent, invalid, or late metadata) cannot reveal new symbolic relationships through DRAW text or diagram/animation labels. The filter is a bounded notation guard, not a proof of pedagogical or mathematical correctness. Metadata is stripped from speech. Hint counters are omitted unless actually available; runtime context asks the model to infer progress from conversation rather than receiving an invented zero each turn.
+
+There is no automatic copying of speech into equations. If the selected visual is missing or not renderable, the client can request `visualRepair: true` once. Its last assistant message includes the chosen TEACH tag, and the parser inherits that original move so repair output cannot grant itself more disclosure. Only at most five renderable static DRAW commands are used; clear/remove, speech, navigation, and other actions are ignored. A static diagram is acceptable recovery for invalid animation. Cancellation uses the active playback epoch; initial speech proceeds while recovery runs, with a 6s timeout.
+
+Static ShapeGroup metadata now stores geometry traces used only for annotation collision checks. Label layout preserves physical geometry, chooses nearby placements clear of shapes/labels/student ink when possible, and stores resolved font/position data for both SVG and snapshots. It retains labels using the least-crowded candidate when no clear position exists. Moving labels retain their attachment and smaller stable size; no per-frame label solver is used. Notes retain their larger hierarchy, with simple Unicode powers/subscripts and separate aligned given rows.
 
 Inline tag grammar the model uses:
 
 ```
+[TEACH move=elicit visual=none]  // local metadata, not a shared AgentTurn field
 [POINT page=1 x=0.42 y=0.31 label="launch angle"]
 [HIGHLIGHT page=1 anchor=3]  // measured text fragment in this request
 [HIGHLIGHT page=1 x=0.40 y=0.28 w=0.20 h=0.06]

@@ -7,7 +7,7 @@ type Box = { left: number; right: number; top: number; bottom: number };
 const margin = .055;
 const gap = .025;
 let measure: CanvasRenderingContext2D | null = null;
-const width = (text: string, size: number, math = isMathText(text)) => {
+export const textWidth = (text: string, size: number, math = isMathText(text)) => {
   if (typeof document !== 'undefined') measure ??= document.createElement('canvas').getContext('2d');
   if (measure) {
     measure.font = `500 100px ${math ? MATH_FONT : LABEL_FONT}`;
@@ -16,6 +16,7 @@ const width = (text: string, size: number, math = isMathText(text)) => {
   // Server/test fallback. Spaces and superscripts are not full-width letters.
   return [...text].reduce((sum, char) => sum + (/\s/.test(char) ? .27 : /[il.,:;!|₀-₉²³]/.test(char) ? .32 : /[MW@]/.test(char) ? .95 : /[=+−×]/.test(char) ? .75 : .57), 0) * size;
 };
+const width = textWidth;
 const intersects = (a: Box, b: Box) => a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;
 
 export function writingBounds(mark: TextMark): Box {
@@ -33,6 +34,7 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
   const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
+  if (!note && !math && width(mark.text, .038, false) <= .91 && groups.some(group => group.geometry?.length)) return group;
   const fontSize = heading ? .057 : mark.size === 'm' ? .085 : .068;
   const available = 1 - margin * 2;
   const fits = (text: string) => width(text, fontSize, math) <= available;
@@ -40,22 +42,24 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   let line = '';
   // Keep a product such as 2 a Δy together. Only long expressions need a
   // continuation, preferably at a relation or additive operator.
-  const tokens = !heading && isMathText(mark.text)
-    ? mark.text.split(/\s+(?=[=+−]|-(?!\d))/)
-    : mark.text.split(/\s+/);
-  for (const token of tokens) {
-    const words = fits(token) ? [token] : token.split(/\s+/);
-    for (const word of words) {
-      if (line && !fits(`${line} ${word}`)) { lines.push(line); line = ''; }
-      let rest = '';
-      for (const char of word) {
-        if (!fits(rest + char)) { lines.push(rest); rest = ''; }
-        rest += char;
+  const rows = note && !heading ? mark.text.split(/,\s*(?=[^,]+[=≈])/u) : [mark.text];
+  for (const row of rows) {
+    const tokens = math ? row.split(/\s+(?=[=+−]|-(?!\d))/) : row.split(/\s+/);
+    for (const token of tokens) {
+      const words = fits(token) ? [token] : token.split(/\s+/);
+      for (const word of words) {
+        if (line && !fits(`${line} ${word}`)) { lines.push(line); line = ''; }
+        let rest = '';
+        for (const char of word) {
+          if (!fits(rest + char)) { lines.push(rest); rest = ''; }
+          rest += char;
+        }
+        line = line ? `${line} ${rest}` : rest;
       }
-      line = line ? `${line} ${rest}` : rest;
     }
+    if (line) lines.push(line);
+    line = '';
   }
-  if (line) lines.push(line);
   const occupied: Box[] = groups.filter(g => g.id !== group.id).flatMap(g => g.drawables.filter((d): d is TextMark => d.kind === 'text').map(writingBounds));
   for (const stroke of ink) {
     if (!stroke.points.length) continue;

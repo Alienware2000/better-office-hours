@@ -295,6 +295,10 @@ export function animationFrame(
           (m) => m.kind === "text",
         );
       }
+      // Moving labels keep their model attachment and stable size. Avoid a
+      // per-frame collision solver that would make them jump between sides.
+      op.group.drawables = op.group.drawables.map(mark => mark.kind === 'text'
+        ? { ...mark, fontSize: .038, diagramLabel: true } : mark);
       groups.push({ ...op.group, opacity: clamp(Number(f.opacity ?? 1)) });
     }
   }

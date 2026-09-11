@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 03:59 ET
+Updated: 2026-09-11 04:24 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,16 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Pedagogy/diagram follow-up: the tutor now declares a local TEACH move (elicit, orient, hint, consolidate, explain) and a visual choice in its existing response stream, based on the conversation. Removed phrase-based diagram triggers, mandatory equation/setup beats, and automatic copying of spoken formulas. Elicit/orient turns withhold new symbolic relationships from streamed DRAW text and geometry/animation labels. Missing or late metadata also withholds them. A silent visual repair inherits the original move and cannot promote itself to a new hint. The runtime no longer supplies fictitious rung-zero counters on every turn. Human PROMPT/PEDAGOGY and shared lib/types.ts remain unchanged.
+
+Static diagram labels use a smaller consistent scale and measured placement clear of paths, neighboring annotations, and student ink. The actual geometry stays fixed. Resolved placements are shared with snapshots. Animated labels keep their attachment and stable size without a per-frame placement solver. ASCII powers/subscripts normalize for the board, comma-separated note givens become aligned rows, and circle coordinate aliases from a live trace normalize. Existing writing reveal, author distinction, scrollback, and tools remain.
+
+Validation: production build, focused lint, teaching-intent/repair, lifecycle, ink, workspace, and animation checks pass. Chrome exercised the actual voice/SSE/SVG path: a deliberately premature equation was withheld, a requested reminder appeared, and two live generated diagrams rendered. Labels were inspected at 1400/1000/700px and expanded. Live Grok probes chose elicitation without an equation after the givens, a formula hint after an explicit failed recall/reminder request, and diagrams for an incline and recursion in differently worded requests. These are small samples, not a guarantee of model judgment. Static annotation placement does not validate subject correctness; crowded layouts and animation physics remain limited. Full lint still has the earlier five PdfViewer render-ref findings.
+
+Next: David should retest a fresh homework recall attempt, a subsequent reminder, and a concept visualization on localhost:3100, then review PR #5 before merge. No new credentials or human unblock is required for this slice. Earlier speech-formula recovery and lexical setup triggers below are historical and have been superseded.
+
+### Earlier stress-test slices (historical)
 
 Live writing/space follow-up: board text reveals by grapheme while retaining its full layout, with sequential wrapped lines and duration-based completion. Identical note updates do not replay. New topic headings, full writing areas, and moving scenes that would cover notes continue on a fresh page. Earlier pages retain tutor content and student ink as read-only scrollback. The working page remains editable, with independent undo. The board viewport is shorter, its tools stay outside scrolling content, and Latest returns from earlier notes without incoming work stealing the reader's scroll. The PDF toolbar stays in one slim row, horizontally scrollable on narrow desks, with proper SVG undo/redo icons.
 

@@ -1,4 +1,5 @@
 import { layoutWriting } from "./writing";
+import { layoutDiagram } from './diagram-layout';
 import { validateAnimation } from "./animation";
 import type { AnimationSpec, DrawCommand } from "@/lib/types";
 import type { StudentInk } from "./colors";
@@ -146,7 +147,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, groups: [...next.groups, group] };
     }
   }
-  state = next;
+  state = { ...next, groups: layoutDiagram(next.groups, next.student) };
   emit();
 }
 

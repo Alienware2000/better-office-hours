@@ -6,8 +6,7 @@ import { detectMode } from "@/lib/agent/intent";
 import { parseAgentTurn, takeSpeechChunks, visualBeats, type ChatMessage } from "@/lib/agent/tags";
 import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
 import { getLiveBoard } from "@/lib/whiteboard/live-board";
-import { validateAnimation } from "@/lib/whiteboard/animation";
-import { needsBoardRepair, speechBoardCue } from "@/lib/whiteboard/speech-cue";
+import { needsBoardRepair, teachingTag } from "@/lib/agent/teaching-intent";
 import { interpretCommand, isDrawCommand } from "@/lib/whiteboard/geometry";
 import { getBoardState, restoreBoard, type BoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, continueBoardPage, openBoard, resetBoard } from "@/lib/whiteboard/store";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
@@ -456,10 +455,6 @@ export function useVoiceLoop() {
           if (playbackEpoch !== playbackEpochRef.current || signal.aborted) return;
           if (speechFailure) throw speechFailure;
           try { await speak(trimmed, previousText, playbackEpoch, prepared, () => {
-            const cue = speechBoardCue(trimmed,
-              historyRef.current.filter(message => message.role === 'user').at(-1)?.content ?? '',
-              (getBoardState().groups ?? []).map(group => group.drawables.filter(mark => mark.kind === 'text').map(mark => mark.text).join(' ')));
-            if (cue) applyDrawCommands([cue]);
             heard = [heard, trimmed].filter(Boolean).join(" ");
             if (!captionStarted) { addTurn("tutor", heard); captionStarted = true; }
             else reviseLastTutorTurn(heard);
@@ -502,21 +497,17 @@ export function useVoiceLoop() {
 
       const leftover = turn.speech.slice(emitted).trim();
       if (leftover) enqueueSpeech(leftover);
-      const student = historyRef.current.filter(message => message.role === 'user').at(-1)?.content ?? '';
-      const hasVisual = Boolean(validateAnimation(turn.board?.animation)) ||
-        Boolean(turn.board?.commands.some((command, index) => interpretCommand(command, index)?.kind === 'draw'));
-      const hasDiagram = Boolean(validateAnimation(turn.board?.animation)) || Boolean(turn.board?.commands.some((command, index) => command.op !== 'text' && interpretCommand(command, index)?.kind === 'draw'));
       let visualRepair: Promise<void> = Promise.resolve();
-      if (!turn.think && needsBoardRepair(student, turn.speech, hasVisual, hasDiagram)) {
+      if (needsBoardRepair(turn)) {
         visualRepair = withRequestTimeout(signal, 6000, 'Board preparation timed out', async repairSignal => {
           const response = await fetch('/api/agent/llm', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: repairSignal,
-            body: JSON.stringify({ visualRepair: true, messages: [...historyRef.current, { role: 'assistant', content: turn.speech }], livePage: visualSource, liveBoard: getLiveBoard() }),
+            body: JSON.stringify({ visualRepair: true, messages: [...historyRef.current, { role: 'assistant', content: teachingTag(turn.teaching) + turn.speech }], livePage: visualSource, liveBoard: getLiveBoard() }),
           });
           if (!response.ok) return;
           const raw = await readSseText(response, () => {});
           if (signal.aborted || playbackEpoch !== playbackEpochRef.current || speechFailure) return;
-          const repair = parseAgentTurn(raw);
+          const repair = parseAgentTurn(raw, visualSource, turn.teaching);
           // This lane cannot speak, navigate, point at the PDF, or clear work.
           const commands = (repair.board?.commands ?? []).filter(command => !['clear', 'remove'].includes(command.op)).slice(0, 5);
           const renderable = commands.filter((command, index) => interpretCommand(command, index)?.kind === 'draw');

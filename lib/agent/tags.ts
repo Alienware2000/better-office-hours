@@ -6,6 +6,8 @@ import type {
   BBox,
 } from "@/lib/types";
 import { parseDrawCommand } from "@/lib/whiteboard/parse-draw";
+import { teachingIntent, teachingDraw, canRevealRelationship, isRelationship, type TeachingIntent, type TeachingTurn } from './teaching-intent';
+import { validateAnimation } from '@/lib/whiteboard/animation';
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -65,7 +67,7 @@ function readJson(source: string, openAt: number): { value: unknown; end: number
 
 type PageAnchors = Pick<LivePage, "page" | "textRegions"> | null;
 
-function applyTag(turn: AgentTurn, name: string, body: string, source?: PageAnchors) {
+function applyTag(turn: TeachingTurn, name: string, body: string, source?: PageAnchors) {
   if (name === "RECAP") {
     turn.recap = true;
     return;
@@ -115,7 +117,8 @@ function applyTag(turn: AgentTurn, name: string, body: string, source?: PageAnch
     return;
   }
   if (name === "DRAW") {
-    const command = parseDrawCommand(body);
+    const parsed = parseDrawCommand(body);
+    const command = parsed && teachingDraw(parsed, turn.teaching);
     if (!command) return;
     turn.board = turn.board ?? { commands: [] };
     turn.board.commands.push(command);
@@ -146,14 +149,26 @@ function applyTag(turn: AgentTurn, name: string, body: string, source?: PageAnch
     const json = readJson(trimmed, trimmed.indexOf("{"));
     if (!json) return;
     turn.board = turn.board ?? { commands: [] };
-    turn.board.animation = json.value as AnimationSpec;
+    const animation = validateAnimation(json.value);
+    if (!animation) return;
+    turn.board.animation = canRevealRelationship(turn.teaching) ? animation : {
+      ...animation,
+      shapes: animation.shapes.filter(shape => shape.kind !== 'text' || !isRelationship(shape.text)).map(shape => ({ ...shape,
+        ...('label' in shape && shape.label && isRelationship(shape.label) ? { label: undefined } : {}),
+        ...(shape.kind === 'axes' ? {
+          xLabel: shape.xLabel && isRelationship(shape.xLabel) ? undefined : shape.xLabel,
+          yLabel: shape.yLabel && isRelationship(shape.yLabel) ? undefined : shape.yLabel,
+        } : {}),
+      })),
+    } as AnimationSpec;
   }
 }
 
-export function parseAgentTurn(raw: string, source?: PageAnchors): AgentTurn {
-  const turn: AgentTurn = { speech: "" };
+export function parseAgentTurn(raw: string, source?: PageAnchors, inheritedIntent?: TeachingIntent): TeachingTurn {
+  const turn: TeachingTurn = { speech: "", ...(inheritedIntent ? { teaching: inheritedIntent } : {}) };
   let speech = "";
   let i = 0;
+  let teachingChosen = Boolean(inheritedIntent);
 
   while (i < raw.length) {
     if (raw[i] !== "[") {
@@ -197,7 +212,11 @@ export function parseAgentTurn(raw: string, source?: PageAnchors): AgentTurn {
       "RECAP",
       "THINK",
     ];
-    if (known.includes(name)) {
+    if (name === 'TEACH') {
+      // A late/second tag cannot retroactively authorize earlier visuals.
+      if (!teachingChosen && !speech.trim() && !turn.board) turn.teaching = teachingIntent(attrs(body));
+      teachingChosen = true;
+    } else if (known.includes(name)) {
       applyTag(turn, name, body, source);
     } else {
       speech += raw.slice(i, end);

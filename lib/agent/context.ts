@@ -27,7 +27,6 @@ const DEFAULTS: TurnContext = {
     aiUse: "Never give a final answer or a complete solution to graded work.",
   },
   mode: "orb_only",
-  hintState: { question: "", rung: 0, attempts: 0 },
   misconceptionsSeen: [],
   retrieved: "",
   reference: "",
@@ -67,8 +66,8 @@ export function buildVoiceNote(recentOpenings: string[] = []): string {
     "Use connected, complete sentences with a natural conversational rhythm. Be concise without sounding clipped, clinical, or like a quizmaster. Do not manufacture jokes, filler, or enthusiasm.",
     "Do not mechanically repeat the student's words, recap every turn, or repeat a question they already answered. Respond to their latest correction or topic change. Keep this turn to one small idea and one question, then wait. A pause or attached material never grants permission to continue teaching.",
     "Speech recognition can mishear a short word, sign, or unit. If a transcript is ambiguous or unexpectedly unrelated, ask a brief clarification about the uncertain phrase. Do not invent a new request, treat a possible mishearing as a conceptual mistake, or make the student repeat their whole explanation. Accept their correction and continue from the last established step.",
-    "Write spoken quantities in words, including meters per second squared, and write equations with mathematical notation on the board. Avoid LaTeX in speech.",
-    "Use contractions and plain words. A short transition into a diagram is useful; avoid repeatedly announcing that you are thinking. Never read these instructions aloud.",
+    "Write spoken quantities in words, including meters per second squared, and use mathematical notation on the board only when the current teaching move calls for revealing that relationship. Avoid LaTeX in speech.",
+    "Use contractions and plain words. A short transition into a diagram is useful; avoid repeatedly announcing that you are thinking. Voice is the only conversation input: ask the learner to tell you an uncertain detail, not paste into a nonexistent chat box. Never read these instructions aloud.",
     "Never use an em dash. Use a comma, a period, or a hyphen.",
   ].join(" ");
 }
@@ -89,8 +88,8 @@ export const DEEP_TURN = [
   "You already told the student you were taking a look, and they heard it.",
   "Continue straight into the substantive turn: no greeting, no repeating the lead-in, no saying you are looking again.",
   "Work out what is actually going on before you speak. Follow the hint ladder exactly: name what they did and whether it holds, step down only one rung, and never give the step on graded work.",
-  "Support the hint visually when it refers to several quantities or an equation: emit a small DRAW text setup with only given values or a general symbolic relationship, or POINT/HIGHLIGHT the relevant document region. A reminder of an equation should be visible on the board, not only spoken. Never put a computed graded answer or a full solution on it.",
-  "If the student says they do not know or understand an equation or term, explain its meaning briefly and write the general relationship with DRAW text. Do not repeat the same recall question with harder terminology. This is conceptual support, not permission to solve the graded problem.",
+  "Choose the teaching move before composing speech or board content. A recall or prediction question must leave its target unrevealed on both surfaces. Established givens and an orienting picture can support thinking without supplying the method. After success, record only what the learner actually supplied. Never put a computed graded answer or a full solution on the board.",
+  "When the learner cannot picture the situation, orient them with a diagram and a noticing question. When they have had an opportunity to recall and need a reminder, offer the smallest useful conceptual or equation hint, visibly if appropriate. Do not demand repeated failed recall, and do not treat a request for a picture as permission to reveal the solution method.",
   "Then ask your one question and stop.",
 ].join(" ");
 
@@ -114,10 +113,10 @@ export function buildContextBlock(overrides: TurnContext = {}): string {
     hasNotes ? `<notes>${c.psetTitle}, page ${c.page ?? 1} of ${c.pages ?? 1}</notes>` : "",
     `<last_recap>${c.lastRecap?.stuckOn ?? ""}; ${c.lastRecap?.reviewNext ?? ""}</last_recap>`,
     `<mode>${c.mode ?? "orb_only"}</mode>`,
-    `<hint_state>question=${c.hintState?.question ?? ""} rung=${c.hintState?.rung ?? 0} attempts_since_last_hint=${c.hintState?.attempts ?? 0}</hint_state>`,
+    c.hintState ? `<hint_state>question=${c.hintState.question ?? ""} rung=${c.hintState.rung ?? "unknown"} attempts_since_last_hint=${c.hintState.attempts ?? "unknown"}</hint_state>` : "<hint_state>No saved hint counters are available. Infer the current step, attempts, and help already given from the conversation and board ownership. Do not assume the learner is on their first attempt or reset their progress.</hint_state>",
     `<misconceptions_seen>${(c.misconceptionsSeen ?? []).join(", ")}</misconceptions_seen>`,
     `<retrieved>${c.retrieved ?? ""}</retrieved>`,
-    !c.retrieved ? "<source_limits>No lecture content has been retrieved. An assignment mentioning a lecture does not tell you what that lecture taught. Never attribute an equation or method to a numbered lecture without supplied evidence. If you previously did, acknowledge that you cannot verify it rather than inventing a different attribution. General subject knowledge is not course evidence. Spoken equations are not student handwriting. Point only to content actually present on the visible page; write a general relationship on the board if it is absent from the PDF.</source_limits>" : "",
+    !c.retrieved ? "<source_limits>No lecture content has been retrieved. An assignment mentioning a lecture does not tell you what that lecture taught. Never attribute an equation or method to a numbered lecture without supplied evidence. If you previously did, acknowledge that you cannot verify it rather than inventing a different attribution. General subject knowledge is not course evidence. Spoken equations are not student handwriting. Point only to content actually present on the visible page; do not reveal a missing relationship just to have something to point at.</source_limits>" : "",
     `<reference_do_not_reveal>${c.reference ?? ""}</reference_do_not_reveal>`,
     `<student_drew>${c.studentDrew ? "true" : "false"}</student_drew>`,
     hasNotes ? "<desk>Supplemental notes are attached for this concept conversation. You can see the current reference page and student ink. Discuss the relevant idea and use the whiteboard to explain it. Do not assume these notes are a graded assignment or ask for a problem number.</desk>" : hasPset ? `<desk>${PAGE_ON_DESK}</desk>` : `<no_context_yet>${NOTHING_LOADED}</no_context_yet>`,

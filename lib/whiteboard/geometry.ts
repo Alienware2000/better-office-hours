@@ -26,12 +26,15 @@ export type Drawable =
       heading?: boolean;
       math?: boolean;
       fontSize?: number; // Resolved standalone writing size, shared by SVG and snapshots.
+      diagramLabel?: boolean;
+      preferredAt?: Pt; // Keep the requested attachment when labels are reflowed.
       color: string;
     };
 
 export type ShapeGroup = {
   id: string;
   drawables: Drawable[];
+  geometry?: Pt[][]; // Local collision traces, never a change to model coordinates.
 };
 
 export type BoardOp =
@@ -85,7 +88,7 @@ export function interpretCommand(
         color,
       });
     }
-    return { kind: "draw", group: { id, drawables } };
+    return { kind: "draw", group: { id, drawables, geometry: [[origin, xTo], [origin, yTo]] } };
   }
 
   if (command.op === "arrow") {
@@ -96,7 +99,7 @@ export function interpretCommand(
     if (command.label) {
       drawables.push(midLabel(`${id}-l`, from, to, command.label, color));
     }
-    return { kind: "draw", group: { id, drawables } };
+    return { kind: "draw", group: { id, drawables, geometry: [[from, to]] } };
   }
 
   if (command.op === "line") {
@@ -112,7 +115,7 @@ export function interpretCommand(
         dashed: Boolean(command.dashed),
       },
     ];
-    return { kind: "draw", group: { id, drawables } };
+    return { kind: "draw", group: { id, drawables, geometry: [[from, to]] } };
   }
 
   if (command.op === "curve") {
@@ -132,7 +135,7 @@ export function interpretCommand(
         color,
       });
     }
-    return { kind: "draw", group: { id, drawables } };
+    return { kind: "draw", group: { id, drawables, geometry: [curveTrace(points)] } };
   }
 
   if (command.op === "circle") {
@@ -152,7 +155,7 @@ export function interpretCommand(
         color,
       });
     }
-    return { kind: "draw", group: { id, drawables } };
+    return { kind: "draw", group: { id, drawables, geometry: [Array.from({ length: 49 }, (_, i) => ({ x: center.x + r * Math.cos(i * Math.PI / 24), y: center.y + r * Math.sin(i * Math.PI / 24) }))] } };
   }
 
   if (command.op === "text") {
@@ -282,6 +285,24 @@ function circlePath(center: Pt, r: number): string {
     `A ${r} ${r} 0 1 1 ${center.x - r} ${center.y}`,
     `A ${r} ${r} 0 1 1 ${x} ${center.y}`,
   ].join(" ");
+}
+
+function curveTrace(points: Pt[]): Pt[] {
+  if (points.length === 2) return points;
+  const trace: Pt[] = [points[0]];
+  let start = points[0];
+  let previousControl = start;
+  for (let i = 1; i < points.length; i++) {
+    const final = i === points.length - 1;
+    const control = final ? { x: 2 * start.x - previousControl.x, y: 2 * start.y - previousControl.y } : points[i];
+    const end = final ? points[i] : { x: (points[i].x + points[i + 1].x) / 2, y: (points[i].y + points[i + 1].y) / 2 };
+    for (let j = 1; j <= 12; j++) {
+      const t = j / 12, u = 1 - t;
+      trace.push({ x: u * u * start.x + 2 * u * t * control.x + t * t * end.x, y: u * u * start.y + 2 * u * t * control.y + t * t * end.y });
+    }
+    start = end; previousControl = control;
+  }
+  return trace;
 }
 
 export function isDrawCommand(value: unknown): value is DrawCommand {

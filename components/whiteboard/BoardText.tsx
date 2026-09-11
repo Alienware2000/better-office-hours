@@ -6,7 +6,7 @@ import type { Drawable } from '@/lib/whiteboard/geometry';
 export function BoardText({ mark, entering = false, delay = 0 }: { mark: Extract<Drawable, { kind: 'text' }>; entering?: boolean; delay?: number }) {
   const reveal = textReveal(mark.text);
   let offset = 0;
-  return <text className={`board-label${entering ? ' is-writing' : ''}${mark.heading ? ' is-heading' : ''}`}
+  return <text className={`board-label${entering ? ' is-writing' : ''}${mark.heading ? ' is-heading' : ''}${mark.diagramLabel ? ' is-diagram' : ''}`}
     x={mark.at.x} y={mark.at.y} fill={mark.color}
     fontSize={mark.fontSize ?? boardTextSize(mark.text, mark.size, mark.at.x)}
     style={{ fontFamily: (mark.math ?? (!mark.heading && isMathText(mark.text))) ? MATH_FONT : LABEL_FONT }} textAnchor={mark.textAnchor ?? 'middle'}>
