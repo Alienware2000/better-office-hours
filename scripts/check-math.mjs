@@ -26,3 +26,13 @@ for(const [i,text] of [examples[1],examples[2],examples[5]].entries()){
 }
 for(const text of examples.slice(0,3)){const draw=`[DRAW ${JSON.stringify({op:'text',id:'eq',text,at:{x:.5,y:.3}})}]`;assert.equal(parseAgentTurn('[TEACH move=elicit visual=none]'+draw).board?.commands.length??0,0,'LaTeX cannot bypass elicitation');assert.equal(parseAgentTurn('[TEACH move=hint visual=notes]'+draw).board.commands[0].text,text);}
 console.log('PASS: real MathJax fractions, roots, indices, vectors, integrals, alignments, matrices, Unicode compatibility, safe fallback, measured math spacing, and LaTeX teaching boundaries.');
+
+const {isMathNotation}=load('lib/whiteboard/math-source.ts');
+for(const text of ['v_x','v_y','x^2','θ',String.raw`\theta`]) {
+ assert.ok(isMathNotation(text),text);
+ const group=layoutWriting(interpretCommand({op:'text',id:'symbol',text,at:{x:.5,y:.5}},0).group,[],[]);
+ assert.ok(group.drawables[0].mathDrawing,'Symbol is rendered through MathJax');
+ assert.equal(group.drawables[0].fontSize,.038,'A symbol is a compact label, not an equation row');
+}
+for(const text of ['ball','launch speed','current_page','ice cream'])assert.equal(isMathNotation(text),false,'Ordinary labels stay prose');
+console.log('PASS: compact TeX/Unicode labels render as math without changing prose or equation sizing.');

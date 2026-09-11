@@ -37,7 +37,7 @@ export function snapshotBoard(
   ctx.scale(w, h);
   ctx.lineWidth = 2.3 / w;
   const animated = animation
-    ? animationFrame(animation.spec, animation.time)
+    ? animationFrame(animation.spec, animation.time, groups, student)
     : null;
   const layers = [{ groups, camera: null }, ...(animated ? [animated] : [])];
   for (const layer of layers) {

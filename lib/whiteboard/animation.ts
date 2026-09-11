@@ -3,11 +3,14 @@ import type { AnimationSpec, AnimShape, DrawCommand, Pt } from "../types";
 import { curvePath, curvePoint } from "./curve";
 import { interpretCommand, type ShapeGroup } from "./geometry";
 import { typesetMath } from './math-layout';
-import type { DiagramCommand } from './diagram-command';
+import { diagramOptions, type DiagramCommand, type DiagramOptions } from './diagram-command';
+import { composeDiagram } from './diagram-compose';
+import { layoutAnimationLabels } from './animation-labels';
 import { isMathText } from './text';
 
 const clamp = (n: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, n));
 type Frame = Record<string, unknown> & { t: number; ease?: string };
+export type DiagramAnimShape = AnimShape & { diagram?: Pick<DiagramOptions, 'attach' | 'component' | 'labelSide'> };
 const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
 const finite = (v: unknown): v is number =>
@@ -28,6 +31,8 @@ export function validateAnimation(input: unknown): AnimationSpec | null {
   )
     return null;
   const ids = new Set<string>();
+  const shapes = new Map(input.shapes.filter(object).map(s => [s.id, s]));
+  const dependencies = new Map<string, string>();
   const paths = new Set(
     input.shapes.filter((s) => object(s) && s.kind === "path").map((s) => s.id),
   );
@@ -56,6 +61,18 @@ export function validateAnimation(input: unknown): AnimationSpec | null {
   for (const s of input.shapes) {
     if (!object(s) || typeof s.id !== "string" || ids.has(s.id)) return null;
     ids.add(s.id);
+    if (s.diagram !== undefined) {
+      if (s.kind !== 'arrow' || !object(s.diagram) || Object.keys(s.diagram).some(key => !['attach', 'component', 'labelSide'].includes(key))) return null;
+      const options = diagramOptions({ op: 'arrow', id: s.id, from: { x: 0, y: 0 }, to: { x: 0, y: 0 }, diagram: s.diagram } as DiagramCommand);
+      if (!options) return null;
+      const targetId = options.attach?.to ?? options.component?.of;
+      if (targetId) {
+        const target = shapes.get(targetId);
+        if (!target || (options.component ? target.kind !== 'arrow' : !['dot', 'arrow'].includes(String(target.kind)))) return null;
+        if (target.kind === 'dot' && options.attach?.anchor !== 'center') return null;
+        dependencies.set(s.id, targetId);
+      }
+    }
     if (s.appearance !== undefined && (s.kind !== "dot" || !validAppearance(s.appearance))) return null;
     if (s.label !== undefined && typeof s.label !== "string") return null;
     let valid = false;
@@ -73,7 +90,7 @@ export function validateAnimation(input: unknown): AnimationSpec | null {
           s.points.length >= 2 &&
           s.points.length <= 256 &&
           s.points.every(point) &&
-          frames(s.keyframes, (f) => finite(f.drawn));
+          frames(s.keyframes, (f) => finite(f.drawn) && f.drawn >= 0 && f.drawn <= 1);
         break;
       case "arrow":
         valid = frames(
@@ -103,6 +120,13 @@ export function validateAnimation(input: unknown): AnimationSpec | null {
         break;
     }
     if (!valid) return null;
+  }
+  for (const id of dependencies.keys()) {
+    const seen = new Set<string>();
+    for (let next: string | undefined = id; next; next = dependencies.get(next)) {
+      if (seen.has(next)) return null;
+      seen.add(next);
+    }
   }
   if (
     input.camera !== undefined &&
@@ -160,7 +184,7 @@ export function sampleFrames(frames: Frame[], time: number): Frame {
 export const pathPoint = curvePoint;
 
 export type AnimGroup = ShapeGroup & { opacity: number };
-export function animationFrame(
+function rawAnimationFrame(
   spec: AnimationSpec,
   time: number,
 ): { groups: AnimGroup[]; camera: { x: number; y: number; zoom: number } } {
@@ -286,6 +310,7 @@ export function animationFrame(
         break;
       }
     }
+    if (s.kind === 'arrow') command = { ...command, diagram: (s as DiagramAnimShape).diagram } as DiagramCommand;
     const op = interpretCommand(command, 0);
     if (op?.kind === "draw") {
       // Paths reveal a prefix of the full spline. Bars keep their sharp corners.
@@ -311,12 +336,27 @@ export function animationFrame(
       // Moving labels keep their model attachment and stable size. Avoid a
       // per-frame collision solver that would make them jump between sides.
       op.group.drawables = op.group.drawables.map(mark => mark.kind === 'text'
-        ? { ...mark, fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color) ?? undefined : undefined } : mark);
+        ? { ...mark, fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color, false) ?? undefined : undefined } : mark);
       groups.push({ ...op.group, opacity: clamp(Number(f.opacity ?? 1)) });
     }
   }
+  const composed = composeDiagram(groups);
+  const resolvedGroups = groups.map((group, i) => {
+    const options = (group.source as DiagramCommand | undefined)?.diagram;
+    if (!options?.attach && !options?.component) return group;
+    const resolved = composed[i];
+    return { ...resolved, drawables: resolved.drawables.map(mark => mark.kind === 'text'
+      ? { ...mark, fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color, false) ?? undefined : undefined } : mark) };
+  });
   const camera = spec.camera
     ? sampleFrames(spec.camera.keyframes, t)
     : { x: 0.5, y: 0.5, zoom: 1 };
-  return { groups, camera: camera as { x: number; y: number; zoom: number } };
+  return { groups: resolvedGroups, camera: camera as { x: number; y: number; zoom: number } };
+}
+
+const emptyBackdrop: ShapeGroup[] = [];
+const emptyInk: { points: Pt[] }[] = [];
+export function animationFrame(spec: AnimationSpec, time: number, backdrop: ShapeGroup[] = emptyBackdrop, ink: { points: Pt[] }[] = emptyInk) {
+  const frame = rawAnimationFrame(spec, time);
+  return { ...frame, groups: layoutAnimationLabels(spec, frame.groups, t => rawAnimationFrame(spec, t), backdrop, ink) };
 }

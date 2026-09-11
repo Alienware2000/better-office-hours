@@ -16,6 +16,7 @@ export type Drawable =
       dashed?: boolean;
       width?: number;
       opacity?: number;
+      annotation?: boolean;
     }
   | {
       kind: "head";
@@ -36,6 +37,7 @@ export type Drawable =
       fontSize?: number; // Resolved standalone writing size, shared by SVG and snapshots.
       diagramLabel?: boolean;
       preferredAt?: Pt; // Keep the requested attachment when labels are reflowed.
+      labelAnchor?: Pt; // The feature a displaced label identifies.
       mathDrawing?: MathDrawing;
       color: string;
     };
@@ -153,6 +155,7 @@ export function interpretCommand(
         kind: "text",
         key: `${id}-l`,
         at: body ? { x: body.center.x, y: clamp(Math.min(...points.map(p => p.y)) - .04, .04, .96) } : { x: clamp(mid.x + 0.02, 0.04, 0.96), y: clamp(mid.y - 0.04, 0.04, 0.96) },
+        labelAnchor: body ? { x: body.center.x, y: Math.min(...points.map(p => p.y)) } : mid,
         text: label(command.label),
         size: "s",
         color,
@@ -174,6 +177,7 @@ export function interpretCommand(
         kind: "text",
         key: `${id}-l`,
         at: { x: clamp(center.x, 0.04, 0.96), y: clamp(center.y - r - 0.04, 0.04, 0.96) },
+        labelAnchor: { x: center.x, y: center.y - r },
         text: label(command.label),
         size: "s",
         color,
@@ -284,6 +288,7 @@ function midLabel(key: string, from: Pt, to: Pt, text: string, color: string, si
       y: clamp((from.y + to.y) / 2 + oy, 0.04, 0.96),
     },
     text: label(text),
+    labelAnchor: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 },
     size: "s",
     color,
   };

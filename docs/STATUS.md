@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 17:59 ET
+Updated: 2026-09-11 18:23 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, continuation of 179544c with merged origin/main
@@ -19,6 +19,16 @@ Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. D
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Concept teaching and diagram mechanics (2026-09-11): David's latest transcript showed repeated prerequisite questions after he said he did not understand, raw v_x/v_y labels, oversized standalone theta, and independent animated vector coordinates. Compact symbolic labels now use local MathJax at diagram size, matching their vector color. Static arrows can declare exact x/y projections with diagram.component. ANIM arrows support validated diagram.attach/component relationships, inherited from reused static IDs when references exist. Origins and projections resolve together at every frame; missing/cyclic references fail validation. A bounded, cached label plan considers the motion, backdrop, camera, and student ink; displaced labels retain subtle leader lines. SVG and snapshots use the same plan. Paper UI, toolbar, authorship, and page following remain intact.
+
+Runtime guidance now distinguishes concept instruction from graded-task elicitation: teach requested ungraded relationships/equations directly, then optionally check application; knowledgeable learners get a narrow answer. Workspace mode never overrides a graded request. Human PROMPT/PEDAGOGY and lib/types remain unchanged. Corrected ambiguous path-progress guidance: drawn is 0..1, not a point count; invalid values are rejected.
+
+Validation: clean isolated production build, focused lint/typecheck, math, diagram/animation mechanics, teaching, structured lessons, voice lifecycle, request deadlines, page following, workspace, and ink checks passed. Actual browser replay of fresh model output showed legible component math and two separate equations at 700px/380px board widths. A corrected timing fixture verified coherent moving origins, clear labels, and retained ink at rising/apex/landing states. This was an isolated rendering test, without microphone or TTS. The fixture route was removed and :3103 stopped; :3102 still serves this worktree.
+
+Limits: two real-model rounds did not establish reliable animation generation. First motion sample used unsupported colors, drawn=4, and three-point straight-segment movement; second used valid attachments but kept drawn=1 throughout, leaving the ball stationary at the path end. No runtime scene correction or third prompt retry was substituted for that failure. Second math/motion calls took 24.0s/33.1s, with first streamed content at 17.4s/21.2s. The model still asked a redundant question after explaining; a separate expert clarification took 46.8s. Graded request stayed protected but its refusal was too long. Timing includes model generation, not measured microphone-to-audio latency. Local artifacts: /tmp/boh-concept-quality*. Earlier user session also overlapped the previous cadence experiments/HMR; its fast-continue traces do not describe the final committed routing.
+
+Next: address model-generated motion semantics and benchmark task-specific model routing using these failed cases, brief expert clarifications, and graded misconceptions. David asked whether different models should handle different tasks; no provider/routing change has been made. Current fast route uses grok-4.20-0309-non-reasoning, substantive turns grok-4.6 with low effort. Avoid another broad prompt-only attempt or assuming a model swap guarantees valid diagrams. Hussein PRs remain open and untouched.
 
 Cadence and page-following (2026-09-11): inspected David's live transcript, rendered working board, and correlated server/playback traces. Eight substantive turns used reasoning (5.9 to 16.7s generation). The reply to Yes took 7.2s; Zero took 5.9s plus a 2.1s visual repair, and two recovery requests across the session contributed to redundant board work. Repeated app-provided waiting lines and long recaps of established givens amplified the wait. The board had three pages, with the current relation and givens legible; prior diagrams and labels remained in history. The old scroll policy deliberately stopped following while reading history, and smooth-scroll events could also disable following.
 

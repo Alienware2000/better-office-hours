@@ -2,7 +2,8 @@ import { layoutWriting } from "./writing";
 import { layoutDiagram } from './diagram-layout';
 import { composeDiagram } from './diagram-compose';
 import { closedBody, type BodyDot } from "./body";
-import { validateAnimation } from "./animation";
+import { validateAnimation, type DiagramAnimShape } from "./animation";
+import { diagramOptions } from './diagram-command';
 import type { AnimationSpec, DrawCommand } from "@/lib/types";
 import type { StudentInk } from "./colors";
 import { interpretCommand, type ShapeGroup } from "./geometry";
@@ -215,12 +216,20 @@ export function loadAnimation(input: unknown) {
     const label = source && 'label' in source ? source.label : previous && 'label' in previous ? previous.label : undefined;
     // Changing an object's representation should retain its established name.
     // An explicit empty label still lets the tutor remove it deliberately.
-    const labeled = shape.label !== undefined || label === undefined ? shape : { ...shape, label };
+    let labeled: DiagramAnimShape = shape.label !== undefined || label === undefined ? shape : { ...shape, label };
+    if (labeled.kind === 'arrow' && !labeled.diagram) {
+      const options = source ? diagramOptions(source) : (previous as DiagramAnimShape | undefined)?.diagram;
+      const target = options?.attach?.to ?? options?.component?.of;
+      if (options && (!target || validated.shapes.some(s => s.id === target))) {
+        labeled = { ...labeled, diagram: { attach: options.attach, component: options.component, labelSide: options.labelSide } };
+      }
+    }
     if (labeled.kind !== 'dot') return labeled;
     const appearance = (labeled as BodyDot).appearance ?? (source ? closedBody(source)?.appearance : undefined) ??
       (previous?.kind === 'dot' ? (previous as BodyDot).appearance : undefined);
     return appearance ? { ...labeled, appearance } : labeled;
   }) };
+  if (!validateAnimation(animation)) return false;
   // Reusing scene/object IDs explicitly continues this figure. Unrelated
   // animations still get a fresh page, preserving earlier work and ink.
   const shapeIds = new Set(animation.shapes.map(shape => shape.id));

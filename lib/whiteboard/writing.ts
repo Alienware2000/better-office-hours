@@ -1,7 +1,7 @@
 import type { Drawable, ShapeGroup } from './geometry';
 import { boardStyle, boardTextSize } from './style';
 import { isMathText, LABEL_FONT, MATH_FONT } from './text';
-import { hasLatex } from './math-source';
+import { hasLatex, isCompactMath } from './math-source';
 import { typesetMath } from './math-layout';
 
 type TextMark = Extract<Drawable, { kind: 'text' }>;
@@ -39,6 +39,7 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
   const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
+  if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color, false) ?? undefined }] };
   if (!note && !math && width(mark.text, .038, false) <= .91 && groups.some(group => group.geometry?.length)) return group;
   let fontSize = heading ? .057 : mark.size === 'm' ? .085 : .068;
   const available = 1 - margin * 2;

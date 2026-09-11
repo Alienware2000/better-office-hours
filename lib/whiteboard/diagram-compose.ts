@@ -44,6 +44,9 @@ export function composeDiagram<T extends ShapeGroup>(groups: T[]): T[] {
           if (inside({ x: center.x - r, y: center.y - r }) && inside({ x: center.x + r, y: center.y + r })) command = { ...source, center };
         }
       }
+    } else if (options?.component && source.op === 'arrow') {
+      const parent = resolve(options.component.of, depth + 1);
+      command = parent?.op === 'arrow' ? { ...source, from: parent.from, to: options.component.axis === 'x' ? { x: parent.to.x, y: parent.from.y } : { x: parent.from.x, y: parent.to.y } } : null;
     } else if (options?.attach && (source.op === 'arrow' || source.op === 'line')) {
       const attach = options.attach, target = resolve(attach.to, depth + 1);
       const at = target && anchor(target, attach.anchor);

@@ -10,6 +10,7 @@ export type DiagramOptions = {
   labelSide?: 'left' | 'right';
   contact?: { with: string; t: number; side: 'left' | 'right' };
   attach?: { to: string; anchor: 'center' | 'start' | 'end'; offset?: Pt };
+  component?: { of: string; axis: 'x' | 'y' };
 };
 export type DiagramCommand = DrawCommand & { diagram?: DiagramOptions };
 
@@ -36,5 +37,9 @@ export function diagramOptions(command: DrawCommand): DiagramOptions | null {
     if (a.offset !== undefined && (!object(a.offset) || !finite(a.offset.x) || !finite(a.offset.y) || Math.abs(a.offset.x) > .3 || Math.abs(a.offset.y) > .3)) return null;
   }
   if (input.contact && input.attach) return null;
+  if (input.component !== undefined) {
+    const c = input.component;
+    if (command.op !== 'arrow' || !object(c) || !id(c.of) || !['x', 'y'].includes(String(c.axis)) || input.attach) return null;
+  }
   return input as DiagramOptions;
 }
