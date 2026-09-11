@@ -81,6 +81,7 @@ export function useVoiceLoop() {
   });
   const abortRef = useRef<AbortController | null>(null);
   const turnAbortRef = useRef<AbortController | null>(null);
+  const transcriptionAbortRef = useRef<AbortController | null>(null);
   const playbackEpochRef = useRef(0);
   const playbackStartedAtRef = useRef(0);
   const playbackEndedAtRef = useRef(0);
@@ -162,6 +163,8 @@ export function useVoiceLoop() {
 
   const stopPlayback = useCallback(() => {
     pauseAnimation();
+    transcriptionAbortRef.current?.abort();
+    transcriptionAbortRef.current = null;
     playbackEpochRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = new AbortController();
@@ -295,17 +298,28 @@ export function useVoiceLoop() {
     setLayout("orb_only");
     setPointer(undefined);
     setHighlight(undefined);
-  }, [adoptKind, setLayout, stopPlayback]);
+    discardRecordingRef.current();
+    setInputEnabledRef.current(!pausedRef.current);
+    setOrb(pausedRef.current ? "idle" : "listening");
+  }, [adoptKind, setLayout, setOrb, stopPlayback]);
 
   const enterWorkspace = useCallback(() => {
+    stopPlayback();
+    turnAbortRef.current?.abort();
+    turnAbortRef.current = null;
+    discardRecordingRef.current();
     adoptKind("pset", true);
     setLayout("pset");
-  }, [adoptKind, setLayout]);
+    setInputEnabledRef.current(!pausedRef.current);
+    setOrb(pausedRef.current ? "idle" : "listening");
+  }, [adoptKind, setLayout, setOrb, stopPlayback]);
 
   // One paper on the desk at a time. Putting it away is a new homework
   // session, not a parked copy of the old one.
   const putAwayPset = useCallback(() => {
     stopPlayback();
+    discardRecordingRef.current();
+    setInputEnabledRef.current(!pausedRef.current);
     turnAbortRef.current?.abort();
     turnAbortRef.current = null;
     parkedRef.current.pset = null;
@@ -696,10 +710,10 @@ export function useVoiceLoop() {
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("pagehide", handlePageHide);
 
-    const transcribe = async (blob: Blob) => {
+    const transcribe = async (blob: Blob, signal: AbortSignal) => {
       const form = new FormData();
       form.set("file", blob, "speech.webm");
-      const response = await fetch("/api/agent/stt", { method: "POST", body: form });
+      const response = await fetch("/api/agent/stt", { method: "POST", body: form, signal });
       if (!response.ok) throw new Error("Could not hear that");
       const data = (await response.json()) as { text?: string };
       return (data.text ?? "").trim();
@@ -707,6 +721,12 @@ export function useVoiceLoop() {
 
     const stopRecorder = async () => {
       if (!recorder || recorder.state === "inactive") return;
+      const epoch = playbackEpochRef.current;
+      const controller = new AbortController();
+      transcriptionAbortRef.current = controller;
+      const current = () => !cancelled && !pausedRef.current &&
+        !controller.signal.aborted && epoch === playbackEpochRef.current;
+      setOrb("thinking");
       const done = new Promise<Blob>((resolve) => {
         recorder!.onstop = () => {
           resolve(new Blob(chunks, { type: recorder!.mimeType || "audio/webm" }));
@@ -716,15 +736,21 @@ export function useVoiceLoop() {
       recorder.stop();
       recordingRef.current = false;
       const blob = await done;
-      if (cancelled || blob.size < 1200) return;
       try {
-        const text = await transcribe(blob);
-        if (text) await sendRef.current(text);
+        if (!current() || blob.size < 1200) return;
+        const text = await transcribe(blob, controller.signal);
+        // A paused tab or a different desk must never receive an old recording,
+        // even when the transport completes despite cancellation.
+        if (!current()) return;
+        transcriptionAbortRef.current = null;
+        if (!isJunkSpeech(text)) await sendRef.current(text);
       } catch (err) {
-        if (!cancelled) {
+        if (current() && (err as Error).name !== "AbortError") {
           setError(err instanceof Error ? err.message : "Could not hear that");
-          setOrb("listening");
         }
+      } finally {
+        if (transcriptionAbortRef.current === controller) transcriptionAbortRef.current = null;
+        if (current() && !playingRef.current && !turnAbortRef.current) setOrb("listening");
       }
     };
 
