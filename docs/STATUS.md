@@ -2,15 +2,15 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 15:37 ET
+Updated: 2026-09-11 15:45 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
-Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on this branch) and awaits review. That does **not** block Hussein.
+Review: David explicitly approved merging his PRs #5 and #7. Hussein owns PRs #6 (context), #8 (recap, based on lane/context), and #9 (shell); keep all three open until David reviews them and gives separate merge approval.
 
-## Unblock for Hussein (read this first)
+## Hussein PRs remain open (read this first)
 
-**Hussein may begin the isolated recap card slice now** while PR #5 awaits review. He may also open additional lane PRs (context, recap, shell) from the latest `origin/main` without waiting for David's stress-test PR to merge.
+Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. David will review them later. This merge approval covers only David's PRs #5 and #7. Do not merge, close, or recreate Hussein's existing PRs.
 
 - Branch from `origin/main`: `lane/recap` (or `lane/context` / `lane/shell`).
 - Follow `docs/LANES.md` for the first reviewable slice boundaries.
@@ -20,13 +20,15 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 
 ## Now
 
-David explicitly authorized continued drawing/diagram work in a fresh task on 2026-09-11. PR #5 awaiting review does not block this follow-up. Continue from the pushed voice-stress-fixes branch, including 5cef623, rather than the older main baseline. Focus on smoother, clearer, more expressive narrated diagrams and reliable visual use while preserving the current UI and pedagogy. Do not restart completed microphone or typesetting work.
+Merge handoff: PR #7 was merged into main and its overlapping documentation reconciled into the voice branch without dropping newer work. PR #5 has David's explicit merge approval. All implementation changes were already committed and pushed; this integration changes documentation only. The tested voice/whiteboard baseline includes 5cef623 and fresh-task handoff 179544c. Continue diagram work from this integrated baseline. GitHub PR state records merge completion. No Hussein implementation branch was changed.
+
+David explicitly authorized continued drawing/diagram work in a fresh task on 2026-09-11. The approval to merge PR #5 does not block this follow-up. Continue from the pushed voice-stress-fixes branch, including 5cef623, rather than the older main baseline. Focus on smoother, clearer, more expressive narrated diagrams and reliable visual use while preserving the current UI and pedagogy. Do not restart completed microphone or typesetting work.
 
 Whiteboard continuity follow-up: narrated visual commands now wait for the actual audio playing event, so delayed synthesis/buffering cannot run the picture ahead of its sentence. Structured lessons retain resume/focus controls; a valid current-scene control no longer triggers a static recovery. LiveBoard carries the validated current animation spec/time/play state. Reusing scene IDs revises the same page, and reusing a static object ID animates it in place while preserving background geometry, established object labels, and student ink. Unrelated scenes still archive earlier work. Static curves now interpolate their declared points without inventing extrema, fixing misplaced markers; moving bodies use the same subtle fill style. No shared types, human prompt, topic triggers, or fixtures added to the runtime.
 
 Generation now keeps its 30s initial deadline, allows 20s between substantive streamed chunks, and has a hard 60s total ceiling for the reasoning pass. The old fixed deadline could discard a later animation even after drawing had started. Request IDs join development-only generation counts/timing with applied board revisions, including incomplete/cancelled responses, without recording transcripts/audio/credentials. Build, focused lint, lifecycle, structured lessons, request deadlines, teaching/repair, workspace, diagrams, and animation checks pass. A Chrome session using the actual uploaded rocket PDF, real Silero with synthetic input, real model output, and stubbed TTS first drew the setup and then animated the same rocket on the same page with student ink intact. This is a verified sequence, not proof that every model response chooses good visuals. It took about 10s to begin the first explanation and 21s to begin the motion explanation after their acknowledgements. The fast acknowledgement also asked an unnecessary question in this sample. Latency, pedagogical consistency, and the visual richness of generated figures remain limits. No mic tuning in this slice; David reports listening improving.
 
-Next: review the updated PR #5 and retest a fresh homework/concept exchange. If the board is blank, capture the request-matched Tutor visual response/playback traces before resetting. The old screenshot turns had no such trace, so their exact missing-drawing cause is not proven. Hussein remains unblocked. An initial browser test was invalidated by development hot reload during a code correction; another used an older cliff PDF fixture with a rocket follow-up, and its late animation did not arrive before cancellation. The final test used the real rocket PDF with no concurrent source edits. Do not tune the model against those invalid test inputs.
+Next: continue the authorized diagram follow-up and retest a fresh homework/concept exchange. If the board is blank, capture the request-matched Tutor visual response/playback traces before resetting. The old screenshot turns had no such trace, so their exact missing-drawing cause is not proven. Hussein remains unblocked. An initial browser test was invalidated by development hot reload during a code correction; another used an older cliff PDF fixture with a rocket follow-up, and its late animation did not arrive before cancellation. The final test used the real rocket PDF with no concurrent source edits. Do not tune the model against those invalid test inputs.
 
 Concept explanation follow-up: reproduced the screenshot's verbal-only definition with no teaching metadata or drawing. The first spoken desk entry also carries board availability/provenance before React mounts its preview, closing a separate first-turn context gap. Concept and homework desks now use a small structured fast-lane decision: conversation/brief definition may answer directly, while lessons and learner work hand off to the existing reasoning model with a short acknowledgement. The reasoning lane emits a structured teaching move and narrated drawing beats, translated back into the existing protected stream. Each complete beat can arrive before the rest of the lesson; its geometry/PDF focus waits for its narration in the voice queue. Supplemental PDF anchors, LaTeX, authorship, disclosure guards, and bounded visual repair remain intact. Homework setups use the same narrated transport and existing hint/disclosure limits. No topic matching, scripted scenes, human prompt/pedagogy edits, or shared-type changes.
 
@@ -124,15 +126,10 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 ## What to do next
 
-**Hussein (unblocked):** start `lane/recap` from `origin/main` and ship the isolated recap card PR per LANES.md. Open more lane PRs as needed. Do not wait for PR #5.
-
-**David:** keep reviewing PR #5 / stress-test on real mics when ready. Hardware checks do not gate Hussein.
-
-1. Hussein: branch `lane/recap` from latest `origin/main`, build the isolated recap card slice, open a PR to `main`.
-2. Hussein: may also open `lane/context` or `lane/shell` first-slice PRs in parallel if capacity allows; each PR stays inside its LANES.md boundary.
-3. David: review and merge Hussein's lane PRs independently of PR #5.
-4. Human mic check on the stress-test branch when convenient (headphones, then speakers): interruption, quiet voices, pauses, pronunciation, equation use, zoomed pointers. See STRESS-TEST.md.
-5. Canvas/Grok Bot operation and live cross-lane wiring still need a separate assignment; not part of the first isolated slices.
+1. David's fresh diagram task continues the integrated voice/whiteboard baseline with the documented pedagogy and no scripted runtime scenes.
+2. Leave Hussein's PRs #6, #8, and #9 open for David's later review. PR #8 is based on lane/context, so review its dependency deliberately. No merge permission has been given for these PRs.
+3. Retest live drawing cadence and real-device voice when convenient. Planning latency, diagram quality, and physical correctness still need observation; do not weaken pedagogy or microphone interruption to make a fixture pass.
+4. Canvas/Grok Bot operation and live cross-lane wiring still require a separate assignment.
 
 ## Validation
 
