@@ -35,9 +35,9 @@ Each lane is a branch off `main` named `lane/<name>`. Lanes touch only their own
 | voice | David | `app/(session)/voice/*`, `app/api/agent/*`, `lib/agent/*` |
 | workspace | David | `components/workspace/*`, `lib/pdf/*`, `app/api/pset/*` |
 | whiteboard | David | `components/whiteboard/*`, `components/scenes/*`, `lib/whiteboard/*` |
-| context | Teammate | `app/api/ingest/*`, `app/api/retrieve/*`, `lib/context/*`, `grokbot/*` |
-| recap | Teammate | `app/api/session/*`, `lib/session/*`, `components/recap/*` |
-| shell | Teammate | `app/(auth)/*`, `app/layout.tsx`, `components/orb/*`, `components/transcript/*`, `README.md` |
+| context | Hussein | `app/api/ingest/*`, `app/api/retrieve/*`, `lib/context/*`, `grokbot/*` |
+| recap | Hussein | `app/api/session/*`, `lib/session/*`, `components/recap/*` |
+| shell | Hussein | `app/(auth)/*`, `app/layout.tsx`, `components/orb/*`, `components/transcript/*`, `README.md` |
 
 Shared and frozen after tonight: `lib/types.ts` (all contracts below live here), `lib/db/schema.sql`, `.env.example`.
 

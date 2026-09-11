@@ -21,7 +21,7 @@ One line: a patient, context-aware tutor that talks you to the answer instead of
 - Judged on usefulness, craft, and speed. Three winners.
 - Submission: public GitHub repo with README containing a screenshot of building it in Cursor, usage instructions (logins, test accounts), and a public link to a 1 to 2 minute demo video. Submit at yale-ai.org/win.
 - Deadline: Friday, September 11, 2026, 11:59 PM.
-- Team: David Antwi and one teammate. Both build in Cursor with coding agents on their own machines.
+- Team: David Antwi and Hussein. Both build in Cursor with coding agents on their own machines.
 
 ## 4. The user experience
 

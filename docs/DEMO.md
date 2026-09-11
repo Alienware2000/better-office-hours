@@ -39,7 +39,7 @@ The Grok Bot running. The login screen. Do not tap the chips in the main take; t
 9. Try it: live URL, judge account credentials, what is preloaded. Note: demo course is PHYS 180 from a past term; the same flow works on any current Canvas course.
 10. Run locally: clone, `.env.example`, `npm run dev`.
 11. Roadmap: professor console, lecture transcription, live screen share for coding courses, iPad handwriting, spaced review reminders.
-12. Team: David Antwi and [teammate], Yale.
+12. Team: David Antwi and Hussein, Yale.
 
 ## Submission checklist
 

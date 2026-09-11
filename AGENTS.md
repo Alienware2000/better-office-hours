@@ -1,6 +1,6 @@
 # AGENTS.md
 
-You are a coding agent working on Better Office Hours, a voice-first tutor for Yale students being built in about 36 hours for a hackathon. Two humans (David and a teammate) run agents on two machines against this repo. Other agents and harnesses will pick up the same repo. The repo is the source of truth, not any chat.
+You are a coding agent working on Better Office Hours, a voice-first tutor for Yale students being built in about 36 hours for a hackathon. Two humans (David and Hussein) run agents on two machines against this repo. Other agents and harnesses will pick up the same repo. The repo is the source of truth, not any chat.
 
 ## Read in this order
 
@@ -54,4 +54,4 @@ Before you stop a session, even if the slice is unfinished:
 2. Update `docs/NOTES.md` under your lane: what works, what is stubbed, what the other lanes need to know. Keep it to a few lines.
 3. Commit those files with the slice and push the lane branch (or `main` if you are on the shared scaffold).
 
-A teammate or another harness should be able to clone, read STATUS, and continue without the previous chat.
+Hussein or another harness should be able to clone, read STATUS, and continue without the previous chat.

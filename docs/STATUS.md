@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-10 23:27 ET
+Updated: 2026-09-10 23:31 ET
 By: Whiteboard lane
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/whiteboard` (from `lane/workspace`)
@@ -15,7 +15,7 @@ One adaptive desk now handles homework, concepts, and other requests. The orb an
 
 Fixed two entry issues: concept state previously never rendered a workspace, and paused tabs claimed voice on microphone initialization, interrupting other tabs. Only an activated tab now claims voice. Starting the orb clears the old handoff message and resumes a suspended audio context. Speech intent accepts homework, home work, p set, assignments, and concept/other requests before waiting for a model tag.
 
-Whiteboard state parks separately with homework and concept sessions and restores paused. Notes do not replace the homework PDF. The existing declarative animation runtime and runtime-only visual hints remain in place. No changes to the human prompt, pedagogy, or shared types. All work is local on `lane/whiteboard`; no push or PR for these slices.
+Whiteboard state parks separately with homework and concept sessions and restores paused. Notes do not replace the homework PDF. The existing declarative animation runtime and runtime-only visual hints remain in place. No changes to the human prompt, pedagogy, or shared types. David approved the current direction and authorized publishing `lane/whiteboard`. Hussein is the teammate responsible for the context, recap, and shell lanes. Hardware feel checks below remain before merging.
 
 ## What to do next
 
@@ -62,9 +62,9 @@ Whiteboard state parks separately with homework and concept sessions and restore
 | voice | David | `lane/voice` | first pass on GitHub; later voice work is on workspace / whiteboard |
 | workspace | David | `lane/workspace` | PR #1 open; desk pass approved |
 | whiteboard | David | `lane/whiteboard` | **adaptive desk + animation in**; waiting on human feel check |
-| context | Teammate | not started | types ready; `lib/db/schema.sql` missing |
-| recap | Teammate | not started | |
-| shell | Teammate | not started | VoiceSession still composes the split |
+| context | Hussein | not started | types ready; `lib/db/schema.sql` missing |
+| recap | Hussein | not started | |
+| shell | Hussein | not started | VoiceSession still composes the split |
 
 ## Run
 
