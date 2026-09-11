@@ -22,6 +22,25 @@ function normalizeText(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
+function validateSource(source: CourseSourceRecord): void {
+  const required = [
+    ["courseId", source.courseId],
+    ["documentId", source.documentId],
+    ["documentTitle", source.documentTitle],
+    ["storagePath", source.storagePath],
+  ] as const;
+
+  for (const [name, value] of required) {
+    if (!value.trim()) throw new Error(`${name} must not be empty`);
+  }
+  if (
+    source.page !== undefined &&
+    (!Number.isInteger(source.page) || source.page < 0)
+  ) {
+    throw new Error("page must be a non-negative integer");
+  }
+}
+
 function findBreak(text: string, start: number, targetEnd: number): number {
   if (targetEnd >= text.length) return text.length;
 
@@ -62,6 +81,7 @@ export function chunkSourceRecord(
   source: CourseSourceRecord,
   options: ChunkingOptions = {},
 ): IndexedCourseChunk[] {
+  validateSource(source);
   const maxCharacters = options.maxCharacters ?? DEFAULT_MAX_CHARACTERS;
   const overlapCharacters =
     options.overlapCharacters ?? DEFAULT_OVERLAP_CHARACTERS;
@@ -78,8 +98,15 @@ export function chunkSourceRecord(
 
   return splitText(source.text, maxCharacters, overlapCharacters).map(
     (text, index) => {
+      const identity = JSON.stringify([
+        source.courseId,
+        source.documentId,
+        source.page ?? null,
+        index,
+        text,
+      ]);
       const chunk: Chunk = {
-        id: `${source.documentId}:${index}:${stableHash(text)}`,
+        id: `${source.documentId}:${source.page ?? "document"}:${index}:${stableHash(identity)}`,
         documentId: source.documentId,
         text,
         page: source.page,
@@ -102,5 +129,11 @@ export function chunkSourceRecords(
   sources: CourseSourceRecord[],
   options: ChunkingOptions = {},
 ): IndexedCourseChunk[] {
-  return sources.flatMap((source) => chunkSourceRecord(source, options));
+  const unique = new Map<string, IndexedCourseChunk>();
+  for (const item of sources.flatMap((source) =>
+    chunkSourceRecord(source, options),
+  )) {
+    unique.set(`${item.courseId}:${item.chunk.id}`, item);
+  }
+  return [...unique.values()];
 }

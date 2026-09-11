@@ -46,7 +46,9 @@ export function rankCourseChunks(
   const queryTerms = terms(request.query);
   if (!request.courseId.trim() || queryTerms.length === 0) return [];
 
-  const limit = Math.max(1, Math.min(request.limit ?? 5, 20));
+  const requestedLimit = request.limit ?? 5;
+  if (!Number.isFinite(requestedLimit) || requestedLimit <= 0) return [];
+  const limit = Math.min(Math.floor(requestedLimit), 20);
   return index
     .filter((item) => item.courseId === request.courseId)
     .map((item) => ({ item, score: score(item, queryTerms) }))

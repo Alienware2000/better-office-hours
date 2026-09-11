@@ -28,7 +28,7 @@ function load(file) {
   return loaded.exports;
 }
 
-const { chunkSourceRecords } = load("lib/context/chunk.ts");
+const { chunkSourceRecord, chunkSourceRecords } = load("lib/context/chunk.ts");
 const { retrieveStudentChunks } = load("lib/context/retrieve.ts");
 const { retrieveServerReferenceChunks } = load(
   "lib/context/server-reference.ts",
@@ -69,6 +69,56 @@ const index = chunkSourceRecords(sources, {
   maxCharacters: 140,
   overlapCharacters: 20,
 });
+
+const longSource = {
+  courseId: "math-120",
+  documentId: "notes-2",
+  documentKind: "lecture",
+  documentTitle: "Limits and λ notation",
+  storagePath: "math-120/notes-2.pdf",
+  page: 3,
+  text: [
+    "For ε > 0, choose δ so the input remains close to the limit point.",
+    "The expression λ² + x² preserves its mathematical symbols after chunking.",
+    "A repeated explanation makes this source long enough to split predictably.",
+    "The final sentence verifies that no chunk exceeds the configured boundary.",
+  ].join(" "),
+};
+const longChunks = chunkSourceRecord(longSource, {
+  maxCharacters: 140,
+  overlapCharacters: 20,
+});
+assert.ok(longChunks.length > 1);
+assert.ok(longChunks.every((item) => item.chunk.text.length <= 140));
+assert.ok(longChunks.some((item) => item.chunk.text.includes("λ²")));
+assert.deepEqual(
+  longChunks.map((item) => item.chunk.id),
+  chunkSourceRecord(longSource, {
+    maxCharacters: 140,
+    overlapCharacters: 20,
+  }).map((item) => item.chunk.id),
+);
+
+const repeated = chunkSourceRecords([longSource, longSource], {
+  maxCharacters: 140,
+  overlapCharacters: 20,
+});
+assert.equal(repeated.length, longChunks.length);
+
+const sameTextNextPage = chunkSourceRecord(
+  { ...longSource, page: 4 },
+  { maxCharacters: 140, overlapCharacters: 20 },
+);
+assert.notEqual(sameTextNextPage[0].chunk.id, longChunks[0].chunk.id);
+
+assert.throws(
+  () => chunkSourceRecord({ ...longSource, courseId: " " }),
+  /courseId/,
+);
+assert.throws(
+  () => chunkSourceRecord({ ...longSource, page: -1 }),
+  /page/,
+);
 
 const lectureChunk = index.find((item) => item.chunk.documentId === "lecture-4");
 assert.ok(lectureChunk);
@@ -123,6 +173,14 @@ assert.deepEqual(
 );
 assert.deepEqual(
   retrieveStudentChunks(index, { courseId: "phys-180", query: "the and of" }),
+  [],
+);
+assert.deepEqual(
+  retrieveStudentChunks(index, {
+    courseId: "phys-180",
+    query: "horizontal velocity",
+    limit: 0,
+  }),
   [],
 );
 
