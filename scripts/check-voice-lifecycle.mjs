@@ -15,7 +15,7 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null, repairResponse = null } = {}) {
+async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false } = {}) {
   const effects = [], states = [], requests = [], recordings = [];
   const inputAudioState = { value: 'running' };
   const stt = deferred();
@@ -60,7 +60,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     Audio: class {
       paused = false;
       constructor() { audio.push(this); }
-      play() { this.onplaying?.(); if (!manualAudio) queueMicrotask(() => this.onended?.()); return Promise.resolve(); }
+      play() { if (!deferPlaying) this.onplaying?.(); if (!manualAudio) queueMicrotask(() => this.onended?.()); return Promise.resolve(); }
       pause() { this.paused = true; }
     },
     structuredClone, queueMicrotask,
@@ -90,6 +90,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
       if (url.endsWith('/stt')) return (sttCount++ ? sttNext : stt).promise; // Deliberately ignores abort.
       if (url.endsWith('/llm') && JSON.parse(options.body).visualRepair && repairResponse) return repairResponse;
       if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: llmText } }] })}\n\ndata: [DONE]\n\n`);
+      if (url.endsWith('/tts') && deferredTts) return deferredTts;
       if (url.endsWith('/tts')) return failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
       throw new Error(`Unexpected request: ${url}`);
     },
@@ -464,3 +465,23 @@ console.log('PASS: one visual repair, no added speech or clearing, and late-resp
   test.hook.pauseVoice();await speaking;test.cleanup();
 }
 console.log('PASS: orientation withholds premature equations; geometry recovery cannot change the teaching move.');
+
+// Synthesis and browser buffering must not play a visual before its narration.
+for (const cancel of [false, true]) {
+  const tts = deferred();
+  const test = await mount({ llmText: '[TEACH move=orient visual=diagram][DRAW {"op":"circle","id":"object","center":{"x":0.4,"y":0.5},"r":0.05}] Here is the object.', manualAudio: true, deferredTts: tts.promise, deferPlaying: true });
+  const speaking = test.hook.sendUtterance('Picture this situation');
+  await settle();
+  assert.equal(test.marks.length, 0, 'Pending synthesis leaves this beat pending');
+  tts.resolve(new Response(new Blob(['audio'])));
+  await settle();
+  assert.equal(test.marks.length, 0, 'Calling play before the playing event cannot start the visual');
+  if (cancel) test.hook.pauseVoice();
+  test.audio[0].onplaying();
+  assert.equal(test.marks.length, cancel ? 0 : 1, 'Only an audible, uncancelled sentence releases its drawing');
+  test.audio[0].onplaying();
+  assert.equal(test.marks.length, cancel ? 0 : 1, 'Buffer recovery does not repeat drawing commands');
+  test.audio[0].onended();
+  await speaking; test.cleanup();
+}
+console.log('PASS: delayed synthesis, buffered playback, repeated playing events, and cancellation preserve visual/narration synchronization.');

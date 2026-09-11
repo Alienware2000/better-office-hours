@@ -204,10 +204,29 @@ export function redoStudentInk() {
 }
 
 export function loadAnimation(input: unknown) {
-  const animation = validateAnimation(input);
-  if (!animation) return false;
-  // A moving explanation gets its own space instead of covering equations.
-  if (state.animation || state.student.length || state.groups.some(group => group.id !== 'topic')) state = nextPage(state);
+  const validated = validateAnimation(input);
+  if (!validated) return false;
+  const animation: AnimationSpec = { ...validated, shapes: validated.shapes.map(shape => {
+    if (shape.kind === 'axes' || shape.kind === 'text' || shape.label !== undefined) return shape;
+    const source = state.groups.find(group => group.id === shape.id)?.source;
+    const previous = state.animation?.id === validated.id ? state.animation.shapes.find(item => item.id === shape.id) : undefined;
+    const label = source && 'label' in source ? source.label : previous && 'label' in previous ? previous.label : undefined;
+    // Changing an object's representation should retain its established name.
+    // An explicit empty label still lets the tutor remove it deliberately.
+    return label === undefined ? shape : { ...shape, label };
+  }) };
+  // Reusing scene/object IDs explicitly continues this figure. Unrelated
+  // animations still get a fresh page, preserving earlier work and ink.
+  const shapeIds = new Set(animation.shapes.map(shape => shape.id));
+  const continuing = state.animation?.id === animation.id ||
+    (!state.animation && state.groups.some(group => group.source && shapeIds.has(group.id)));
+  if (!continuing && (state.animation || state.student.length || state.groups.some(group => group.id !== 'topic'))) state = nextPage(state);
+  if (continuing) {
+    // The animated object replaces its static counterpart, not the backdrop.
+    // Drop source references to replaced shapes rather than leave dependents
+    // attached to their old position. Composition marks these unresolved.
+    state = { ...state, groups: layoutDiagram(composeDiagram(state.groups.filter(group => !shapeIds.has(group.id))), state.student) };
+  }
   state = { ...state, open: true, animation, time: 0, playing: true, focus: null };
   emit();
   return true;

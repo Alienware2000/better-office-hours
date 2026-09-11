@@ -392,11 +392,13 @@ export function useVoiceLoop() {
       deep,
       signal,
       playbackEpoch,
+      onProgress,
     }: {
       event?: SessionEvent;
       deep: boolean;
       signal: AbortSignal;
       playbackEpoch: number;
+      onProgress?: () => void;
     }): Promise<{ full: string; turn: AgentTurn; spoken: Promise<void> }> => {
       // Each model pass has its own tag stream. Reset so a deep turn after
       // [THINK] does not skip DRAW commands that share indices with the lead-in.
@@ -431,11 +433,14 @@ export function useVoiceLoop() {
       let historyMessage: ChatMessage | null = null;
       let spoken: Promise<void> = Promise.resolve();
       let preparationQueue: Promise<unknown> = Promise.resolve();
+      let pendingVisuals: AgentTurn[] = [];
 
       // Shortness is a tutor instruction, never a silent client-side audio cut.
       const enqueueSpeech = (chunk: string) => {
         const trimmed = chunk.trim();
         if (!trimmed || signal.aborted || playbackEpoch !== playbackEpochRef.current) return;
+        const visuals = pendingVisuals;
+        pendingVisuals = [];
         const previousText = saidSoFar;
         saidSoFar = [saidSoFar, trimmed].filter(Boolean).join(" ");
         const audioSignal = abortRef.current?.signal;
@@ -454,7 +459,17 @@ export function useVoiceLoop() {
         spoken = enqueueSpeechTask(async () => {
           if (playbackEpoch !== playbackEpochRef.current || signal.aborted) return;
           if (speechFailure) throw speechFailure;
+          let started = false;
           try { await speak(trimmed, previousText, playbackEpoch, prepared, () => {
+            if (started) return;
+            started = true;
+            // Playback may wait on synthesis or browser buffering. Start both
+            // ink and motion when the sentence is audible, not when queued.
+            visuals.forEach(applyTurn);
+            if (process.env.NODE_ENV !== 'production' && visuals.length) {
+              const board = getBoardState();
+              console.info('Tutor visual playback ' + JSON.stringify({ request: response.headers.get('x-tutor-request'), deep, beats: visuals.length, page: board.pageId, groups: board.groups?.length, animation: Boolean(board.animation), revision: board.revision }));
+            }
             heard = [heard, trimmed].filter(Boolean).join(" ");
             if (!captionStarted) { addTurn("tutor", heard); captionStarted = true; }
             else reviseLastTutorTurn(heard);
@@ -468,6 +483,7 @@ export function useVoiceLoop() {
 
       const full = await readSseText(response, (raw) => {
         if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
+        onProgress?.();
         const partial = parseAgentTurn(raw);
         // Both static marks and animation share the speech queue. A tag waits
         // for its preceding words rather than drawing the whole reply upfront.
@@ -475,9 +491,7 @@ export function useVoiceLoop() {
         for (const beat of beats.slice(beatsApplied)) {
           const pending = beat.speechBefore.slice(emitted).trim();
           if (pending) { enqueueSpeech(pending); emitted = beat.speechBefore.length; }
-          spoken = enqueueSpeechTask(async () => {
-            if (!signal.aborted && playbackEpoch === playbackEpochRef.current) applyTurn(beat.turn);
-          });
+          pendingVisuals.push(beat.turn);
         }
         beatsApplied = beats.length;
         if (partial.mode) applyTurn({ speech: "", mode: partial.mode });
@@ -497,8 +511,17 @@ export function useVoiceLoop() {
 
       const leftover = turn.speech.slice(emitted).trim();
       if (leftover) enqueueSpeech(leftover);
+      // Legacy/silent drawing turns may end in tags without spoken words.
+      // They still wait for preceding narration and obey interruption.
+      if (pendingVisuals.length) {
+        const visuals = pendingVisuals;
+        pendingVisuals = [];
+        spoken = enqueueSpeechTask(async () => {
+          if (!signal.aborted && !speechFailure && playbackEpoch === playbackEpochRef.current) visuals.forEach(applyTurn);
+        });
+      }
       let visualRepair: Promise<void> = Promise.resolve();
-      if (needsBoardRepair(turn)) {
+      if (needsBoardRepair(turn, getBoardState().animation)) {
         visualRepair = withRequestTimeout(signal, 6000, 'Board preparation timed out', async repairSignal => {
           const response = await fetch('/api/agent/llm', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: repairSignal,
@@ -583,7 +606,9 @@ export function useVoiceLoop() {
       if (lead.turn.think) {
         // Fired before waiting on the lead-in audio, so the reasoning wait
         // happens underneath it rather than after it.
-        const deep = withRequestTimeout(signal, 30000, "The tutor took too long. Please try again.", signal => runPass({ event, deep: true, signal, playbackEpoch }));
+        const deep = withRequestTimeout(signal, 30000, "The tutor took too long. Please try again.",
+          (signal, onProgress) => runPass({ event, deep: true, signal, playbackEpoch, onProgress }),
+          { idleMilliseconds: 20000, totalMilliseconds: 60000 });
         void deep.catch(() => {});
         await lead.spoken;
         if (playbackEpoch === playbackEpochRef.current && !playingRef.current) setOrb("thinking");

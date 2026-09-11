@@ -1,4 +1,4 @@
-import type { AgentTurn, DrawCommand } from '@/lib/types';
+import type { AgentTurn, AnimationSpec, DrawCommand } from '@/lib/types';
 import { interpretCommand } from '@/lib/whiteboard/geometry';
 import { validateAnimation } from '@/lib/whiteboard/animation';
 
@@ -47,8 +47,10 @@ export function teachingDraw(command: DrawCommand, intent?: TeachingIntent): Dra
   return command;
 }
 
-export function needsBoardRepair(turn: TeachingTurn): boolean {
+export function needsBoardRepair(turn: TeachingTurn, currentAnimation?: AnimationSpec | null): boolean {
   if (turn.think || !turn.teaching || turn.teaching.visual === 'none') return false;
+  const scene = validateAnimation(turn.board?.animation) ?? currentAnimation;
+  if (scene && (turn.board?.animControl?.resume || scene.shapes.some(shape => shape.id === turn.board?.animControl?.focus))) return false;
   const animation = Boolean(validateAnimation(turn.board?.animation));
   const drawn = (turn.board?.commands ?? []).filter((command, i) => interpretCommand(command, i)?.kind === 'draw');
   if (turn.teaching.visual === 'notes') return !animation && !drawn.length;

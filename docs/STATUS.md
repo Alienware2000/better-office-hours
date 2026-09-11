@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 15:15 ET
+Updated: 2026-09-11 15:37 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,12 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Whiteboard continuity follow-up: narrated visual commands now wait for the actual audio playing event, so delayed synthesis/buffering cannot run the picture ahead of its sentence. Structured lessons retain resume/focus controls; a valid current-scene control no longer triggers a static recovery. LiveBoard carries the validated current animation spec/time/play state. Reusing scene IDs revises the same page, and reusing a static object ID animates it in place while preserving background geometry, established object labels, and student ink. Unrelated scenes still archive earlier work. Static curves now interpolate their declared points without inventing extrema, fixing misplaced markers; moving bodies use the same subtle fill style. No shared types, human prompt, topic triggers, or fixtures added to the runtime.
+
+Generation now keeps its 30s initial deadline, allows 20s between substantive streamed chunks, and has a hard 60s total ceiling for the reasoning pass. The old fixed deadline could discard a later animation even after drawing had started. Request IDs join development-only generation counts/timing with applied board revisions, including incomplete/cancelled responses, without recording transcripts/audio/credentials. Build, focused lint, lifecycle, structured lessons, request deadlines, teaching/repair, workspace, diagrams, and animation checks pass. A Chrome session using the actual uploaded rocket PDF, real Silero with synthetic input, real model output, and stubbed TTS first drew the setup and then animated the same rocket on the same page with student ink intact. This is a verified sequence, not proof that every model response chooses good visuals. It took about 10s to begin the first explanation and 21s to begin the motion explanation after their acknowledgements. The fast acknowledgement also asked an unnecessary question in this sample. Latency, pedagogical consistency, and the visual richness of generated figures remain limits. No mic tuning in this slice; David reports listening improving.
+
+Next: review the updated PR #5 and retest a fresh homework/concept exchange. If the board is blank, capture the request-matched Tutor visual response/playback traces before resetting. The old screenshot turns had no such trace, so their exact missing-drawing cause is not proven. Hussein remains unblocked. An initial browser test was invalidated by development hot reload during a code correction; another used an older cliff PDF fixture with a rocket follow-up, and its late animation did not arrive before cancellation. The final test used the real rocket PDF with no concurrent source edits. Do not tune the model against those invalid test inputs.
 
 Concept explanation follow-up: reproduced the screenshot's verbal-only definition with no teaching metadata or drawing. The first spoken desk entry also carries board availability/provenance before React mounts its preview, closing a separate first-turn context gap. Concept and homework desks now use a small structured fast-lane decision: conversation/brief definition may answer directly, while lessons and learner work hand off to the existing reasoning model with a short acknowledgement. The reasoning lane emits a structured teaching move and narrated drawing beats, translated back into the existing protected stream. Each complete beat can arrive before the rest of the lesson; its geometry/PDF focus waits for its narration in the voice queue. Supplemental PDF anchors, LaTeX, authorship, disclosure guards, and bounded visual repair remain intact. Homework setups use the same narrated transport and existing hint/disclosure limits. No topic matching, scripted scenes, human prompt/pedagogy edits, or shared-type changes.
 

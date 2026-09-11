@@ -1,6 +1,7 @@
 import type { AnimationSpec, AnimShape, DrawCommand, Pt } from "../types";
 import { interpretCommand, type ShapeGroup } from "./geometry";
 import { typesetMath } from './math-layout';
+import type { DiagramCommand } from './diagram-command';
 import { isMathText } from './text';
 
 const clamp = (n: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, n));
@@ -206,7 +207,7 @@ export function animationFrame(
           ...("at" in frame ? { at: resolve(frame.at) } : {}),
         })), t)
       : frames.get(s.id)!;
-    let command: DrawCommand;
+    let command: DrawCommand | DiagramCommand;
     switch (s.kind) {
       case "axes":
         command = {
@@ -233,6 +234,7 @@ export function animationFrame(
           id: s.id,
           center: resolve(f.at),
           r: clamp(Number(f.r), 0.006, 0.04),
+          diagram: { fill: "tint" },
           label: s.label,
         };
         break;

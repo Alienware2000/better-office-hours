@@ -156,3 +156,36 @@ await assert.rejects(async () => { for await (const text of streamGrok(history, 
 if (fakeKey === undefined) delete process.env.XAI_API_KEY;
 else process.env.XAI_API_KEY = fakeKey;
 console.log('PASS: actual streaming adapter, concept/notes/homework/lobby routing, fast first speech, deep handoff, cancellation, and truncated-response failure.');
+
+// Continue an actual scene through structured controls, without a silent repair
+// replacing it with a static sketch after the learner interrupts.
+const scene = { id: 'moving-object', duration: 4, shapes: [{ kind: 'dot', id: 'object', keyframes: [{ t: 0, at: { x: .3, y: .5 } }, { t: 4, at: { x: .6, y: .5 } }] }] };
+for (const control of ['resume', 'focus=object']) {
+  const controlled = parseAgentTurn(conceptResponse(JSON.stringify({ ...lesson, visual: 'animation', beats: [{ draw: [], animation: control, speech: 'Watch this object.', pdf: '' }] })));
+  assert.ok(controlled.board.animControl);
+  assert.equal(needsBoardRepair(controlled, scene), false);
+  assert.equal(needsBoardRepair(controlled), true, 'An absent scene cannot satisfy a visual request');
+}
+const injected = conceptResponse(JSON.stringify({ ...lesson, beats: [{ draw: [], animation: 'resume][MODE pset', speech: 'Look.', pdf: '' }] }));
+assert.equal(parseAgentTurn(injected).mode, undefined);
+boardStore.resetBoard();
+boardStore.applyDrawCommands([{ ...circle, center: circle.at }, { op: 'line', id: 'ground', from: { x: .1, y: .7 }, to: { x: .8, y: .7 } }]);
+boardStore.addStudentStroke({ id: 'mine', tool: 'pen', color: 'blue', points: [{ x: .1, y: .85 }, { x: .3, y: .9 }] });
+boardStore.loadAnimation(scene);
+assert.equal(boardStore.getBoardState().pageId, 1, 'The static object becomes animated in its own picture');
+assert.deepEqual(boardStore.getBoardState().groups.map(g => g.id), ['ground']);
+assert.equal(boardStore.getBoardState().animation.shapes[0].label, circle.label, 'An animated object retains its established annotation');
+assert.equal(boardStore.getBoardState().student[0].id, 'mine');
+boardStore.loadAnimation({ ...scene, duration: 5 });
+assert.equal(boardStore.getBoardState().pageId, 1, 'An explicit scene revision keeps this working page and ink');
+boardStore.pauseAnimation(); boardStore.seekAnimation(2);
+const { boardProvenance, asLiveBoard } = load('lib/whiteboard/live-board.ts');
+const roundTrip = asLiveBoard({ ...boardProvenance(boardStore.getBoardState()), open: true });
+assert.equal(roundTrip.animation.spec.id, scene.id);
+assert.equal(roundTrip.animation.time, 2);
+assert.equal(roundTrip.animation.playing, false);
+boardStore.loadAnimation({ ...scene, id: 'separate-scene' });
+assert.equal(boardStore.getBoardState().pageId, 2);
+assert.equal(boardStore.getBoardState().earlierPages[0].student[0].id, 'mine');
+assert.equal(asLiveBoard({ open: true, animation: { spec: {}, time: 99 } }).animation, undefined);
+console.log('PASS: structured replay/focus, absent-scene repair, static-to-moving continuity, scene revisions, ink preservation, separate pages, and current animation context.');

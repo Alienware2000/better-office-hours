@@ -57,3 +57,10 @@ store.resetBoard();store.applyDrawCommands([support,body]);store.applyDrawComman
 console.log('PASS: flat model metadata normalizes without overriding explicit options; references stay scoped to their working page.');
 const anonymous=[interpretCommand({op:'line',from:{x:.1,y:.1},to:{x:.2,y:.2}},4).group,interpretCommand({op:'circle',center:{x:.5,y:.5},r:.04},5).group];assert.deepEqual(composeDiagram(anonymous).map(g=>g.id),anonymous.map(g=>g.id),'Fallback IDs survive repeated composition');
 const rectangle=parseDrawCommand(JSON.stringify({op:'rect',id:'box',at:{x:.3,y:.3},w:.2,h:.12,diagram:{fill:'tint'}}));assert.ok(interpretCommand(rectangle,0).group.drawables.some(mark=>mark.kind==='fill'),'Rectangle normalization retains body styling');
+
+// Declared curve points must remain on the rendered path, including extrema.
+const samples = [{ x: .1, y: .65 }, { x: .3, y: .35 }, { x: .5, y: .25 }, { x: .7, y: .35 }, { x: .9, y: .65 }];
+const curved = interpretCommand({ op: 'curve', id: 'sampled-path', points: samples }, 1).group;
+for (const point of samples) assert.ok(curved.geometry[0].some(p => Math.hypot(p.x - point.x, p.y - point.y) < 1e-9), 'A marker at a declared sample sits on the curve');
+assert.ok(curved.geometry[0].every(p => p.y >= .25 && p.y <= .65 && p.x >= .1 && p.x <= .9), 'Curve smoothing stays within the sampled extrema');
+console.log('PASS: smooth static curves pass through their declared points without invented extrema.');

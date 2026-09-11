@@ -3,6 +3,7 @@ import { GROK_DEEP_MODEL, GROK_MODEL, streamGrok } from "@/lib/agent/grok";
 import { setLivePage, type LivePage } from "@/lib/pdf/live-page";
 import { asLiveBoard, setLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
+import { parseAgentTurn } from "@/lib/agent/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,8 @@ export async function POST(req: Request) {
       : null,
   );
   const model = deep ? GROK_DEEP_MODEL : GROK_MODEL;
-  const id = "chatcmpl-boh";
+  const id = `tutor-${crypto.randomUUID()}`;
+  const started = Date.now();
   const created = Math.floor(Date.now() / 1000);
   const encoder = new TextEncoder();
 
@@ -83,8 +85,12 @@ export async function POST(req: Request) {
       const send = (payload: unknown) => {
         if (!cancelled) controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
       };
+      let raw = '';
+      let firstVisualMs: number | null = null;
       try {
         for await (const content of streamGrok(history, event, deep, upstream.signal, visualRepair)) {
+          raw += content;
+          if (firstVisualMs === null && /\[(?:DRAW|ANIM) /.test(raw)) firstVisualMs = Date.now() - started;
           send({
             id,
             object: "chat.completion.chunk",
@@ -92,6 +98,10 @@ export async function POST(req: Request) {
             model,
             choices: [{ index: 0, delta: { content }, finish_reason: null }],
           });
+        }
+        if (process.env.NODE_ENV !== 'production') {
+          const turn = parseAgentTurn(raw);
+          console.info('Tutor visual response ' + JSON.stringify({ request: id, deep, visualRepair, elapsedMs: Date.now() - started, firstVisualMs, think: turn.think === true, teaching: turn.teaching, commands: turn.board?.commands.length ?? 0, animation: Boolean(turn.board?.animation), control: Boolean(turn.board?.animControl) }));
         }
         send({
           id,
@@ -102,6 +112,7 @@ export async function POST(req: Request) {
         });
         if (!cancelled) controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (error) {
+        if (process.env.NODE_ENV !== 'production') console.info('Tutor visual incomplete ' + JSON.stringify({ request: id, deep, visualRepair, elapsedMs: Date.now() - started, firstVisualMs, cancelled, receivedCharacters: raw.length }));
         const message = error instanceof Error ? error.message : "Grok request failed";
         send({ error: { message } });
       } finally {
@@ -117,6 +128,7 @@ export async function POST(req: Request) {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
+      "X-Tutor-Request": id,
     },
   });
 }

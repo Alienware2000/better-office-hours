@@ -305,21 +305,26 @@ function surfaceHatching(id: string, from: Pt, to: Pt, side: 'left' | 'right'): 
   return { kind: 'path', key: `${id}-surface`, d, color: TUTOR_HEX.muted, width: 1, opacity: .55 };
 }
 
+// Interpolate the declared points, including extrema and attached markers.
+// Bound each cubic to its segment box so smoothing cannot invent an overshoot.
+function curveSegments(points: Pt[]) {
+  return points.slice(1).map((end, i) => {
+    const start = points[i], before = points[Math.max(0, i - 1)], after = points[Math.min(points.length - 1, i + 2)];
+    const bound = (p: Pt): Pt => ({
+      x: clamp(p.x, Math.min(start.x, end.x), Math.max(start.x, end.x)),
+      y: clamp(p.y, Math.min(start.y, end.y), Math.max(start.y, end.y)),
+    });
+    return { start, end,
+      a: bound({ x: start.x + (end.x - before.x) / 6, y: start.y + (end.y - before.y) / 6 }),
+      b: bound({ x: end.x - (after.x - start.x) / 6, y: end.y - (after.y - start.y) / 6 }),
+    };
+  });
+}
+
 function curvePath(points: Pt[]): string {
-  if (points.length === 2) {
-    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
-  }
-  let d = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length - 1; i++) {
-    const current = points[i];
-    const next = points[i + 1];
-    const mx = (current.x + next.x) / 2;
-    const my = (current.y + next.y) / 2;
-    d += ` Q ${current.x} ${current.y} ${mx} ${my}`;
-  }
-  const last = points[points.length - 1];
-  d += ` T ${last.x} ${last.y}`;
-  return d;
+  if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+  return `M ${points[0].x} ${points[0].y}` + curveSegments(points).map(({ a, b, end }) =>
+    ` C ${a.x} ${a.y} ${b.x} ${b.y} ${end.x} ${end.y}`).join('');
 }
 
 function circlePath(center: Pt, r: number): string {
@@ -333,20 +338,12 @@ function circlePath(center: Pt, r: number): string {
 
 function curveTrace(points: Pt[]): Pt[] {
   if (points.length === 2) return points;
-  const trace: Pt[] = [points[0]];
-  let start = points[0];
-  let previousControl = start;
-  for (let i = 1; i < points.length; i++) {
-    const final = i === points.length - 1;
-    const control = final ? { x: 2 * start.x - previousControl.x, y: 2 * start.y - previousControl.y } : points[i];
-    const end = final ? points[i] : { x: (points[i].x + points[i + 1].x) / 2, y: (points[i].y + points[i + 1].y) / 2 };
-    for (let j = 1; j <= 12; j++) {
-      const t = j / 12, u = 1 - t;
-      trace.push({ x: u * u * start.x + 2 * u * t * control.x + t * t * end.x, y: u * u * start.y + 2 * u * t * control.y + t * t * end.y });
-    }
-    start = end; previousControl = control;
-  }
-  return trace;
+  return [points[0], ...curveSegments(points).flatMap(({ start, a, b, end }) =>
+    Array.from({ length: 12 }, (_, i) => {
+      const t = (i + 1) / 12, u = 1 - t;
+      return { x: u ** 3 * start.x + 3 * u * u * t * a.x + 3 * u * t * t * b.x + t ** 3 * end.x,
+        y: u ** 3 * start.y + 3 * u * u * t * a.y + 3 * u * t * t * b.y + t ** 3 * end.y };
+    }))];
 }
 
 export function isDrawCommand(value: unknown): value is DrawCommand {
