@@ -7,7 +7,7 @@ import type { StudentInk } from '@/lib/whiteboard/colors';
 import type { BoardTool } from './BoardInkBar';
 
 type Gesture = {
-  pointer: number; tool: BoardTool; color: StudentInk; origin: DOMRect;
+  pointer: number; pageId: number; tool: BoardTool; color: StudentInk; origin: DOMRect;
   start: InkPoint; points: InkPoint[]; before: BoardStroke[]; next: BoardStroke[];
   ids: string[]; box: InkBounds | null; moved: boolean;
 };
@@ -49,6 +49,7 @@ export function useBoardInk(tool: BoardTool, color: StudentInk) {
   const finish = (event: ReactPointerEvent<HTMLDivElement>, cancel = false) => {
     const g = gesture.current;
     if (!g || event.pointerId !== g.pointer) return;
+    cancel ||= g.pageId !== getBoardState().pageId;
     if (!cancel) edit(g, event);
     gesture.current = null;
     cancelAnimationFrame(frame.current); frame.current = 0;
@@ -77,7 +78,7 @@ export function useBoardInk(tool: BoardTool, color: StudentInk) {
         const hit = [...before].reverse().find(s => hitInk(s.points, point, { x: 9 / origin.width, y: 9 / origin.height }));
         const ids = tool === 'select' && hit ? selected.includes(hit.id) ? selected : [hit.id] : [];
         setSelected(ids);
-        gesture.current = { pointer: event.pointerId, tool, color, origin, start: point, points: [point], before, next: before, ids, box: null, moved: false };
+        gesture.current = { pointer: event.pointerId, pageId: getBoardState().pageId, tool, color, origin, start: point, points: [point], before, next: before, ids, box: null, moved: false };
         event.currentTarget.setPointerCapture(event.pointerId);
         if (tool === 'eraser') edit(gesture.current, event);
         publish();

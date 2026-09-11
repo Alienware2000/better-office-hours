@@ -1,5 +1,7 @@
 "use client";
 
+import { HistoryIcon } from "@/components/workspace/HistoryIcon";
+
 import type { StudentInk } from "@/lib/whiteboard/colors";
 import { STUDENT_HEX } from "@/lib/whiteboard/colors";
 
@@ -56,8 +58,8 @@ export function BoardInkBar({
         ))}
       </div>
       <div className="ink-cluster">
-        <button className="ink-tool" type="button" aria-label="Undo your ink" title="Undo your ink" disabled={!canUndo} onClick={onUndo}>↶</button>
-        <button className="ink-tool" type="button" aria-label="Redo your ink" title="Redo your ink" disabled={!canRedo} onClick={onRedo}>↷</button>
+        <button className="ink-tool" type="button" aria-label="Undo your ink" title="Undo your ink" disabled={!canUndo} onClick={onUndo}><HistoryIcon /></button>
+        <button className="ink-tool" type="button" aria-label="Redo your ink" title="Redo your ink" disabled={!canRedo} onClick={onRedo}><HistoryIcon redo /></button>
       </div>
     </div>
   );

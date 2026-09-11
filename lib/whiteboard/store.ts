@@ -13,10 +13,22 @@ export type BoardStroke = {
 
 export type BoardGroup = ShapeGroup & {
   appear: "pending" | "done";
+  version?: number;
+};
+
+export type BoardPage = {
+  id: number;
+  groups: BoardGroup[];
+  student: BoardStroke[];
+  animation: AnimationSpec | null;
+  time: number;
+  focus: string | null;
 };
 
 export type BoardState = {
   revision: number;
+  pageId: number;
+  earlierPages: BoardPage[];
   open: boolean;
   groups: BoardGroup[];
   student: BoardStroke[];
@@ -33,6 +45,7 @@ export type BoardState = {
 
 const empty = (): BoardState => ({
   revision: 0,
+  pageId: 1, earlierPages: [],
   open: false,
   groups: [],
   student: [],
@@ -74,6 +87,19 @@ export function resetBoard() {
   emit();
 }
 
+function nextPage(current: BoardState): BoardState {
+  if (!current.groups.length && !current.student.length && !current.animation) return current;
+  const page: BoardPage = { id: current.pageId, groups: current.groups, student: current.student, animation: current.animation, time: current.time, focus: current.focus };
+  return { ...current, pageId: current.pageId + 1, earlierPages: [...current.earlierPages, page], groups: [], student: [], studentPast: [], studentFuture: [], studentSince: '', animation: null, playing: false, time: 0, focus: null, pulseId: null };
+}
+
+export function continueBoardPage() {
+  const next = nextPage(state);
+  if (next === state) return;
+  state = next;
+  emit();
+}
+
 export function applyDrawCommands(commands: DrawCommand[]) {
   if (!commands.length) return;
   let next: BoardState = { ...state, open: true, groups: [...state.groups] };
@@ -97,17 +123,21 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, pulseId: op.id };
       continue;
     }
-    // A new reserved topic begins a new tutor note. Never relabel old givens
-    // as the next phase, and never remove the student's separate ink layer.
+    // A new topic continues below the old work, with its student ink intact.
     const previousTopic = next.groups.find(group => group.id === "topic");
     const words = (group: ShapeGroup) => group.drawables.flatMap(mark => mark.kind === "text" ? [mark.text] : []).join(" ").replace(/\s+/g, " ").trim().toLowerCase();
     if (op.group.id === "topic" && previousTopic && words(previousTopic) !== words(op.group)) {
-      next = { ...next, groups: [], animation: null, playing: false, time: 0, focus: null, pulseId: null };
+      next = nextPage(next);
     }
+    let laidOut = layoutWriting(op.group, next.groups, next.student);
+    if (!laidOut) {
+      next = nextPage(next);
+      laidOut = layoutWriting(op.group, [], []);
+    }
+    if (!laidOut) continue;
     const existing = next.groups.findIndex((group) => group.id === op.group.id);
-    const laidOut = layoutWriting(op.group, next.groups, next.student);
-    if (!laidOut) { console.warn("Whiteboard writing has no free space; keep existing content."); continue; }
-    const group: BoardGroup = { ...laidOut, appear: "pending" };
+    if (existing >= 0 && JSON.stringify(next.groups[existing].drawables) === JSON.stringify(laidOut.drawables)) continue;
+    const group: BoardGroup = { ...laidOut, appear: "pending", version: next.seq };
     if (existing >= 0) {
       const groups = next.groups.slice();
       groups[existing] = group;
@@ -171,6 +201,8 @@ export function redoStudentInk() {
 export function loadAnimation(input: unknown) {
   const animation = validateAnimation(input);
   if (!animation) return false;
+  // A moving explanation gets its own space instead of covering equations.
+  if (state.animation || state.student.length || state.groups.some(group => group.id !== 'topic')) state = nextPage(state);
   state = { ...state, open: true, animation, time: 0, playing: true, focus: null };
   emit();
   return true;
@@ -204,6 +236,6 @@ export function focusAnimation(id: string) {
 
 // Park each desk independently, always restoring a still frame.
 export function restoreBoard(snapshot: BoardState) {
-  state = { ...structuredClone(snapshot), studentPast: snapshot.studentPast ?? [], studentFuture: snapshot.studentFuture ?? [], playing: false };
+  state = { ...structuredClone(snapshot), pageId: snapshot.pageId ?? 1, earlierPages: structuredClone(snapshot.earlierPages ?? []), studentPast: structuredClone(snapshot.studentPast ?? []), studentFuture: structuredClone(snapshot.studentFuture ?? []), playing: false };
   emit();
 }

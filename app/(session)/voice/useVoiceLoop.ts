@@ -9,7 +9,7 @@ import { getLiveBoard } from "@/lib/whiteboard/live-board";
 import { validateAnimation } from "@/lib/whiteboard/animation";
 import { needsBoardRepair, speechBoardCue } from "@/lib/whiteboard/speech-cue";
 import { interpretCommand, isDrawCommand } from "@/lib/whiteboard/geometry";
-import { getBoardState, restoreBoard, type BoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
+import { getBoardState, restoreBoard, type BoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, continueBoardPage, openBoard, resetBoard } from "@/lib/whiteboard/store";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
 import { createSpeechDetector, isSpeechFrame } from "./speech-detector";
 import { SpeechAudioCapture } from "./audio-capture";
@@ -505,8 +505,9 @@ export function useVoiceLoop() {
       const student = historyRef.current.filter(message => message.role === 'user').at(-1)?.content ?? '';
       const hasVisual = Boolean(validateAnimation(turn.board?.animation)) ||
         Boolean(turn.board?.commands.some((command, index) => interpretCommand(command, index)?.kind === 'draw'));
+      const hasDiagram = Boolean(validateAnimation(turn.board?.animation)) || Boolean(turn.board?.commands.some((command, index) => command.op !== 'text' && interpretCommand(command, index)?.kind === 'draw'));
       let visualRepair: Promise<void> = Promise.resolve();
-      if (!turn.think && needsBoardRepair(student, turn.speech, hasVisual)) {
+      if (!turn.think && needsBoardRepair(student, turn.speech, hasVisual, hasDiagram)) {
         visualRepair = withRequestTimeout(signal, 6000, 'Board preparation timed out', async repairSignal => {
           const response = await fetch('/api/agent/llm', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: repairSignal,
@@ -519,9 +520,10 @@ export function useVoiceLoop() {
           // This lane cannot speak, navigate, point at the PDF, or clear work.
           const commands = (repair.board?.commands ?? []).filter(command => !['clear', 'remove'].includes(command.op)).slice(0, 5);
           const renderable = commands.filter((command, index) => interpretCommand(command, index)?.kind === 'draw');
-          if (renderable.length) applyDrawCommands(renderable);
-          const animation = repair.board?.animation;
-          if (animation && 'shapes' in animation && loadAnimation(animation) && window.matchMedia('(prefers-reduced-motion: reduce)').matches) pauseAnimation();
+          if (renderable.length) {
+            if (renderable.some(command => command.op !== 'text')) continueBoardPage();
+            applyDrawCommands(renderable);
+          }
         }).catch(error => { if (!signal.aborted) console.warn('Board preparation did not complete:', (error as Error).name); });
       }
       const finished = Promise.all([spoken, visualRepair]).then(() => { if (speechFailure) throw speechFailure; });

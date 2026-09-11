@@ -367,3 +367,15 @@ for(const cancel of [false,true]) {
   test.hook.pauseVoice();await speaking;test.cleanup();
 }
 console.log('PASS: one visual repair, no added speech or clearing, and late-response cancellation.');
+
+{
+  const repair=deferred();
+  const test=await mount({llmText:'[DRAW {"op":"text","id":"relation","at":{"x":0.5,"y":0.3},"text":"F = ma"}] The equation relates force and acceleration. Which quantity is missing?',manualAudio:true,repairResponse:repair.promise});
+  const speaking=test.hook.sendUtterance("I don't understand the setup");await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')&&JSON.parse(r.body).visualRepair).length,1,'A formula alone must not satisfy a request to picture the situation');
+  const content='[DRAW {"op":"circle","id":"object","center":{"x":0.5,"y":0.5},"r":0.1}][DRAW {"op":"arrow","id":"force","from":{"x":0.5,"y":0.4},"to":{"x":0.5,"y":0.2},"label":"force"}]';
+  repair.resolve(new Response(`data: ${JSON.stringify({choices:[{delta:{content}}]})}\n\ndata: [DONE]\n\n`));await settle();
+  assert.ok(test.marks.some(mark=>mark.op==='circle')&&test.marks.some(mark=>mark.op==='arrow'),'Setup recovery contains actual geometry');
+  test.hook.pauseVoice();await speaking;test.cleanup();
+}
+console.log('PASS: setup confusion gets geometry recovery even when the primary turn already wrote an equation.');

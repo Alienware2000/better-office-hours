@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { BoardText } from "./BoardText";
-import { AnimLayer } from "./AnimLayer";
+import { BoardDrawing } from "./BoardDrawing";
+import { groupReveal } from "@/lib/whiteboard/reveal";
 import { projectileFixture } from "@/components/scenes/projectile";
 import { boardStyle } from "@/lib/whiteboard/style";
 import type { StudentInk } from "@/lib/whiteboard/colors";
@@ -31,13 +31,16 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
   const [tool, setTool] = useState<BoardTool>("pen");
   const [color, setColor] = useState<StudentInk>("blue");
   const paperRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const followRef = useRef(true);
+  const [readingEarlier, setReadingEarlier] = useState(false);
   const ink = useBoardInk(tool, color);
   const reduceMotion = useReducedMotion() ?? false;
   const board = getBoardState();
   const isOpen = expanded || board.open;
   const pendingKey = board.groups
     .filter((group) => group.appear === "pending")
-    .map((group) => group.id)
+    .map((group) => `${group.id}:${group.version ?? 0}`)
     .join(",");
 
   useEffect(() => { if (expanded) openBoard(); }, [expanded]);
@@ -77,16 +80,22 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
       pending.forEach((group) => markGroupShown(group.id));
       return;
     }
-    const wait = window.setTimeout(() => markGroupShown(pending[0].id), 560);
+    const wait = window.setTimeout(() => markGroupShown(pending[0].id), groupReveal(pending[0]).duration);
     return () => window.clearTimeout(wait);
-  }, [pendingKey, reduceMotion]);
+  }, [pendingKey, reduceMotion, board.pageId]);
+
+  useEffect(() => {
+    if (followRef.current && scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.querySelector<HTMLElement>('.board-current')?.offsetTop ?? 0, behavior: reduceMotion ? 'instant' : 'smooth' });
+    }
+  }, [board.pageId, isOpen, reduceMotion]);
 
   useEffect(() => {
     setBoardSnapshotProvider(() => {
       const current = getBoardState();
       if (!active) return null;
-      const metadata = { ...boardProvenance(current), open: current.open, studentShapesSince: current.studentSince };
-      const surface = paperRef.current?.querySelector('.board-surface');
+      const metadata = { ...boardProvenance(current), open: current.open, studentShapesSince: current.studentSince, readingEarlier: !followRef.current };
+      const surface = paperRef.current?.querySelector('.board-current .board-surface');
       const rect = surface?.getBoundingClientRect();
       if (!rect || rect.width < 8 || rect.height < 8) return { ...metadata, imageUrl: "" };
       const snap = snapshotBoard(
@@ -122,6 +131,15 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
     ? null
     : board.groups.find((group) => group.appear === "pending")?.id ?? null;
 
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    if (!scroll || !followRef.current || !enteringId) return;
+    const group = Array.from(scroll.querySelectorAll<SVGGElement>('.board-current [data-board-group]')).find(el => el.dataset.boardGroup === enteringId);
+    if (!group) return;
+    const bounds = group.getBoundingClientRect(), viewport = scroll.getBoundingClientRect();
+    if (bounds.bottom > viewport.bottom - 16) scroll.scrollBy({ top: bounds.bottom - viewport.bottom + 24, behavior: reduceMotion ? 'instant' : 'smooth' });
+  }, [enteringId, pendingKey, board.pageId, reduceMotion]);
+
   const selectedStrokes = (ink.preview ?? board.student).filter(s => ink.selected.includes(s.id));
   const selectionBounds = selectedStrokes.length ? inkBounds(selectedStrokes.flatMap(s => s.points)) : null;
 
@@ -147,64 +165,40 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
             <span className="board-author-tutor" title="Equations and diagrams written by the tutor"><span aria-hidden>𝑓</span> Tutor notes</span>
             <span className="board-author-you" title="Your editable pen and highlighter marks"><span aria-hidden>〰</span> Your ink</span>
           </div>
-          {onExpand && <button className="board-expand" type="button" aria-label="Expand whiteboard" title="Expand whiteboard" onClick={onExpand}><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4M4 4l5 5m11-5-5 5M4 20l5-5m11 5-5-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg></button>}
+          <div className="board-page-controls">
+            {board.earlierPages.length > 0 && <span className="board-page-count">{readingEarlier ? 'Earlier notes' : `Page ${board.pageId}`}</span>}
+            {readingEarlier && <button className="board-latest" type="button" onClick={() => { followRef.current = true; setReadingEarlier(false); scrollRef.current?.scrollTo({ top: scrollRef.current.querySelector<HTMLElement>('.board-current')?.offsetTop ?? 0, behavior: reduceMotion ? 'instant' : 'smooth' }); }}>Latest ↓</button>}
+            {onExpand && <button className="board-expand" type="button" aria-label="Expand whiteboard" title="Expand whiteboard" onClick={onExpand}><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4M4 4l5 5m11-5-5 5M4 20l5-5m11 5-5-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg></button>}
+          </div>
         </div>
-        <div className="board-canvas">
-        <div className={`board-surface is-${tool}`} {...ink.handlers}>
-          <svg className="board-layer" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden>
-            <g className="board-tutor-layer"><title>Tutor notes</title>
-            {board.groups.map((group) => {
-              if (group.appear === "pending" && group.id !== enteringId) return null;
-              const enter = group.id === enteringId;
-              return (
-                <g
-                  key={group.id}
-                  className={["board-group", board.pulseId === group.id ? "is-pulse" : ""]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  {group.drawables.map((mark) => {
-                    if (mark.kind === "text") {
-                      return (
-                        <BoardText key={mark.key} mark={mark} entering={enter} />
-                      );
-                    }
-                    return (
-                      <path
-                        key={mark.key}
-                        className={[
-                          mark.kind === "head" ? "board-head" : "board-path",
-                          mark.kind === "path" && mark.dashed && !enter ? "is-dashed" : "",
-                          enter ? "is-entering" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        d={mark.d}
-                        pathLength={mark.kind === "path" ? 1 : undefined}
-                        stroke={mark.color}
-                      />
-                    );
-                  })}
-                </g>
-              );
-            })}
-            {board.animation && <AnimLayer spec={board.animation} time={board.time} focus={board.focus} />}
-            </g>
-            <g className="board-your-layer"><title>Your ink</title>
-            {(ink.preview ?? board.student).map(stroke => (
-              <path key={stroke.id} className={`board-student ${stroke.tool === 'highlighter' ? 'is-high' : 'is-pen'}`}
-                data-ink-id={stroke.id} d={inkPath(stroke.points)} stroke={STUDENT_HEX[stroke.color]}><title>Your ink</title></path>
-            ))}
-            {ink.draft && <path className={`board-student ${tool === 'highlighter' ? 'is-high' : 'is-pen'}`} d={inkPath(ink.draft)} stroke={STUDENT_HEX[color]} />}
-            </g>
-            {selectionBounds && <rect className="board-selection" x={selectionBounds.x - .014} y={selectionBounds.y - .014} width={selectionBounds.w + .028} height={selectionBounds.h + .028} rx=".008" />}
-            {ink.box && <rect className="board-selection is-box" x={ink.box.x} y={ink.box.y} width={ink.box.w} height={ink.box.h} />}
-
-          </svg>
-        </div>
+        <div className="board-scroll" ref={scrollRef} onScroll={event => {
+          const el = event.currentTarget;
+          const nearEnd = el.scrollTop >= (el.querySelector<HTMLElement>('.board-current')?.offsetTop ?? 0) - 48;
+          followRef.current = nearEnd;
+          setReadingEarlier(!nearEnd);
+        }}>
+          {board.earlierPages.map(page => <div className="board-note-page" key={page.id}>
+            <div className="board-page-divider">Page {page.id} · Earlier notes</div>
+            <div className="board-canvas board-archived" aria-label={`Earlier board page ${page.id}`}>
+              <div className="board-surface"><svg className="board-layer" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden><BoardDrawing {...page} earlier /></svg></div>
+            </div>
+          </div>)}
+          <div className="board-note-page board-current" data-board-page={board.pageId}>
+            {board.earlierPages.length > 0 && <div className="board-page-divider">Page {board.pageId} · Working page</div>}
+            <div className="board-canvas">
+              <div className={`board-surface is-${tool}`} {...ink.handlers}>
+                <svg className="board-layer" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden>
+                  <BoardDrawing groups={board.groups} student={ink.preview ?? board.student} animation={board.animation} time={board.time} focus={board.focus} pulseId={board.pulseId} enteringId={enteringId} />
+                  {ink.draft && <g className="board-your-layer"><path className={`board-student ${tool === 'highlighter' ? 'is-high' : 'is-pen'}`} d={inkPath(ink.draft)} stroke={STUDENT_HEX[color]} /></g>}
+                  {selectionBounds && <rect className="board-selection" x={selectionBounds.x - .014} y={selectionBounds.y - .014} width={selectionBounds.w + .028} height={selectionBounds.h + .028} rx=".008" />}
+                  {ink.box && <rect className="board-selection is-box" x={ink.box.x} y={ink.box.y} width={ink.box.w} height={ink.box.h} />}
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="board-selection-tools">
-          {selectionBounds ? <><span>Your ink · {selectedStrokes.length} {selectedStrokes.length === 1 ? 'stroke' : 'strokes'}</span><button type="button" onClick={() => { editInk(() => setStudentStrokes(board.student.filter(s => !ink.selected.includes(s.id)))); ink.setSelected([]); }}>Delete selected ink</button></> : <span className="board-tool-hint">{tool === 'select' ? 'Drag around your ink to select it' : tool === 'eraser' ? 'Erase your ink, tutor notes stay in place' : 'Your pen and highlighter marks stay editable'}</span>}
+          {selectionBounds ? <><span>Your ink · {selectedStrokes.length} {selectedStrokes.length === 1 ? 'stroke' : 'strokes'}</span><button type="button" onClick={() => { editInk(() => setStudentStrokes(board.student.filter(s => !ink.selected.includes(s.id)))); ink.setSelected([]); }}>Delete selected ink</button></> : <span className="board-tool-hint">{tool === 'select' ? 'Drag around your ink to select it' : tool === 'eraser' ? 'Erase your ink, tutor notes stay in place' : board.earlierPages.length ? 'Your tools edit the working page' : 'Your pen and highlighter marks stay editable'}</span>}
         </div>
         {isOpen && <BoardInkBar tool={tool} color={color}
           onTool={next => { setTool(next); if (next !== 'select') ink.setSelected([]); }}

@@ -41,3 +41,28 @@ store.undoStudentInk();assert.equal(store.getBoardState().student.length,2,'One 
 for(let i=0;i<35;i++)store.addStudentStroke({...stroke,id:String(i)});
 assert.equal(store.getBoardState().studentPast.length,30,'History stays bounded');
 console.log('PASS: smooth paths, tap dots, segment erasing, aspect-aware hit tests, constrained movement, author-isolated undo/redo, session restore, and bounded ink history.');
+
+const {textReveal,groupReveal}=load('lib/whiteboard/reveal.ts');
+const reveal=textReveal('a + Δy');
+assert.equal(reveal.glyphs.join(''),'a + Δy');
+assert.equal(textReveal('e\u0301').glyphs.length,1,'Combining characters reveal together');
+assert.ok(reveal.delays.every((delay,index)=>!index || delay>reveal.delays[index-1]));
+const multi={id:'lines',drawables:[{kind:'text',text:'First line'},{kind:'text',text:'Next line'}]};
+assert.ok(groupReveal(multi).delays[1]>=textReveal('First line').duration,'Wrapped lines write sequentially');
+store.resetBoard();
+store.addStudentStroke({id:'page-one-ink',tool:'pen',color:'blue',points:[{x:0,y:0},{x:1,y:1}]});
+store.applyDrawCommands([{op:'text',id:'new-line',at:{x:.5,y:.3},text:'F = ma'}]);
+assert.equal(store.getBoardState().pageId,2,'Full writing area creates a continuation page');
+assert.equal(store.getBoardState().earlierPages[0].student[0].id,'page-one-ink');
+assert.equal(store.getBoardState().groups[0].id,'new-line','Writing is retained rather than rejected');
+store.addStudentStroke(stroke);store.undoStudentInk();
+assert.equal(store.getBoardState().earlierPages[0].student.length,1,'Current undo never alters earlier pages');
+const notebook=structuredClone(store.getBoardState());store.resetBoard();store.restoreBoard(notebook);
+assert.deepEqual(store.getBoardState().earlierPages,notebook.earlierPages,'All pages survive desk restoration');
+const {needsSetupPicture}=load('lib/agent/visual-help.ts');
+const {needsBoardRepair}=load('lib/whiteboard/speech-cue.ts');
+for(const said of ["I don't understand the setup", "I'm totally lost", "I don't know where to start", "Can you describe the situation?"])assert.ok(needsSetupPicture(said));
+for(const said of ['The acceleration is constant','What is the equation again?','I got the setup, now what?'])assert.ok(!needsSetupPicture(said));
+assert.ok(needsBoardRepair("I don't understand the setup",'The equation is F = ma. Think about which force acts on the object.',true,false),'A formula alone does not satisfy a setup diagram request');
+assert.ok(!needsBoardRepair("I don't understand the setup",'Here is a diagram showing the two objects and their interaction.',true,true));
+console.log('PASS: progressive grapheme timing, sequential lines, overflow continuation, preserved earlier ink, page restoration, and contingent setup-diagram repair.');

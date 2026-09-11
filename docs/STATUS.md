@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 03:40 ET
+Updated: 2026-09-11 03:59 ET
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,12 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Live writing/space follow-up: board text reveals by grapheme while retaining its full layout, with sequential wrapped lines and duration-based completion. Identical note updates do not replay. New topic headings, full writing areas, and moving scenes that would cover notes continue on a fresh page. Earlier pages retain tutor content and student ink as read-only scrollback. The working page remains editable, with independent undo. The board viewport is shorter, its tools stay outside scrolling content, and Latest returns from earlier notes without incoming work stealing the reader's scroll. The PDF toolbar stays in one slim row, horizontally scrollable on narrow desks, with proper SVG undo/redo icons.
+
+Setup confusion now gets explicit runtime guidance to describe the situation, draw meaningful geometry, then ask one concrete noticing/prediction question. A formula-only reply no longer satisfies that visual request. One bounded silent repair can add a static sketch on its own page. A live Grok 4.6 setup probe produced an orienting sentence, diagram, and prediction question without a computed answer. Two fast-model pendulum probes still produced invalid animation schemas and inconsistent attachments; both were rejected. A live static recovery sketch rendered correctly. Do not claim general physical animation reliability. Main motion generation remains enabled for valid specs; the repair lane uses static DRAW only.
+
+Build, focused lint, ink/teaching/workspace/animation/lifecycle regressions pass. Chrome verified progressive writing without reflow, scrollback and ink preservation, automatic continuation, reader scroll preservation, fixed tools, expansion, reduced motion, and single-row PDF controls at 1400/1000/700px. Real drag/edit/undo checks still pass. Live generated setup/recovery output was parsed and rendered through the actual SVG board. Earlier pages are currently reference-only; the model receives the current working-page image plus earlier topic summaries and a reading-earlier flag. No shared contracts, human PROMPT/PEDAGOGY, or model selection changes. Review PR #5 before merge.
 
 Visible authorship/editing follow-up: the board labels Tutor notes and Your ink, with blue as the student default and hover emphasis for each author. Student strokes can be selected, moved, recolored, deleted, and undone/redone independently of tutor notes. History is bounded to 30 edits and follows the parked board. Board tools now live below a square drawing area, with a stable selection row and an expand control that preserves work. The teaching rail has more width and captions no longer fade under a mask.
 

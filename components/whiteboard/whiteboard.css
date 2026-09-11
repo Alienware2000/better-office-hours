@@ -16,15 +16,15 @@
 .board-surface.is-eraser { cursor: cell; }
 .board-layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .board-tutor-layer, .board-your-layer { transition: opacity .15s; }
-.board-heading:has(.board-author-you:hover) ~ .board-canvas .board-tutor-layer,
-.board-heading:has(.board-author-tutor:hover) ~ .board-canvas .board-your-layer { opacity: .2; }
+.board-heading:has(.board-author-you:hover) ~ .board-scroll .board-tutor-layer,
+.board-heading:has(.board-author-tutor:hover) ~ .board-scroll .board-your-layer { opacity: .2; }
 .board-path, .board-head, .board-student { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .board-path, .board-head { stroke-width: 2.25px; }
 .board-path.is-dashed { stroke-dasharray: 7px 6px; }
 .board-path.is-entering { stroke-dasharray: 1; stroke-dashoffset: 1; animation: board-draw .52s ease both; }
 .board-head.is-entering { opacity: 0; animation: board-fade .18s ease .36s forwards; }
 .board-label { font-weight: 500; letter-spacing: .01em; paint-order: stroke; stroke: #fffcf6; stroke-width: .009; stroke-linejoin: round; pointer-events: none; }
-.board-label.is-writing { animation: board-write .5s cubic-bezier(.22,1,.36,1) both; }
+.board-glyph { animation: board-character 80ms step-end both; }
 .board-group.is-pulse .board-label { animation: board-text-focus 1.1s ease-in-out 2; }
 .board-group.is-pulse .board-path, .board-group.is-pulse .board-head { animation: board-pulse 1.1s ease-in-out 2; }
 .board-student.is-pen { stroke-width: 2.5px; }
@@ -36,12 +36,12 @@
 .ink-bar.board-ink-bar { position: static; transform: none; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .25rem; flex-shrink: 0; border: 0; border-top: 1px solid #3024180d; border-radius: 0; background: transparent; box-shadow: none; padding: .5rem .3rem; width: 100%; }
 .board-ink-bar .ink-cluster { display: flex; align-items: center; gap: .08rem; }
 .board-ink-bar .ink-cluster + .ink-cluster { margin-left: .12rem; border-left: 1px solid #30241814; padding-left: .35rem; }
-.board-ink-bar .ink-tool { display: grid; width: 2rem; height: 2rem; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #746f65; cursor: pointer; font-size: 21px; }
+.board-ink-bar .ink-tool { display: grid; width: 1.75rem; height: 1.75rem; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #746f65; cursor: pointer; font-size: 21px; }
 .board-ink-bar .ink-tool svg { width: 1.12rem; height: 1.12rem; }
 .board-ink-bar .ink-tool.is-on { background: #e8eef9; color: #3468c0; }
 .board-ink-bar .ink-tool:hover:not(:disabled):not(.is-on) { background: #eee9df; color: #292621; }
 .board-ink-bar .ink-tool:disabled { opacity: .3; cursor: default; }
-.board-ink-bar .ink-swatch { width: 1rem; height: 1rem; margin: 0 .2rem; border: 2px solid #fffcf6; border-radius: 50%; box-shadow: 0 0 0 1px #30241826; cursor: pointer; }
+.board-ink-bar .ink-swatch { width: .9rem; height: .9rem; margin: 0 .14rem; border: 2px solid #fffcf6; border-radius: 50%; box-shadow: 0 0 0 1px #30241826; cursor: pointer; }
 .board-ink-bar .ink-swatch.is-on { box-shadow: 0 0 0 1px #fffcf6, 0 0 0 2.5px #3468c0; }
 .board-paper button:focus-visible { outline: 2px solid #3468c0; outline-offset: 2px; }
 .board-transport { display: flex; flex-shrink: 0; align-items: center; gap: .7rem; padding: .25rem .85rem .55rem; color: #938b7d; font-size: 11px; font-variant-numeric: tabular-nums; }
@@ -49,11 +49,20 @@
 .board-transport input { flex: 1; min-width: 0; accent-color: #b95832; height: 3px; cursor: ew-resize; }
 @keyframes board-draw { to { stroke-dashoffset: 0; } }
 @keyframes board-fade { to { opacity: 1; } }
-@keyframes board-write { from { clip-path: inset(-30% 100% -30% 0); opacity: .35; } to { clip-path: inset(-30% 0 -30% 0); opacity: 1; } }
+@keyframes board-character { from { opacity: 0; } to { opacity: 1; } }
 @keyframes board-text-focus { 50% { opacity: .55; } }
 @keyframes board-pulse { 50% { stroke-width: 4.2px; opacity: .55; } }
-@media (prefers-reduced-motion: reduce) { .board-path.is-entering, .board-head.is-entering, .board-label.is-writing, .board-group.is-pulse .board-label, .board-group.is-pulse .board-path, .board-group.is-pulse .board-head { animation: none; stroke-dashoffset: 0; opacity: 1; } .board-tutor-layer, .board-your-layer { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .board-path.is-entering, .board-head.is-entering, .board-glyph, .board-group.is-pulse .board-label, .board-group.is-pulse .board-path, .board-group.is-pulse .board-head { animation: none; stroke-dashoffset: 0; opacity: 1; } .board-tutor-layer, .board-your-layer { transition: none; } }
 
 .board-tool-hint { color: #928b7f; font-size: 10px; }
 
-.board-expanded .board-canvas { flex: 1; aspect-ratio: auto; }
+.board-scroll { position: relative; min-height: 0; max-height: min(34dvh, 22rem); overflow-y: auto; overflow-anchor: none; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #b9b2a555 transparent; }
+.board-note-page { padding-bottom: .5rem; }
+.board-current { min-height: min(34dvh, 22rem); }
+.board-page-divider { padding: .55rem .85rem; font-size: 10px; letter-spacing: .04em; color: #928b7f; border-top: 1px solid #30241812; }
+.board-archived .board-surface { touch-action: pan-y; cursor: default; }
+.board-page-controls { display: flex; align-items: center; gap: .3rem; }
+.board-page-count { font-size: 10px; color: #928b7f; white-space: nowrap; }
+.board-latest { background: transparent; border: 0; padding: .35rem; color: #3468c0; font: inherit; font-size: 11px; white-space: nowrap; cursor: pointer; }
+.board-expanded .board-scroll { flex: 1; max-height: none; }
+.board-expanded .board-note-page { max-width: min(100%, calc(100dvh - 15rem)); margin: auto; }

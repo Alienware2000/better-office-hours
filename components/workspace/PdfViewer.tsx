@@ -1,5 +1,7 @@
 "use client";
 
+import { HistoryIcon } from "@/components/workspace/HistoryIcon";
+
 import { revealPageTarget } from "@/lib/pdf/coordinates";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -513,8 +515,8 @@ export function PdfViewer({
           }}
         >
           <div className="ink-cluster" role="group" aria-label="Annotation history">
-            <button className="ink-tool" type="button" aria-label="Undo PDF annotation" title="Undo PDF annotation" disabled={!inkHistory.past.length} onClick={undoInk}>↶</button>
-            <button className="ink-tool" type="button" aria-label="Redo PDF annotation" title="Redo PDF annotation" disabled={!inkHistory.future.length} onClick={redoInk}>↷</button>
+            <button className="ink-tool" type="button" aria-label="Undo PDF annotation" title="Undo PDF annotation" disabled={!inkHistory.past.length} onClick={undoInk}><HistoryIcon /></button>
+            <button className="ink-tool" type="button" aria-label="Redo PDF annotation" title="Redo PDF annotation" disabled={!inkHistory.future.length} onClick={redoInk}><HistoryIcon redo /></button>
           </div>
           <div className="ink-cluster" role="group" aria-label="Zoom">
             <button

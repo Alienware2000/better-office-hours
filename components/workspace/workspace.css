@@ -185,7 +185,7 @@
   flex: 0 0 auto;
   display: flex;
   flex-wrap: nowrap;
-  justify-content: center;
+  justify-content: safe center;
   align-items: center;
   gap: 0.45rem;
   max-width: 100%;
@@ -492,5 +492,6 @@
 }
 
 /* Controls keep their height while the document owns the scrolling area. */
-.pdf-tools .ink-bar { flex-wrap: wrap; justify-content: center; border-radius: 1.5rem; row-gap: 0.5rem; }
+.pdf-tools .ink-bar { flex-wrap: nowrap; width: max-content; max-width: none; border-radius: 9999px; }
+.pdf-tools { overscroll-behavior-x: contain; }
 .pdf-tools .ink-cluster { flex: 0 0 auto; }

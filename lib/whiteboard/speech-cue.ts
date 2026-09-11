@@ -1,3 +1,4 @@
+import { needsSetupPicture } from '@/lib/agent/visual-help';
 import type { DrawCommand } from '@/lib/types';
 
 // A general relationship already spoken should not remain invisible merely
@@ -40,7 +41,8 @@ export function speechBoardCue(speech: string, student: string, existing: string
   return { op: 'text', id: 'relation', at: { x: .5, y: .3 }, text: relation, size: 'm' };
 }
 
-export function needsBoardRepair(student: string, speech: string, hasVisual: boolean): boolean {
+export function needsBoardRepair(student: string, speech: string, hasVisual: boolean, hasDiagram = false): boolean {
+  if (needsSetupPicture(student) && speech.length >= 40 && !hasDiagram) return true;
   if (hasVisual || speech.length < 40 || symbolicRelation(speech)) return false;
   return /\b(draw|diagram|visuali[sz]e|picture|illustrat\w*|example|equation|formula|remind|givens)\b/i.test(student) ||
     /\b(imagine|for example|picture this|look at the board|givens|quantities|variables|relationship|equation|formula)\b/i.test(speech);
