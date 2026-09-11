@@ -13,10 +13,12 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null } = {}) {
+async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null, repairResponse = null } = {}) {
   const effects = [], states = [], requests = [], recordings = [];
   let audioContext;
   const stt = deferred();
+  const sttNext = deferred();
+  let sttCount = 0;
   const audio = [];
   const marks = [];
   let now = 1000, loud = false, frame, stateIndex = 0;
@@ -91,7 +93,8 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     fetch: async (url, options) => {
       requests.push({ url, ...options });
       if (url.endsWith('/health')) return Response.json({ grok: true, elevenlabs: true });
-      if (url.endsWith('/stt')) return stt.promise; // Deliberately ignores abort.
+      if (url.endsWith('/stt')) return (sttCount++ ? sttNext : stt).promise; // Deliberately ignores abort.
+      if (url.endsWith('/llm') && JSON.parse(options.body).visualRepair && repairResponse) return repairResponse;
       if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: llmText } }] })}\n\ndata: [DONE]\n\n`);
       if (url.endsWith('/tts')) return failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
       throw new Error(`Unexpected request: ${url}`);
@@ -110,6 +113,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     return loaded.exports;
   }
   imports['./speech'] = load('app/(session)/voice/speech.ts');
+  imports['@/lib/whiteboard/geometry'] = load('lib/whiteboard/geometry.ts');
   const hook = load('app/(session)/voice/useVoiceLoop.ts').useVoiceLoop();
   const cleanups = effects.map(effect => effect());
   await settle();
@@ -123,10 +127,9 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     tick(false, 1000);
     await settle();
     assert.equal(states[0], 'thinking', 'Show processing while STT is pending');
-    tick(true, 1000);
-    assert.equal(recordings.length, 1, 'Do not record a competing turn during STT');
+    assert.equal(recordings.length, 1, 'One recording before the first transcription');
   }
-  return { hook, states, stt, requests, record, listeners, tick, audio, marks,
+  return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks,
     suspendAudio: () => { audioContext.state = 'suspended'; },
     cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
@@ -278,7 +281,7 @@ console.log('PASS: finish-tap race across automatic endpoint and playback; separ
   const test = await mount();
   test.tick(true, 1000);
   for (let i=0;i<20;i++) test.tick(true,20);
-  for (let i=0;i<12;i++) test.tick(.45,100);
+  for (let i=0;i<17;i++) test.tick(.45,100);
   await settle();
   assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,1,'Uncertain background sound cannot renew the endpoint indefinitely');
   test.cleanup();
@@ -330,3 +333,48 @@ console.log('PASS: suspended microphone audio has a bounded recovery path.');
   test.cleanup();
 }
 console.log('PASS: actual voice queue advances measured PDF highlights with spoken sentences.');
+
+for (const order of ['first-first','second-first']) {
+  const test=await mount();
+  await test.record();
+  test.tick(true,1000);
+  for(let i=0;i<20;i++)test.tick(true,20);
+  assert.equal(test.recordings.length,2,'Capture continued speech during STT');
+  assert.equal(test.requests.find(r=>r.url.endsWith('/stt')).signal.aborted,false,'Continuation preserves the opening transcript');
+  if(order==='first-first') {test.stt.resolve(Response.json({text:'I understand the velocity'}));await settle();}
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,0,'Do not reply while the student continues');
+  test.tick(false,1000);
+  assert.equal(test.recordings[1].state,'recording','Allow a one-second thinking pause');
+  test.tick(false,700);await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,2);
+  test.sttNext.resolve(Response.json({text:'but I do not understand acceleration'}));await settle();
+  if(order==='second-first') {
+    assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,0,'Wait for the opening transcript even if it finishes later');
+    test.stt.resolve(Response.json({text:'I understand the velocity'}));await settle();
+  }
+  const calls=test.requests.filter(r=>r.url.endsWith('/llm'));
+  assert.equal(calls.length,1,'Continuation is one tutor turn');
+  assert.equal(JSON.parse(calls[0].body).messages.at(-1).content,'I understand the velocity but I do not understand acceleration');
+  test.cleanup();
+}
+{
+ const test=await mount({llmText:'The general relationship is v² = u² + 2 a s. What is unknown?',manualAudio:true});
+ const speaking=test.hook.sendUtterance('Remind me of the equation');await settle();
+ assert.equal(test.marks[0]?.text,'v² = u² + 2 a s','A spoken formula appears even without a model DRAW tag');
+ test.hook.pauseVoice();await speaking;test.cleanup();
+}
+console.log('PASS: resumed speech survives pending STT in either completion order; a missing DRAW tag cannot hide the spoken symbolic relation.');
+
+for(const cancel of [false,true]) {
+  const repair=deferred();
+  const test=await mount({llmText:'Imagine opening a box that contains a smaller box. Each box waits for the one inside.',manualAudio:true,repairResponse:repair.promise});
+  const speaking=test.hook.sendUtterance('Can you illustrate recursion?');await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')&&JSON.parse(r.body).visualRepair).length,1,'One bounded repair for a missing conceptual diagram');
+  if(cancel)test.hook.pauseVoice();
+  const content='[MODE pset][DRAW {"op":"clear"}][DRAW {"op":"circle","id":"box","at":{"x":0.5,"y":0.3},"r":0.1}] These words must never be spoken.';
+  repair.resolve(new Response(`data: ${JSON.stringify({choices:[{delta:{content}}]})}\n\ndata: [DONE]\n\n`));await settle();
+  assert.equal(test.marks.length,cancel?0:1,'Cancelled repair cannot draw; valid repair never clears existing work');
+  assert.ok(test.requests.filter(r=>r.url.endsWith('/tts')).every(r=>!JSON.parse(r.body).text.includes('These words')),'The repair lane cannot add speech');
+  test.hook.pauseVoice();await speaking;test.cleanup();
+}
+console.log('PASS: one visual repair, no added speech or clearing, and late-response cancellation.');

@@ -4,6 +4,8 @@ Each lane keeps a few lines here: what works, what is stubbed, what other lanes 
 
 ## voice
 
+Continuation repair: the recorder may start during pending STT. A cancellation-scoped batch preserves fragment order and waits for continued recording before sending one joined utterance. Failed batches do not send partial text. Quiet endpoint is 1.5s, with manual finish retained. Lifecycle tests cover both STT completion orders, pause/late results, and weak noise. Hardware pacing remains a manual check.
+
 Current endpoint uses clear speech (probability >= 0.6) to extend a confirmed recording, while the lower gate still retains quiet syllables. Approximately 1s without clear speech submits. Suspended AudioContext retries resume and exposes microphone retry after 2s. Playback uses rate 1.08 with preservesPitch. Test with quiet voices: this is acoustic endpointing, not semantic turn detection.
 
 Readiness now permits a fixed one-time "I can see your PDF now." receipt after 1.5s of idle quiet. No LLM call, problem selection, or question is allowed for this receipt. Busy uploads stay silent; starting speech cancels the pending receipt, as do changed pages/session ownership and its 8s expiry. Existing live snapshots supply the attachment on the next actual student turn. Lifecycle harness covers these rules and suspended-input recovery.
@@ -40,6 +42,8 @@ Open pedagogy risk with the non-reasoning model: on a page question it said "Fir
 
 ## workspace
 
+Cursor/highlight follow-up: familiar fixed-size arrow cursor now sits 23px before anchored text; unanchored POINT keeps its exact tip coordinates. Text highlights use the full region with a lighter translucent fill, replacing the strike-through-like narrow path. Browser checked clearance at 100%/125%; temporary fixture route removed. Old chevron notes below are historical.
+
 Toolbar/guidance repair: PDF controls no longer flex-shrink and clusters wrap within the desk. Pointer is now a fixed-size margin chevron without a label/glow; highlighting also shows it. Text targets use measured PDF bounds and scroll to the passage start. `[HIGHLIGHT page=N anchor=ID]` resolves against the request's LivePage textRegions and enters the existing speech queue; invalid/page-mismatched IDs are ignored. Browser verified control bounds, zoom, resize, and off-text cue placement. Legacy PdfViewer render-ref lint findings remain.
 Lecture mentions no longer route homework into a separate concept session. This reproduced the reported disappearing PDF: it was parked, not removed. Regression phrases include the actual lecture correction, teaching a term, and talking about initial velocity. Explicit topic switching and the dedicated Explain a concept request still change sessions.
 
@@ -52,6 +56,8 @@ The visible page now drives `livePage` through an IntersectionObserver, so the t
 Student ink is the second bar: hand, pen, highlighter, eraser, and black / rust / gold (`InkBar`). Zoom and page stepping sit in the same pill. Default 100% fits the desk column on every viewport; − / + zoom around the center of the desk, pinch or Ctrl-scroll zoom around the cursor, and the hand tool drags to pan. Click the percent to fit again. Range is 75% to 250%. Do not scale the page width without pan: that cropped the paper. Default tool is hand so the page still moves. Strokes stay in the viewer and are composited onto the vision JPEG (`paintInkOnImage`). Do not send freehand ink through `StudentAnnotation` in `lib/types.ts`. Drag-to-circle / underline is gone; it felt unlike a notebook. **Remove** on the title bar puts the PDF away and starts a fresh homework session (drop zone, empty captions). This is not a notebook library. Two CSS-only transition attempts felt janky in human review; replaced them with Motion `layoutId` for the orb and independent workspace entry. Do not restore the old transform/width choreography. Missing-key mode still opens Homework without calling the agent. Breakpoints: workspace-heavy split on desktop, stacked agent/workspace at 640px. The ink bar sizes down with the desk via a container query. Dedicated mobile design is later.
 
 ## whiteboard
+
+Missing-command repair: `speech-cue.ts` copies short general symbolic relations at audio start when the primary model omits DRAW; it does no calculation and rejects numeric assignments. Missing conceptual diagrams receive one visual-only LLM request with a 6s deadline, applied only in the current playback epoch. No extra speech, navigation, PDF action, clear, or remove can come from that lane. A repair can still fail or time out. `parse-draw.ts` normalizes circle `at`, point arrays, and rectangle aliases to existing DrawCommand types. Browser tests exercised no-DRAW primary responses through the real hook and SVG. No automatic fixture content.
 
 Note composition: DRAW text IDs `topic` / `topic-*` select a muted heading; `given-*`, `note-*`, and `definition-*` select aligned rows. Equations retain centered, larger type. Stored local drawables carry alignment/heading metadata so SVG and snapshots agree. Shared types stay frozen. Runtime hints describe these recipes and require clear space between diagram geometry and note rows; arbitrary diagram collision avoidance remains unimplemented.
 

@@ -232,7 +232,7 @@ type BoardSnapshot = {
 
 ### 3.4 Agent turn (voice lane produces, workspace and whiteboard lanes consume)
 
-Each model turn returns speech plus UI commands. The model emits tags inline; the voice lane strips them before TTS and dispatches them.
+Each model turn returns speech plus UI commands. The model emits tags inline; the voice lane strips them before TTS and dispatches them. Short symbolic relations already spoken can be copied to DRAW at audio start if absent from the board. For a substantive visual request with no renderable scene, the client can call the same LLM endpoint once with `visualRepair: true`. This is a bounded visual-only pass using the current request context, not a new tutor turn. Its output is restricted client-side to at most five renderable DRAW commands or a validated ANIM; clear/remove and non-board actions are ignored. Cancellation uses the active playback epoch. The repair does not delay initial speech and may time out after 6s.
 
 Inline tag grammar the model uses:
 

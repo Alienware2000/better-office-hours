@@ -155,6 +155,7 @@ export function interpretCommand(
   }
 
   if (command.op === "text") {
+    if (typeof command.text !== "string" || !command.text.trim()) return null;
     const at = pt(command.at);
     if (!at) return null;
     return {

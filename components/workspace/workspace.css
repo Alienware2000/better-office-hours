@@ -307,7 +307,7 @@
 }
 
 .marker-ink {
-  fill: rgba(247, 197, 96, 0.55);
+  fill: rgba(247, 197, 96, 0.3);
   mix-blend-mode: multiply;
   transform-box: fill-box;
   transform-origin: left center;

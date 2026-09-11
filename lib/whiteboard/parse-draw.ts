@@ -207,10 +207,24 @@ function fromShorthand(body: string): DrawCommand | null {
 export function parseDrawCommand(body: string): DrawCommand | null {
   const trimmed = body.trim();
   const json = readJson(trimmed, trimmed.indexOf("{"));
-  if (json && isDrawCommand(json)) return json;
-  // Tolerate the model wrapping the shape kind in a generic draw operation.
-  if (json && typeof json === 'object' && 'op' in json && json.op === 'draw' && 'kind' in json) {
-    const normalized = { ...json, op: json.kind };
+  if (json && typeof json === 'object') {
+    const value = json as Record<string, unknown>;
+    const op = value.op === 'draw' ? value.kind : value.op;
+    const normalized = { ...value, op };
+    // Normalize common point spellings before geometry validation, not after
+    // accepting an op-only shape that the renderer would silently discard.
+    const point = (p: unknown) => Array.isArray(p) && p.length === 2 ? { x: p[0], y: p[1] } : p;
+    for (const name of ['at', 'center', 'origin', 'from', 'to']) if (name in normalized) (normalized as Record<string, unknown>)[name] = point(value[name]);
+    if (op === 'circle' && !('center' in normalized) && 'at' in normalized) Object.assign(normalized, { center: normalized.at });
+    if (op === 'text' && !('at' in normalized) && 'x' in normalized && 'y' in normalized) Object.assign(normalized, { at: { x: normalized.x, y: normalized.y } });
+    if ((op === 'rect' || op === 'rectangle') && 'at' in normalized && 'w' in normalized && 'h' in normalized) {
+      const at = normalized.at as Pt;
+      const w = Number(normalized.w), h = Number(normalized.h);
+      if (at && Number.isFinite(at.x) && Number.isFinite(at.y) && Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) {
+        const a = { x: at.x, y: at.y }, b = { x: at.x + w, y: at.y }, c = { x: at.x + w, y: at.y + h }, d = { x: at.x, y: at.y + h };
+        return { op: 'curve', id: typeof value.id === 'string' ? value.id : 'box', points: [a,b,b,c,c,d,d,a,a], label: typeof value.label === 'string' ? value.label : undefined, color: colorOf(typeof value.color === 'string' ? value.color : undefined) };
+      }
+    }
     if (isDrawCommand(normalized)) return normalized;
   }
   return fromShorthand(trimmed);

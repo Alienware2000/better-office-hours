@@ -154,8 +154,7 @@ function boxKey(box: BBox) {
 }
 
 function Marker({ bbox }: { bbox: BBox }) {
-  const line = bbox.h < 0.04;
-  const path = line ? strokePath() : regionPath();
+  const path = regionPath();
 
   return (
     <svg
@@ -173,18 +172,6 @@ function Marker({ bbox }: { bbox: BBox }) {
       <path className="marker-ink" d={path} />
     </svg>
   );
-}
-
-function strokePath() {
-  return [
-    "M 1.2 14.8",
-    "C 18 11.2, 38 16.4, 52 13.1",
-    "C 68 9.6, 84 15.8, 98.6 12.4",
-    "L 99 16.8",
-    "C 84 19.6, 67 13.8, 52 17.2",
-    "C 36 20.4, 18 15.2, 1.4 18.6",
-    "Z",
-  ].join(" ");
 }
 
 function regionPath() {

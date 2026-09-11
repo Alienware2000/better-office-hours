@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 02:21 ET
+Updated: 2026-09-11 02:50 ET
 By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
@@ -19,6 +19,12 @@ Review: David's voice stress-test work is on PR #5 (or the open stress-fix PR on
 - Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Missing-board/mic follow-up: general symbolic relations already spoken now render at audio start when DRAW is omitted, with duplicate suppression and no numerical-answer fallback. A substantive example/equation/visual request with no renderable scene gets one general visual-only repair, bounded to 6s, while speech proceeds. The repair cannot speak, navigate, point, clear, or remove work; interruptions invalidate late results. It remains model-dependent and may time out. Common circle `at`, point arrays, and rectangle commands normalize into existing contracts. Empty text no longer counts as a rendered visual.
+
+Confirmed a microphone capture gap: new recording was blocked while STT was pending. Continued speech is now captured and combined in original order into one student turn before the tutor responds, even if STT results arrive out of order. The quiet endpoint is 1.5s; low-confidence noise still cannot renew it indefinitely. Failed transcription batches do not send a partial thought. Pause, desk changes, and interruption still invalidate outstanding work.
+
+Replaced the chevron with a small familiar arrow cursor outside the text bounds. Highlights now tint the text region instead of drawing a thin line through letters. Build, TypeScript, focused lint outside legacy PDF/Overlay ref-access findings, teaching/animation/lifecycle checks pass. Browser covered speech-only formula recovery, missing-diagram repair through the actual hook/store/SVG with mocked services, plus cursor/highlight clearance at 100% and 125%. Live probes produced diagrams and exposed rectangle/circle aliases, now covered by normalization tests. Real mic timing, general note composition, and annotation taste still need David's stress test. No human prompt or shared types changed. Review PR #5 before merge.
 
 PDF guidance/note follow-up: toolbar rows keep their height and wrap controls on narrow desks, fixing the clipped top. HIGHLIGHT now accepts a measured text anchor ID scoped to the page supplied with the request. The speech queue resolves IDs and advances highlights in narration order; invalid or page-mismatched IDs are ignored. A small fixed-size margin cue replaces the laser glow/tail/label and stays beside highlighted text across zoom/resize. Highlight scrolling reveals the start of a passage. Board topic headings and given/note/definition rows use consistent typography and left alignment, shared with snapshots. Runtime guidance asks for a short heading, separate givens, and deliberate PDF highlighting.
 

@@ -452,7 +452,7 @@ export function PdfViewer({
         return target.x >= b.x && target.x <= b.x + b.w && target.y >= b.y && target.y <= b.y + b.h;
       })?.bbox;
       // Park beside a measured text fragment, never on top of its letters.
-      const x = (sheetBox.left - frameBox.left + (anchor?.x ?? target.x) * sheetBox.width - 7) / frameBox.width;
+      const x = (sheetBox.left - frameBox.left + (anchor?.x ?? target.x) * sheetBox.width - (anchor ? 23 : 0)) / frameBox.width;
       const y = (sheetBox.top - frameBox.top + (anchor ? anchor.y + anchor.h / 2 : target.y) * sheetBox.height) / frameBox.height;
       // Off the visible frame: hide the cue until the passage is visible.
       if (x < -0.04 || x > 1.04 || y < -0.04 || y > 1.04) {

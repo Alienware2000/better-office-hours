@@ -61,6 +61,7 @@ export async function POST(req: Request) {
   );
   const deep: boolean =
     !!body && typeof body === "object" && (body as { deep?: unknown }).deep === true;
+  const visualRepair = !!body && typeof body === "object" && (body as { visualRepair?: unknown }).visualRepair === true;
   setLivePage(asLivePage(body));
   setLiveBoard(
     body && typeof body === "object"
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
         if (!cancelled) controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
       };
       try {
-        for await (const content of streamGrok(history, event, deep, upstream.signal)) {
+        for await (const content of streamGrok(history, event, deep, upstream.signal, visualRepair)) {
           send({
             id,
             object: "chat.completion.chunk",

@@ -6,7 +6,9 @@ import { detectMode } from "@/lib/agent/intent";
 import { parseAgentTurn, takeSpeechChunks, visualBeats, type ChatMessage } from "@/lib/agent/tags";
 import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
 import { getLiveBoard } from "@/lib/whiteboard/live-board";
-import { isDrawCommand } from "@/lib/whiteboard/geometry";
+import { validateAnimation } from "@/lib/whiteboard/animation";
+import { needsBoardRepair, speechBoardCue } from "@/lib/whiteboard/speech-cue";
+import { interpretCommand, isDrawCommand } from "@/lib/whiteboard/geometry";
 import { getBoardState, restoreBoard, type BoardState, loadAnimation, pauseAnimation, playAnimation, focusAnimation, applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
 import { createSpeechDetector, isSpeechFrame } from "./speech-detector";
@@ -452,6 +454,10 @@ export function useVoiceLoop() {
           if (playbackEpoch !== playbackEpochRef.current || signal.aborted) return;
           if (speechFailure) throw speechFailure;
           try { await speak(trimmed, previousText, playbackEpoch, prepared, () => {
+            const cue = speechBoardCue(trimmed,
+              historyRef.current.filter(message => message.role === 'user').at(-1)?.content ?? '',
+              (getBoardState().groups ?? []).map(group => group.drawables.filter(mark => mark.kind === 'text').map(mark => mark.text).join(' ')));
+            if (cue) applyDrawCommands([cue]);
             heard = [heard, trimmed].filter(Boolean).join(" ");
             if (!captionStarted) { addTurn("tutor", heard); captionStarted = true; }
             else reviseLastTutorTurn(heard);
@@ -494,7 +500,29 @@ export function useVoiceLoop() {
 
       const leftover = turn.speech.slice(emitted).trim();
       if (leftover) enqueueSpeech(leftover);
-      const finished = spoken.then(() => { if (speechFailure) throw speechFailure; });
+      const student = historyRef.current.filter(message => message.role === 'user').at(-1)?.content ?? '';
+      const hasVisual = Boolean(validateAnimation(turn.board?.animation)) ||
+        Boolean(turn.board?.commands.some((command, index) => interpretCommand(command, index)?.kind === 'draw'));
+      let visualRepair: Promise<void> = Promise.resolve();
+      if (!turn.think && needsBoardRepair(student, turn.speech, hasVisual)) {
+        visualRepair = withRequestTimeout(signal, 6000, 'Board preparation timed out', async repairSignal => {
+          const response = await fetch('/api/agent/llm', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: repairSignal,
+            body: JSON.stringify({ visualRepair: true, messages: [...historyRef.current, { role: 'assistant', content: turn.speech }], livePage: visualSource, liveBoard: getLiveBoard() }),
+          });
+          if (!response.ok) return;
+          const raw = await readSseText(response, () => {});
+          if (signal.aborted || playbackEpoch !== playbackEpochRef.current || speechFailure) return;
+          const repair = parseAgentTurn(raw);
+          // This lane cannot speak, navigate, point at the PDF, or clear work.
+          const commands = (repair.board?.commands ?? []).filter(command => !['clear', 'remove'].includes(command.op)).slice(0, 5);
+          const renderable = commands.filter((command, index) => interpretCommand(command, index)?.kind === 'draw');
+          if (renderable.length) applyDrawCommands(renderable);
+          const animation = repair.board?.animation;
+          if (animation && 'shapes' in animation && loadAnimation(animation) && window.matchMedia('(prefers-reduced-motion: reduce)').matches) pauseAnimation();
+        }).catch(error => { if (!signal.aborted) console.warn('Board preparation did not complete:', (error as Error).name); });
+      }
+      const finished = Promise.all([spoken, visualRepair]).then(() => { if (speechFailure) throw speechFailure; });
       void finished.catch(() => {});
       return { full, turn, spoken: finished };
     },
@@ -711,6 +739,17 @@ export function useVoiceLoop() {
     let voicedMs = 0;
     let lastFrame = 0;
     let raf = 0;
+    let capture: { controller: AbortController; epoch: number; pending: number; failed?: boolean; parts: (string | null)[] } | null = null;
+    const flushCapture = () => {
+      const batch = capture;
+      if (!batch || batch.pending || recordingRef.current) return;
+      if (cancelled || pausedRef.current || batch.controller.signal.aborted || batch.epoch !== playbackEpochRef.current) { capture = null; return; }
+      capture = null;
+      if (transcriptionAbortRef.current === batch.controller) transcriptionAbortRef.current = null;
+      const text = batch.failed ? '' : batch.parts.filter((part): part is string => Boolean(part)).join(' ');
+      if (text) void sendRef.current(text);
+      else if (!playingRef.current && !turnAbortRef.current) setOrb('listening');
+    };
     const tabId = crypto.randomUUID();
     const channel =
       typeof BroadcastChannel === "undefined"
@@ -785,7 +824,14 @@ export function useVoiceLoop() {
     const stopRecorder = async () => {
       if (!recorder || recorder.state === "inactive") return;
       const epoch = playbackEpochRef.current;
-      const controller = new AbortController();
+      if (!capture || capture.controller.signal.aborted || capture.epoch !== epoch) {
+        capture = { controller: new AbortController(), epoch, pending: 0, parts: [] };
+      }
+      const batch = capture;
+      const controller = batch.controller;
+      const part = batch.parts.length;
+      batch.parts.push(null);
+      batch.pending += 1;
       transcriptionAbortRef.current = controller;
       const current = () => !cancelled && !pausedRef.current &&
         !controller.signal.aborted && epoch === playbackEpochRef.current;
@@ -809,15 +855,16 @@ export function useVoiceLoop() {
         // A paused tab or a different desk must never receive an old recording,
         // even when the transport completes despite cancellation.
         if (!current()) return;
-        transcriptionAbortRef.current = null;
-        if (!isJunkSpeech(text)) await sendRef.current(text);
+        if (!isJunkSpeech(text)) batch.parts[part] = text;
       } catch (err) {
         if (current() && (err as Error).name !== "AbortError") {
+          batch.failed = true;
           setError(err instanceof Error ? err.message : "Could not hear that");
         }
       } finally {
-        if (transcriptionAbortRef.current === controller) transcriptionAbortRef.current = null;
-        if (current() && !playingRef.current && !turnAbortRef.current) setOrb("listening");
+        batch.pending -= 1;
+        if (current()) flushCapture();
+        else if (capture === batch) capture = null;
       }
     };
 
@@ -829,9 +876,13 @@ export function useVoiceLoop() {
     };
 
     const takeFloor = () => {
-      turnAbortRef.current?.abort();
-      turnAbortRef.current = null;
-      stopRef.current();
+      // Continued speech during transcription belongs to the same student
+      // turn. Keep that batch alive instead of discarding its opening words.
+      if (!capture || capture.controller.signal.aborted || capture.epoch !== playbackEpochRef.current) {
+        turnAbortRef.current?.abort();
+        turnAbortRef.current = null;
+        stopRef.current();
+      }
       pauseAnimation();
       candidate = false;
       pendingAttachmentRef.current = null;
@@ -950,7 +1001,7 @@ export function useVoiceLoop() {
         // Preserve quiet syllables in the recording, but only clear speech
         // renews the endpoint timer.
         if (loud && speechProbability >= 0.6) lastLoud = now;
-        if (!recordingRef.current && !transcriptionAbortRef.current && loud &&
+        if (!recordingRef.current && loud &&
             (playingRef.current || now - playbackEndedAtRef.current > 300)) {
           startRecorder();
         }
@@ -959,11 +1010,12 @@ export function useVoiceLoop() {
           if (candidate) {
             if (voicedMs >= 180) takeFloor();
             else if (now - lastLoud > 120) discardRecording();
-          } else if ((now - lastLoud > 1000 && now - startedAt > 450) || now - startedAt > 90000) {
+          } else if ((now - lastLoud > 1500 && now - startedAt > 450) || now - startedAt > 90000) {
             void stopRecorder();
           }
         }
 
+        flushCapture();
         const attachment = pendingAttachmentRef.current;
         if (attachment) {
           const samePage = getLivePage()?.psetId === attachment.id;

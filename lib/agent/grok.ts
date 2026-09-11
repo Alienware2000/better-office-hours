@@ -165,8 +165,11 @@ export async function* streamGrok(
   event?: SessionEvent | null,
   deep = false,
   signal?: AbortSignal,
+  visualRepair = false,
 ): AsyncGenerator<string> {
   const grok = client();
+  const messages = toApiMessages(history, event, deep);
+  if (visualRepair) messages.push({ role: 'system', content: 'Compose only the missing whiteboard visual for the last assistant explanation and the student request. Return [BOARD open] and at most five compact valid DRAW commands, or one compact ANIM, with no spoken text. Do not repeat the explanation or ask a question. Use a general diagram, relationship, or conceptual example appropriate to the subject. Do not calculate or label any new numeric result or a graded answer. Do not add missing givens, pretend a lecture was retrieved, clear student work, or use a scripted fixture. Keep labels short and diagram geometry clear of text. Use only DRAW ops text, line, arrow, curve, circle, axes. For a box use a closed curve, repeating each corner for straight edges. Put circle positions in center:{x,y}. If the explanation cannot be illustrated responsibly, return nothing.' });
   const stream = await grok.chat.completions.create({
     model: deep ? GROK_DEEP_MODEL : GROK_MODEL,
     temperature: deep ? 0.5 : 0.85,
@@ -176,7 +179,7 @@ export async function* streamGrok(
     // 220 cut mid-tag and left the board empty.
     max_tokens: deep ? 2400 : wantsVisualHelp(history) ? 1800 : 900,
     stream: true,
-    messages: toApiMessages(history, event, deep),
+    messages,
     ...(deep ? { reasoning_effort: "low" as const } : {}),
   }, { signal });
 
