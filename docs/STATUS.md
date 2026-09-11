@@ -2,13 +2,15 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 00:00 ET
-By: Whiteboard lane
+Updated: 2026-09-11 14:39 ET
+By: Hussein (shell lane)
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `main`, approved empty-state integration
-Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability and PR #4 removes automatic test diagrams. Hussein's subsequent work requires new lane PRs and David's review.
+Branch: `lane/shell`, from `origin/main`
+Review: David authorized Hussein's independent shell first slice while the context, recap, and voice PRs remain open. This PR requires review before authentication gates the tutor or supplies identity to storage.
 
 ## Now
+
+Shell first slice is ready for review. Stable NextAuth v4 provides a Google OAuth route and `/sign-in` shell without replacing or gating the working `VoiceSession`. The policy accepts Yale addresses and reserves the documented judge address, normalizes authenticated identity, and disables sign-in with an explicit missing-configuration message unless all three existing auth environment variables are present. The judge password provider, root-route gate, course identity, and persistence wiring are intentionally absent. The README distinguishes this first slice from finished authentication.
 
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
@@ -28,10 +30,11 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
 3. Try the board on an iPad with Apple Pencil. Pointer input is implemented, but Pencil behavior, palm rejection, and device-specific feel are not verified.
 4. Review live drawing cadence. Model DRAW output still varies: one earlier probe returned just one arrow across two turns. Do not weaken the pedagogy to force extra shapes.
-5. Hussein may start the context, recap, or shell first slice in LANES.md on a new lane branch from main. Open a PR for David; do not merge it or run ahead into another slice. Canvas/Grok Bot operation and live cross-lane integrations still need a separate assignment.
+5. David reviews Hussein's shell identity boundary before the tutor is gated or context/recap persistence depends on it.
 
 ## Validation
 
+- Shell: `node scripts/check-auth.mjs`, focused ESLint, `npx tsc --noEmit`, production build, voice lifecycle, workspace, and animation unit checks pass. Browser verified the honest missing-config `/sign-in` state and unchanged tutor home. `npm ci --dry-run` validates the synchronized lockfile; a later local clean install hit Windows `EPERM` locks on native binaries in the OneDrive checkout and is recorded in NOTES.
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. Existing hook ref-access/immutability lint failures remain; the new harness passes lint.
 
 - `npm run build` and `npx tsc --noEmit` pass.
@@ -71,7 +74,7 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 | whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
 | context | Hussein | `lane/context` from main | first isolated slice authorized in LANES.md; schema missing |
 | recap | Hussein | `lane/recap` from main | first card/interface slice authorized in LANES.md |
-| shell | Hussein | `lane/shell` from main | first auth/shell slice authorized; preserve VoiceSession |
+| shell | Hussein | `lane/shell` from main | Google/Yale auth shell ready for review; tutor remains ungated |
 
 ## Run
 
@@ -86,6 +89,8 @@ Open http://localhost:3100. Allow the mic. Tap the orb. Upload a pset, ask to dr
 Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.mjs`, `node scripts/check-lanes.mjs`.
 
 ## Blockers
+
+Shell integration needs real Google OAuth credentials, a reviewed authenticated identity contract, and a decision on secure judge-password storage before it can gate the tutor.
 
 Pointer quality depends on Grok seeing the page image.
 

@@ -24,6 +24,7 @@ The longer-term vision includes learning on an iPad, writing directly on the boa
 - Settled PDF-mark events so the tutor can respond to a marked region without requiring the student to describe it again.
 - Separate parked homework and concept sessions within the current browser session.
 - Orb interruption that stops speech and freezes animation. Paused tabs do not take over an active conversation.
+- A first Google sign-in shell at `/sign-in` with a Yale email allowlist and an honest missing-configuration state. It does not gate the tutor until the identity contract is reviewed.
 
 The tutor is instructed to ask short, focused questions and guide the student through graded work without giving the final answer. Those guardrails are part of the design, and model behavior still needs evaluation. The learning approach and human-maintained prompt are in [PEDAGOGY.md](docs/PEDAGOGY.md) and [PROMPT.md](docs/PROMPT.md).
 
@@ -33,7 +34,7 @@ The tutor is instructed to ask short, focused questions and guide the student th
 
 **Spoken and saved recaps.** After the student summarizes what they learned, the tutor should close with the sticking point, what changed, and something specific to review. Recap types exist; the spoken close flow, storage, and card are not wired yet.
 
-**Identity and learning memory.** Authentication, durable course/session storage, and later retrieval of prior learning are planned. Uploaded files currently live on the local development machine. Sessions are not yet saved across reloads.
+**Identity and learning memory.** The first Google authentication shell exists, but it is not yet enforced at the tutor entry or connected to durable course/session storage. Uploaded files currently live on the local development machine. Sessions are not yet saved across reloads.
 
 A recorded demo and hosted judge access will be added after the integrated flow is ready. The [demo plan](docs/DEMO.md) describes the target experience, not a list of completed features.
 
@@ -54,7 +55,7 @@ XAI_API_KEY=your_key_here
 ELEVENLABS_API_KEY=your_key_here
 ```
 
-The other names in `.env.example` are reserved for integrations that are not required by the current local voice loop.
+Google sign-in additionally needs `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`. Without them, `/sign-in` clearly reports that authentication is unavailable and the current local tutor remains accessible. The password-based judge account is not enabled in this first authentication slice.
 
 ```bash
 npm run dev -- -p 3100
