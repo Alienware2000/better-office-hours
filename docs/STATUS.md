@@ -2,11 +2,21 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 01:23 ET
-By: Voice and teaching surfaces
+Updated: 2026-09-11 01:32 ET
+By: David (Cursor)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/voice-stress-fixes`, from main
-Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability and PR #4 removes automatic test diagrams. Hussein's subsequent work requires new lane PRs and David's review.
+Review: David's voice stress-test work is on PR #6 (or the open stress-fix PR on this branch) and awaits review. That does **not** block Hussein.
+
+## Unblock for Hussein (read this first)
+
+**Hussein may begin the isolated recap card slice now** while PR #6 awaits review. He may also open additional lane PRs (context, recap, shell) from the latest `origin/main` without waiting for David's stress-test PR to merge.
+
+- Branch from `origin/main`: `lane/recap` (or `lane/context` / `lane/shell`).
+- Follow `docs/LANES.md` for the first reviewable slice boundaries.
+- Open a PR to `main` for David to review. Do not merge your own PRs.
+- Stay in recap/context/shell directories. Do not wait on mic hardware checks or PR #6.
+- Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
 
@@ -32,13 +42,15 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 ## What to do next
 
-Next: David and Hussein run STRESS-TEST.md on real microphones, first with headphones and then speakers, including background music. Check interruption, quiet voices, pauses, pronunciation, equation use, and zoomed pointers. Review this branch before merging; Hussein continues his isolated lanes.
+**Hussein (unblocked):** start `lane/recap` from `origin/main` and ship the isolated recap card PR per LANES.md. Open more lane PRs as needed. Do not wait for PR #6.
 
-1. Human mic check: tap the orb, say a homework request, then leave and ask for a concept. Confirm the desk opens from speech and the response feels natural.
-2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
-3. Try the board on an iPad with Apple Pencil. Pointer input is implemented, but Pencil behavior, palm rejection, and device-specific feel are not verified.
-4. Review live drawing cadence. Model DRAW output still varies: one earlier probe returned just one arrow across two turns. Do not weaken the pedagogy to force extra shapes.
-5. Hussein may start the context, recap, or shell first slice in LANES.md on a new lane branch from main. Open a PR for David; do not merge it or run ahead into another slice. Canvas/Grok Bot operation and live cross-lane integrations still need a separate assignment.
+**David:** keep reviewing PR #6 / stress-test on real mics when ready. Hardware checks do not gate Hussein.
+
+1. Hussein: branch `lane/recap` from latest `origin/main`, build the isolated recap card slice, open a PR to `main`.
+2. Hussein: may also open `lane/context` or `lane/shell` first-slice PRs in parallel if capacity allows; each PR stays inside its LANES.md boundary.
+3. David: review and merge Hussein's lane PRs independently of PR #6.
+4. Human mic check on the stress-test branch when convenient (headphones, then speakers): interruption, quiet voices, pauses, pronunciation, equation use, zoomed pointers. See STRESS-TEST.md.
+5. Canvas/Grok Bot operation and live cross-lane wiring still need a separate assignment; not part of the first isolated slices.
 
 ## Validation
 
@@ -84,9 +96,9 @@ Next: David and Hussein run STRESS-TEST.md on real microphones, first with headp
 | voice | David | next voice branch from main | custom voice loop and delayed-input isolation included in main |
 | workspace | David | next workspace branch from main | adaptive PDF desk included in main |
 | whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
-| context | Hussein | `lane/context` from main | first isolated slice authorized in LANES.md; schema missing |
-| recap | Hussein | `lane/recap` from main | first card/interface slice authorized in LANES.md |
-| shell | Hussein | `lane/shell` from main | first auth/shell slice authorized; preserve VoiceSession |
+| context | Hussein | `lane/context` from main | authorized now; first isolated slice in LANES.md; schema missing |
+| recap | Hussein | `lane/recap` from main | **start now**; isolated card slice while PR #6 awaits review |
+| shell | Hussein | `lane/shell` from main | authorized now; first auth/shell slice; preserve VoiceSession |
 
 ## Run
 
