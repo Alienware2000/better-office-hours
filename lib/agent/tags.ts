@@ -3,8 +3,8 @@ import type {
   AnimationProgram,
   AnimationSpec,
   BBox,
-  DrawCommand,
 } from "@/lib/types";
+import { parseDrawCommand } from "@/lib/whiteboard/parse-draw";
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -103,10 +103,10 @@ function applyTag(turn: AgentTurn, name: string, body: string) {
     return;
   }
   if (name === "DRAW") {
-    const json = readJson(body.trim(), body.trim().indexOf("{"));
-    if (!json) return;
+    const command = parseDrawCommand(body);
+    if (!command) return;
     turn.board = turn.board ?? { commands: [] };
-    turn.board.commands.push(json.value as DrawCommand);
+    turn.board.commands.push(command);
     return;
   }
   if (name === "ANIM_PROGRAM") {
@@ -158,9 +158,8 @@ export function parseAgentTurn(raw: string): AgentTurn {
     if (brace !== -1 && (close === -1 || brace < close)) {
       const json = readJson(raw, brace);
       if (!json) {
-        speech += raw[i];
-        i += 1;
-        continue;
+        // Tag JSON is still streaming; wait for the next chunk.
+        break;
       }
       end = raw[json.end] === "]" ? json.end + 1 : json.end;
       inner = raw.slice(i + 1, end - (raw[end - 1] === "]" ? 1 : 0));
@@ -168,9 +167,8 @@ export function parseAgentTurn(raw: string): AgentTurn {
       end = close + 1;
       inner = raw.slice(i + 1, close);
     } else {
-      speech += raw[i];
-      i += 1;
-      continue;
+      // Opening bracket with no close yet.
+      break;
     }
 
     const space = inner.search(/\s/);

@@ -1,6 +1,7 @@
 import { asSessionEvent } from "@/lib/agent/events";
 import { GROK_DEEP_MODEL, GROK_MODEL, streamGrok } from "@/lib/agent/grok";
 import { setLivePage, type LivePage } from "@/lib/pdf/live-page";
+import { asLiveBoard, setLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +57,11 @@ export async function POST(req: Request) {
   const deep: boolean =
     !!body && typeof body === "object" && (body as { deep?: unknown }).deep === true;
   setLivePage(asLivePage(body));
+  setLiveBoard(
+    body && typeof body === "object"
+      ? asLiveBoard((body as { liveBoard?: unknown }).liveBoard)
+      : null,
+  );
   const model = deep ? GROK_DEEP_MODEL : GROK_MODEL;
   const id = "chatcmpl-boh";
   const created = Math.floor(Date.now() / 1000);

@@ -6,6 +6,7 @@ import {
   WorkspacePane,
   type LoadedPset,
 } from "@/components/workspace/WorkspacePane";
+import { Whiteboard } from "@/components/whiteboard/Whiteboard";
 import { Captions } from "./Captions";
 import { Orb } from "./Orb";
 import type { OrbState } from "./constants";
@@ -167,6 +168,7 @@ export function VoiceSession() {
                 </motion.div>
                 <p className="orb-status">{statusText(state, paused)}</p>
                 <Captions turns={turns} />
+                <Whiteboard active={split} />
                 {error ? <p className="session-note workspace-note">{error}</p> : null}
               </section>
             ) : null}

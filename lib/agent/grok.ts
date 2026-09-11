@@ -8,6 +8,7 @@ import {
 import { describeEvent, type SessionEvent } from "@/lib/agent/events";
 import { loadTutorPrompt } from "@/lib/agent/prompt";
 import { getLivePage } from "@/lib/pdf/live-page";
+import { getLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
 
 // Fast lane. grok-4.6 reasons before it answers, which put the first spoken
@@ -34,6 +35,7 @@ export function buildGrokMessages(
   deep = false,
 ): ChatMessage[] {
   const live = getLivePage();
+  const board = getLiveBoard();
   const extra = live
     ? `\n${[
         `<pset_page>${live.page + 1}</pset_page>`,
@@ -46,6 +48,9 @@ export function buildGrokMessages(
           .join("; ")}</question_regions>`,
       ].join("\n")}`
     : "";
+  const boardNote = board?.open
+    ? "\n<board>The whiteboard is open. Coordinates are normalized 0 to 1, origin at the top left. Emit [BOARD open] then one JSON [DRAW ...] per stroke as you name it, for example [DRAW {\"op\":\"axes\",\"id\":\"axes\",\"origin\":{\"x\":0.2,\"y\":0.78},\"xLabel\":\"x\",\"yLabel\":\"y\"}] then [DRAW {\"op\":\"arrow\",\"id\":\"v\",\"from\":{\"x\":0.2,\"y\":0.78},\"to\":{\"x\":0.55,\"y\":0.35},\"label\":\"v\",\"color\":\"accent\"}]. ops: clear, axes, arrow, line, curve, circle, text, highlight, remove.</board>"
+    : "\n<board>When a picture helps, emit [BOARD open] then one JSON [DRAW {\"op\":\"arrow\",\"id\":\"v\",\"from\":{\"x\":0.2,\"y\":0.7},\"to\":{\"x\":0.6,\"y\":0.3},\"label\":\"v\"}] per stroke. Coordinates are normalized 0 to 1, origin at the top left.</board>";
   const context = buildContextBlock(
     live
       ? {
@@ -53,9 +58,11 @@ export function buildGrokMessages(
           page: live.page + 1,
           pages: live.pages,
           mode: "pset",
-          studentDrew: (live.studentMarks ?? 0) > 0,
+          studentDrew: (live.studentMarks ?? 0) > 0 || Boolean(board?.studentShapesSince),
         }
-      : {},
+      : {
+          studentDrew: Boolean(board?.studentShapesSince),
+        },
   );
   const eventBlock = event ? `\n<event>${describeEvent(event)}</event>` : "";
   const rest = history.filter((message) => message.role !== "system");
@@ -67,7 +74,7 @@ export function buildGrokMessages(
   const lane = deep
     ? `\n<deep_turn>${DEEP_TURN}</deep_turn>`
     : `\n<when_to_think>${WHEN_TO_THINK}</when_to_think>`;
-  const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${voice}${eventBlock}${lane}`;
+  const system = `${loadTutorPrompt("your course")}\n\n${context}${extra}${boardNote}${voice}${eventBlock}${lane}`;
   return [{ role: "system", content: system }, ...rest];
 }
 
@@ -115,6 +122,27 @@ function toApiMessages(
     });
   }
 
+  const board = getLiveBoard();
+  if (board?.imageUrl) {
+    messages.push({
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: [
+            "This is the whiteboard right now.",
+            board.studentShapesSince
+              ? "The student drew on it; their ink is in the image. Respond to what they marked."
+              : "Your earlier strokes are in the image.",
+            "Coordinates are normalized 0 to 1, origin at the top left.",
+            "Keep using [BOARD open] and [DRAW ...] when a picture helps.",
+          ].join(" "),
+        },
+        { type: "image_url", image_url: { url: board.imageUrl } },
+      ],
+    });
+  }
+
   return messages;
 }
 
@@ -129,7 +157,9 @@ export async function* streamGrok(
     temperature: deep ? 0.5 : 0.85,
     // Reasoning tokens count against this, so a tight cap on the deep lane
     // returns an empty message.
-    max_tokens: deep ? 1400 : 220,
+    // Board turns need room for a few DRAW tags plus a short spoken line.
+    // 220 cut mid-tag and left the board empty.
+    max_tokens: deep ? 1400 : 700,
     stream: true,
     messages: toApiMessages(history, event, deep),
     ...(deep ? { reasoning_effort: "low" as const } : {}),

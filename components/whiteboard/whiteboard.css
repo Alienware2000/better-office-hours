@@ -1,0 +1,245 @@
+.board-root {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex: 0 0 0;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    flex-basis 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    min-height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
+}
+
+.board-root.is-open {
+  flex: 1.2 1 12.5rem;
+  min-height: 12.5rem;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.board-root.is-open .board-paper {
+  min-height: 11rem;
+  height: 100%;
+}
+
+.board-paper {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  margin-top: 0.85rem;
+  overflow: hidden;
+  border: 1px solid rgba(48, 36, 24, 0.1);
+  border-radius: 10px;
+  background: #fffcf6;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 10px 28px rgba(48, 36, 24, 0.08);
+}
+
+.board-ink-bar {
+  position: absolute;
+  z-index: 2;
+  top: 0.45rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.board-surface {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.board-surface.is-eraser {
+  cursor: cell;
+}
+
+.board-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.board-path,
+.board-head,
+.board-student {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.board-path,
+.board-head {
+  stroke-width: 2.25px;
+}
+
+.board-path.is-dashed {
+  stroke-dasharray: 7 6;
+}
+
+.board-path.is-entering {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: board-draw 0.52s ease-out forwards;
+}
+
+.board-head.is-entering,
+.board-label.is-entering {
+  opacity: 0;
+  animation: board-fade 0.28s ease-out 0.38s forwards;
+}
+
+.board-label {
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+.board-group.is-pulse .board-path,
+.board-group.is-pulse .board-head {
+  animation: board-pulse 1.1s ease-in-out 2;
+}
+
+.board-student.is-pen {
+  stroke-width: 2.5px;
+}
+
+.board-student.is-high {
+  stroke-width: 18px;
+  opacity: 0.42;
+  mix-blend-mode: multiply;
+}
+
+.board-ink-bar .ink-bar,
+.ink-bar.board-ink-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.2rem;
+  border: 1px solid rgba(48, 36, 24, 0.12);
+  border-radius: 9999px;
+  background: rgba(255, 252, 246, 0.94);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 6px 18px rgba(48, 36, 24, 0.08);
+  padding: 0.22rem 0.28rem;
+}
+
+.board-ink-bar .ink-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.08rem;
+}
+
+.board-ink-bar .ink-cluster + .ink-cluster {
+  margin-left: 0.18rem;
+  border-left: 1px solid rgba(48, 36, 24, 0.1);
+  padding-left: 0.32rem;
+}
+
+.board-ink-bar .ink-tool {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: #57534e;
+  cursor: pointer;
+}
+
+.board-ink-bar .ink-tool svg {
+  width: 1.12rem;
+  height: 1.12rem;
+}
+
+.board-ink-bar .ink-tool.is-on {
+  background: #1c1917;
+  color: #fffcf6;
+}
+
+.board-ink-bar .ink-tool:hover:not(.is-on) {
+  background: rgba(48, 36, 24, 0.06);
+  color: #1c1917;
+}
+
+.board-ink-bar .ink-swatch {
+  width: 1.12rem;
+  height: 1.12rem;
+  margin: 0 0.16rem;
+  border: 2px solid rgba(255, 252, 246, 0.9);
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px rgba(48, 36, 24, 0.18);
+  cursor: pointer;
+}
+
+.board-ink-bar .ink-swatch.is-on {
+  box-shadow:
+    0 0 0 1px rgba(48, 36, 24, 0.18),
+    0 0 0 3px #fffcf6,
+    0 0 0 4.5px #1c1917;
+}
+
+@keyframes board-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes board-fade {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes board-pulse {
+  0%,
+  100% {
+    stroke-width: 2.25px;
+    opacity: 1;
+  }
+  50% {
+    stroke-width: 4.2px;
+    opacity: 0.55;
+  }
+}
+
+@media (max-height: 740px) {
+  .board-root.is-open {
+    min-height: 10rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .board-root {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-root {
+    transition: none;
+  }
+
+  .board-path.is-entering,
+  .board-head.is-entering,
+  .board-label.is-entering,
+  .board-group.is-pulse .board-path,
+  .board-group.is-pulse .board-head {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}

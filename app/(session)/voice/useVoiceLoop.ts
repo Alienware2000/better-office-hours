@@ -5,6 +5,9 @@ import type { SessionEvent } from "@/lib/agent/events";
 import { detectMode } from "@/lib/agent/intent";
 import { parseAgentTurn, takeSpeechChunks, type ChatMessage } from "@/lib/agent/tags";
 import { getLivePage } from "@/lib/pdf/live-page";
+import { getLiveBoard } from "@/lib/whiteboard/live-board";
+import { isDrawCommand } from "@/lib/whiteboard/geometry";
+import { applyDrawCommands, openBoard, resetBoard } from "@/lib/whiteboard/store";
 import type { AgentTurn, LayoutState, Turn } from "@/lib/types";
 import { CHIPS, pickGreeting, type OrbState } from "./constants";
 import { isJunkSpeech, isPutAwayPsetPhrase, isResumeConceptPhrase, isResumePsetPhrase } from "./speech";
@@ -81,6 +84,7 @@ export function useVoiceLoop() {
   const playbackEpochRef = useRef(0);
   const playbackStartedAtRef = useRef(0);
   const playbackEndedAtRef = useRef(0);
+  const boardAppliedRef = useRef(0);
   const playingRef = useRef(false);
   const recordingRef = useRef(false);
   const stateRef = useRef<OrbState>("idle");
@@ -244,6 +248,13 @@ export function useVoiceLoop() {
     }
     if (turn.pointer) setPointer(turn.pointer);
     if (turn.highlight) setHighlight(turn.highlight);
+    if (turn.board?.open) openBoard();
+    const commands = turn.board?.commands;
+    if (commands && commands.length > boardAppliedRef.current) {
+      const fresh = commands.slice(boardAppliedRef.current).filter(isDrawCommand);
+      boardAppliedRef.current = commands.length;
+      if (fresh.length) applyDrawCommands(fresh);
+    }
   }, [adoptKind, setLayout]);
 
   // Leaving the desk parks that work. The tutor is back in the lobby and
@@ -273,6 +284,7 @@ export function useVoiceLoop() {
     setTurns([]);
     setPointer(undefined);
     setHighlight(undefined);
+    resetBoard();
     setLayout("pset");
     discardPsetRef.current();
     setOrb(pausedRef.current ? "idle" : "listening");
@@ -318,6 +330,9 @@ export function useVoiceLoop() {
       signal: AbortSignal;
       playbackEpoch: number;
     }): Promise<{ full: string; turn: AgentTurn; spoken: Promise<void> }> => {
+      // Each model pass has its own tag stream. Reset so a deep turn after
+      // [THINK] does not skip DRAW commands that share indices with the lead-in.
+      boardAppliedRef.current = 0;
       const response = await fetch("/api/agent/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -325,6 +340,7 @@ export function useVoiceLoop() {
           messages: historyRef.current,
           stream: true,
           livePage: getLivePage(),
+          liveBoard: getLiveBoard(),
           event,
           deep,
         }),
@@ -421,6 +437,7 @@ export function useVoiceLoop() {
       stopPlayback();
       setPointer(undefined);
       setHighlight(undefined);
+      boardAppliedRef.current = 0;
       turnAbortRef.current?.abort();
       const turnController = new AbortController();
       turnAbortRef.current = turnController;
