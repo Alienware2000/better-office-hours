@@ -2,13 +2,15 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 00:00 ET
-By: Whiteboard lane
+Updated: 2026-09-11 00:37 ET
+By: Hussein (context lane)
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `main`, approved empty-state integration
+Branch: `lane/context`, from the approved `main` baseline
 Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability and PR #4 removes automatic test diagrams. Hussein's subsequent work requires new lane PRs and David's review.
 
 ## Now
+
+Context first slice is ready for David's review. `lib/context/*` now chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Student retrieval is course-scoped and always excludes solutions; solution retrieval has a separate server-runtime-only entry point. The focused synthetic check covers cross-course filtering, solution separation, missing data, and browser rejection of reference access. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
 
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
@@ -28,10 +30,11 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
 3. Try the board on an iPad with Apple Pencil. Pointer input is implemented, but Pencil behavior, palm rejection, and device-specific feel are not verified.
 4. Review live drawing cadence. Model DRAW output still varies: one earlier probe returned just one arrow across two turns. Do not weaken the pedagogy to force extra shapes.
-5. Hussein may start the context, recap, or shell first slice in LANES.md on a new lane branch from main. Open a PR for David; do not merge it or run ahead into another slice. Canvas/Grok Bot operation and live cross-lane integrations still need a separate assignment.
+5. David reviews Hussein's isolated context slice. Do not wire it into voice or start database, endpoint, embeddings, or Canvas integration until those contracts are agreed in the PR.
 
 ## Validation
 
+- Context: `node scripts/check-context.mjs`, focused ESLint, production build, workspace checks, and animation unit checks pass. Standalone `npx tsc --noEmit` still reports the pre-existing `LayoutProps` error in `app/layout.tsx`; `next build` completes its TypeScript phase successfully.
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. Existing hook ref-access/immutability lint failures remain; the new harness passes lint.
 
 - `npm run build` and `npx tsc --noEmit` pass.
@@ -69,7 +72,7 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 | voice | David | next voice branch from main | custom voice loop and delayed-input isolation included in main |
 | workspace | David | next workspace branch from main | adaptive PDF desk included in main |
 | whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
-| context | Hussein | `lane/context` from main | first isolated slice authorized in LANES.md; schema missing |
+| context | Hussein | `lane/context` from main | chunking and solution-safe retrieval ready for review; persistence and API contracts pending |
 | recap | Hussein | `lane/recap` from main | first card/interface slice authorized in LANES.md |
 | shell | Hussein | `lane/shell` from main | first auth/shell slice authorized; preserve VoiceSession |
 
@@ -86,6 +89,8 @@ Open http://localhost:3100. Allow the mic. Tap the orb. Upload a pset, ask to dr
 Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.mjs`, `node scripts/check-lanes.mjs`.
 
 ## Blockers
+
+Context persistence is intentionally blocked on review of database ownership/RLS, authenticated identity, endpoint formats, storage ownership, and the embeddings provider/dimensions.
 
 Pointer quality depends on Grok seeing the page image.
 
