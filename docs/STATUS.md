@@ -2,13 +2,15 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 01:07 ET
-By: Hussein (context lane)
+Updated: 2026-09-11 01:43 ET
+By: Hussein (recap lane)
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/context`, from the approved `main` baseline
-Review: David explicitly approved merging all his open PRs. PRs #1 and #2 were already merged; PR #3 adds voice lifecycle reliability and PR #4 removes automatic test diagrams. Hussein's subsequent work requires new lane PRs and David's review.
+Branch: `lane/recap`, stacked on `lane/context`
+Review: David authorized Hussein's isolated recap slice while the context and voice PRs remain open. The recap PR targets `lane/context` first and must be retargeted to `main` after context merges.
 
 ## Now
+
+Recap first slice is ready for review. `lib/session/*` validates and canonically serializes the existing `Recap` contract, rejects incomplete review references and explicit answer-key disclosures in displayed fields, and proposes an authenticated, course-scoped, idempotent repository boundary. `components/recap/*` renders an accessible cream-desk card with the sticking point, what changed, and a real review location when available; it states honestly when no course reference exists. Student calculations and spoken transcript text are deliberately not rendered. This slice does not add persistence, API routes, auth, or voice-loop wiring.
 
 Context first slice is ready for David's review. `lib/context/*` now chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Chunk IDs are deterministic and page-aware, repeated source ingestion is deduplicated, malformed identity/page fields fail early, and mathematical Unicode survives chunking. Student retrieval is course-scoped and always excludes solutions, including non-solution document kinds explicitly flagged as private answers. Its public result contains only document kind, title, page, and text; course IDs, storage paths, embeddings, solution flags, and internal chunk records cannot cross that boundary. Solution retrieval has a separate server-runtime-only entry point. The focused synthetic check covers chunk boundaries, stable IDs, repeated ingestion, ranking quality, cross-course filtering, solution separation, result-field leakage, missing data, and browser rejection of reference access. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
 
@@ -30,10 +32,11 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 2. Try a notes PDF in the concept desk. Switch between Notes and Whiteboard, mark the PDF, and confirm the tutor notices the marked region.
 3. Try the board on an iPad with Apple Pencil. Pointer input is implemented, but Pencil behavior, palm rejection, and device-specific feel are not verified.
 4. Review live drawing cadence. Model DRAW output still varies: one earlier probe returned just one arrow across two turns. Do not weaken the pedagogy to force extra shapes.
-5. David reviews Hussein's isolated context slice. Do not wire it into voice or start database, endpoint, embeddings, or Canvas integration until those contracts are agreed in the PR.
+5. David reviews Hussein's stacked context and recap slices. After context merges, retarget recap to `main`. Do not wire recap into voice or add unauthenticated persistence in this slice.
 
 ## Validation
 
+- Recap: `node scripts/check-recap.mjs`, focused ESLint, `npx tsc --noEmit`, production build, context check, workspace checks, and animation unit checks pass.
 - Context: `node scripts/check-context.mjs`, focused ESLint, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass.
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. Existing hook ref-access/immutability lint failures remain; the new harness passes lint.
 
@@ -73,7 +76,7 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 | workspace | David | next workspace branch from main | adaptive PDF desk included in main |
 | whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
 | context | Hussein | `lane/context` from main | chunking and solution-safe retrieval ready for review; persistence and API contracts pending |
-| recap | Hussein | `lane/recap` from main | first card/interface slice authorized in LANES.md |
+| recap | Hussein | `lane/recap`, stacked on context | card, validation/serialization, and repository interface ready for review |
 | shell | Hussein | `lane/shell` from main | first auth/shell slice authorized; preserve VoiceSession |
 
 ## Run
@@ -89,6 +92,8 @@ Open http://localhost:3100. Allow the mic. Tap the orb. Upload a pset, ask to dr
 Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.mjs`, `node scripts/check-lanes.mjs`.
 
 ## Blockers
+
+Recap persistence requires authenticated session identity and a reviewed storage adapter. Spoken close flow requires a coordinated change in David's voice lane.
 
 Context persistence is intentionally blocked on review of database ownership/RLS, authenticated identity, endpoint formats, storage ownership, and the embeddings provider/dimensions.
 
