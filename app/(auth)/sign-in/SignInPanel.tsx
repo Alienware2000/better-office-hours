@@ -46,8 +46,8 @@ export function SignInPanel({
       <p className={styles.eyebrow}>Better Office Hours</p>
       <h1 id="sign-in-title">Bring your course with you</h1>
       <p className={styles.copy}>
-        Sign in with your Yale Google account. The tutor will only use course
-        and session information that belongs to you.
+        Sign in with your Yale Google account. Your saved tutoring sessions
+        currently stay in this browser.
       </p>
       <button
         className={styles.primary}

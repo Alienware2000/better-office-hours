@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { isAllowedEmail } from "./policy";
+import type { GoogleProfile } from "next-auth/providers/google";
+import { isAllowedEmail, normalizeEmail } from "./policy";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,8 +17,11 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    signIn({ user }) {
-      return isAllowedEmail(user.email);
+    signIn({ user, account, profile }) {
+      const google = profile as GoogleProfile | undefined;
+      return account?.provider === 'google' && google?.email_verified === true &&
+        typeof google.email === 'string' && isAllowedEmail(user.email) &&
+        normalizeEmail(google.email) === normalizeEmail(user.email ?? '');
     },
   },
 };

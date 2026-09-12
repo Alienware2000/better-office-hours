@@ -59,6 +59,15 @@ const {
   normalizeEmail,
 } = load("lib/auth/policy.ts");
 const { getAuthenticatedIdentity } = load("lib/auth/identity.ts");
+const { authOptions } = load('lib/auth/options.ts');
+const signIn = authOptions.callbacks.signIn;
+const verified = { user: { email: 'student@yale.edu' }, account: { provider: 'google' }, profile: { email: 'student@yale.edu', email_verified: true } };
+assert.equal(await signIn(verified), true);
+assert.equal(await signIn({ ...verified, profile: { ...verified.profile, email_verified: false } }), false);
+assert.equal(await signIn({ ...verified, profile: { email: 'student@yale.edu' } }), false);
+assert.equal(await signIn({ ...verified, profile: { ...verified.profile, email: 'other@yale.edu' } }), false);
+assert.equal(await signIn({ ...verified, account: { provider: 'unrecognized' } }), false);
+assert.equal(await signIn({ ...verified, profile: undefined }), false);
 const { SignInPanel } = load("app/(auth)/sign-in/SignInPanel.tsx");
 const React = nodeRequire("react");
 const { renderToStaticMarkup } = nodeRequire("react-dom/server");
