@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 20:58 ET
+Updated: 2026-09-11 21:58 ET
 By: Hussein (shell lane)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/shell`, merged with current `origin/main`
@@ -116,6 +116,8 @@ Uploads and ink no longer start autonomous speech. The orb starts or submits onl
 
 Shell first slice is ready for review on PR #9. Stable NextAuth v4 provides a Google OAuth route and `/sign-in` shell without replacing or gating the working `VoiceSession`. The policy accepts Yale addresses and reserves the documented judge address, normalizes authenticated identity, and disables sign-in with an explicit missing-configuration message unless all three auth environment variables are present. A dedicated Google Cloud project and internal Yale OAuth web client now exist for local development. Its localhost origin and callback are configured, credentials are stored only in the ignored `.env.local`, and a real Yale sign-in successfully reached the signed-in shell. The judge password provider, root-route gate, course identity, and persistence wiring remain intentionally absent pending review.
 
+Submission README follow-up: the README now follows the required demo-first structure, includes the verified PNAS learning-safeguards citation, accurately documents local Yale OAuth setup and current prototype limits, and leaves explicit placeholders for the live URL, video, Cursor screenshot, judge instructions, and Grok Bot link/GIF. No unmerged course retrieval, recap, persistence, or deployment feature is claimed as live.
+
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
 Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David authorized merging PR #3. Try pause/resume and Leave while a recording is processing as the remaining hardware check. This earlier slice established delayed-input isolation; the current stress-test branch adds prototype acoustic interruption, still requiring hardware validation.
@@ -132,6 +134,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 2. Leave Hussein's PRs #6, #8, and #9 open for David's later review. PR #8 is based on lane/context, so review its dependency deliberately. No merge permission has been given for these PRs.
 3. Retest live drawing cadence and real-device voice when convenient. Planning latency, diagram quality, and physical correctness still need observation; do not weaken pedagogy or microphone interruption to make a fixture pass.
 4. Canvas/Grok Bot operation and live cross-lane wiring still require a separate assignment.
+5. Before submission, replace the README placeholders with the deployed URL, demo video, Cursor screenshot, judge instructions, and verified Grok Bot link/GIF.
 
 ## Validation
 
