@@ -1,45 +1,58 @@
 # Better Office Hours
 
-A voice-first tutor that sees your work and helps you reason through it.
+A voice tutor that knows your course and talks you to the answer instead of handing it to you.
 
-Better Office Hours is being built around the feeling of sharing a desk with a good tutor. You talk, work through a problem, or mark something you do not understand. The tutor sees the material in front of you, points to the relevant part, and draws or animates a diagram when a picture helps. The goal is to learn with someone, not to receive a finished answer.
+Built by David Antwi and Hussein for the Yale AI Association x SpaceXAI hackathon.
 
-Built by **David Antwi and Hussein** for the Yale AI Association x SpaceXAI hackathon. This is an active prototype. The adaptive desk works locally; course integrations, authentication, and saved recaps are still being built.
+## Demo
 
-## One desk, different ways to learn
+The public demo video and live application link will be added after the integrated build is deployed. The planned 90-second walkthrough is documented in [DEMO.md](docs/DEMO.md).
 
-Homework starts with a PDF upload. “Explain a concept” and “Something else” start with a large whiteboard. Each uses the same desk, with the voice orb and live captions alongside the work. You can switch between the whiteboard and an attached PDF without leaving the conversation.
+## The problem
 
-The whiteboard is primarily how the tutor explains things. Students can also circle a confusing part, sketch their thinking, or work through a step on the same surface. Diagrams are generated for the topic at hand. Projectile motion is a development fixture, not the boundary of what the tutor is meant to teach.
+Office hours are crowded, time-conflicting, and intimidating. Generic AI tutors do not know the student's course and often solve the problem instead of teaching the student how to solve it. In a 2025 field study, unguarded AI assistance improved practice performance but reduced later unassisted exam performance by 17 percent; a tutor with learning safeguards largely removed that harm ([Bastani et al., PNAS](https://doi.org/10.1073/pnas.2422633122)). Better Office Hours combines those safeguards with course context, voice, and a shared visual workspace.
 
-The longer-term vision includes learning on an iPad, writing directly on the board with Apple Pencil. Pointer input is implemented; Pencil feel and palm rejection still need testing on a real device.
+## What it does
 
-## What works today
+- Talks with the student through ElevenLabs speech recognition and synthesis.
+- Sees uploaded problem sets and notes, including the student's marks.
+- Points to and highlights the relevant part of a PDF.
+- Draws and animates generated explanations on a shared SVG whiteboard.
+- Guides graded work with short hints and questions instead of final answers.
+- Supports homework, concept explanations, and other office-hours conversations in one desk.
+- Provides Yale Google sign-in through the isolated `/sign-in` shell when OAuth is configured.
 
-- Voice conversation using ElevenLabs speech recognition and speech synthesis, with Grok handling the tutor's responses.
-- Immediate workspace selection from recognized homework, concept, and other requests.
-- PDF uploads for problem sets and supplemental notes, with page navigation, zoom, freehand ink, highlighting, and a tutor pointer.
-- Shared diagram styling and generated SVG drawings and animations, including play, pause, focus, and scrubbing.
-- Page and board snapshots supplied to the tutor, including student marks and the current animation frame.
-- Settled PDF-mark events so the tutor can respond to a marked region without requiring the student to describe it again.
-- Separate parked homework and concept sessions within the current browser session.
-- Orb interruption that stops speech and freezes animation. Paused tabs do not take over an active conversation.
+## It has the answer key and will not give it to you
 
-The tutor is instructed to ask short, focused questions and guide the student through graded work without giving the final answer. Those guardrails are part of the design, and model behavior still needs evaluation. The learning approach and human-maintained prompt are in [PEDAGOGY.md](docs/PEDAGOGY.md) and [PROMPT.md](docs/PROMPT.md).
+The tutor elicits the student's thinking first, advances one hint at a time, asks for predictions before explanations, and never bottoms out to the final answer on graded work. Solution retrieval and spoken recap integration are still under review, so this is the enforced teaching design rather than a claim that every planned context source is live. See [PEDAGOGY.md](docs/PEDAGOGY.md) for the learning basis and [PROMPT.md](docs/PROMPT.md) for the human-maintained tutor policy.
 
-## Where we are going
+## Built in Cursor
 
-**Course context through Grok Bot and Canvas.** The tutor should already know the student's classes, assigned materials, and course conventions. A future collector will supply the course profile and materials for retrieval. This is a separate context layer, not a requirement for uploading a PDF today. The collector specification exists, but Canvas access and ingestion are not connected yet.
+The team built and coordinated this project in Cursor across separate voice, workspace, whiteboard, context, recap, and shell lanes.
 
-**Spoken and saved recaps.** After the student summarizes what they learned, the tutor should close with the sticking point, what changed, and something specific to review. Recap types exist; the spoken close flow, storage, and card are not wired yet.
+<!-- Add the required Cursor screenshot here before submission. -->
 
-**Identity and learning memory.** Authentication, durable course/session storage, and later retrieval of prior learning are planned. Uploaded files currently live on the local development machine. Sessions are not yet saved across reloads.
+## Grok Bot course context
 
-A recorded demo and hosted judge access will be added after the integrated flow is ready. The [demo plan](docs/DEMO.md) describes the target experience, not a list of completed features.
+The planned Course Pack Collector uses Grok Bot to gather a student's Canvas course profile, syllabus, lecture material, assignments, and posted solutions after the student approves Yale Duo. Student-visible retrieval must exclude solution text. The collector specification exists in [grokbot/TASK.md](grokbot/TASK.md), but the bot share link and live ingestion are not connected yet.
 
-## Run locally
+<!-- Add the Grok Bot share link and collection GIF here after the collector is verified. -->
 
-You need Node.js, npm, an xAI API key, and an ElevenLabs API key with access to speech recognition and speech synthesis.
+## Stack
+
+- Next.js App Router, TypeScript, Tailwind CSS, and Motion
+- PDF.js with custom pointer, highlight, and student-ink overlays
+- Custom SVG whiteboard with generated declarative animations
+- ElevenLabs STT and TTS with local Silero voice activity detection
+- Grok through the OpenAI-compatible xAI API
+- NextAuth with Google OAuth for Yale sign-in
+- Supabase with Postgres and pgvector planned for durable context and recaps
+
+## Try it
+
+The hosted URL and judge instructions will be added after deployment. The demo course is archived PHYS 180 material; the same desk is designed to work with any course once its context has been loaded.
+
+To run locally, install Node.js and configure xAI and ElevenLabs API keys:
 
 ```bash
 git clone https://github.com/Alienware2000/better-office-hours.git
@@ -47,44 +60,44 @@ cd better-office-hours
 npm ci
 ```
 
-On first setup, copy `.env.example` to `.env.local`. Preserve your existing `.env.local` if you already have one. Set:
+Copy `.env.example` to `.env.local` and preserve any existing local secrets:
 
 ```dotenv
 XAI_API_KEY=your_key_here
 ELEVENLABS_API_KEY=your_key_here
 ```
 
-The other names in `.env.example` are reserved for integrations that are not required by the current local voice loop.
+Google sign-in additionally requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`. Without all three values, `/sign-in` reports that authentication is unavailable. Never commit `.env.local`.
 
 ```bash
 npm run dev -- -p 3100
 ```
 
-Open [localhost:3100](http://localhost:3100), allow microphone access, and tap the orb to activate the tutor. Say what you want to work on. The three entry chips can also open a desk. Attach a PDF or use the whiteboard; tap the orb again to stop voice.
+Open [localhost:3100](http://localhost:3100), allow microphone access, and activate the orb. API calls consume provider credits. Audio is processed by ElevenLabs, and conversation content plus supplied page and board images are sent to xAI.
 
-API calls can consume credits. Audio is processed by ElevenLabs, and conversation content plus supplied page/board images are sent to xAI. Do not commit credentials or uploaded materials.
+## Current prototype limits
 
-## Current limits
+Authentication is not yet enforced at the tutor route or connected to course and recap persistence. Local PDF storage is not durable or user-isolated for serverless deployment. The context retrieval core and recap card are awaiting review, and their live integrations are not complete. Generated visual quality and microphone interruption still require real-device testing.
 
-This is a local prototype, not a finished multi-user service. It has no authenticated user isolation or durable production storage. PDFs are stored in ignored `.data/psets`; that filesystem approach is not a serverless persistence solution. Production deployment and per-user context isolation still need integration work.
-
-Hands-free barge-in is not implemented; use the orb to interrupt. Live diagram generation varies, and the reasoning pass can leave several seconds of quiet. Real microphone cadence, marked-page reactions, and iPad/Pencil behavior still need hands-on review.
-
-## Stack and checks
-
-The working app uses Next.js App Router, TypeScript, Tailwind, Motion, PDF.js, custom SVG whiteboard rendering, ElevenLabs STT/TTS, and the OpenAI-compatible xAI API. The fast spoken model and deeper reasoning model are configured in `lib/agent/grok.ts`. Supabase and authentication are planned integrations. tldraw and the ElevenLabs conversational SDK are not installed in the current implementation.
+## Development checks
 
 ```bash
 npm run build
 npx tsc --noEmit
+node scripts/check-auth.mjs
 node scripts/check-workspace.mjs
 node scripts/check-anim.mjs --unit
 ```
 
-With the dev server and API keys available, `node scripts/check-board.mjs` and `node scripts/check-anim.mjs` exercise live model output. These checks are variable and use API credits. Full repo lint currently reports existing ref-access issues; changed code should still pass focused lint and add no new failures.
+Live model checks require a running development server and API credentials and can consume credits.
 
-## Working together
+## Roadmap
 
-David owns voice, workspace, and whiteboard. Hussein owns context, recap, and shell. Start from the latest `main`, work on `lane/<name>`, and open a PR. David reviews Hussein's PRs before they merge.
+Professor-configurable course guidance, lecture transcription, live screen sharing for coding courses, iPad handwriting, spaced review reminders, cross-course learning memory, and transcript export.
 
-Read [STATUS](docs/STATUS.md) for the current baseline, [DESIGN](docs/DESIGN.md) for the product, [ARCHITECTURE](docs/ARCHITECTURE.md) for contracts, and [LANES](docs/LANES.md) for Hussein's first slices and acceptance checks. Coding agents must also read [AGENTS.md](AGENTS.md). Keep the human prompt and shared contracts stable, preserve the adaptive desk, and make missing integrations explicit.
+## Team
+
+- David Antwi: voice, workspace, and whiteboard
+- Hussein: context, recap, authentication, and application shell
+
+For current implementation status and contribution boundaries, read [STATUS.md](docs/STATUS.md), [DESIGN.md](docs/DESIGN.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), and [LANES.md](docs/LANES.md).

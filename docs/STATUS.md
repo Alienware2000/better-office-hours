@@ -2,23 +2,19 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 21:14 ET
-By: Hussein (recap lane)
+Updated: 2026-09-11 22:06 EDT
+By: Codex for David, consolidating Hussein's reviewed slices
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/recap`, stacked on refreshed `lane/context`
-Review: David explicitly approved merging his PRs #5 and #7. Hussein owns PRs #6 (context), #8 (recap, based on lane/context), and #9 (shell); keep all three open until David reviews them and gives separate merge approval.
+Branch: `lane/shell`, integrated with current main
+Review: David explicitly authorized consolidating and merging Hussein's PRs. #6 and #8 are merged. #9 has reviewed verified-email and clean-install repairs and is next. David also assigned the live Canvas/Grok Bot integration.
 
-## Hussein PRs remain open (read this first)
+## Consolidation authorized
 
-Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. David will review them later. This merge approval covers only David's PRs #5 and #7. Do not merge, close, or recreate Hussein's existing PRs.
-
-- Branch from `origin/main`: `lane/recap` (or `lane/context` / `lane/shell`).
-- Follow `docs/LANES.md` for the first reviewable slice boundaries.
-- Open a PR to `main` for David to review. Do not merge your own PRs.
-- Stay in recap/context/shell directories. Do not wait on mic hardware checks or PR #5.
-- Recap first slice = isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
+David explicitly requested Hussein's merges and live integration on September 11. Context #6 and recap #8 are merged, preserving their dependency. Shell #9 is being merged after the verified Google-email check and repaired package lock pass. Earlier wait-for-review instructions are superseded for these slices. Keep frozen lib/types.ts and human PROMPT/PEDAGOGY unchanged. Grok Bot must collect the student's Canvas materials for the live demo; do not substitute a fictitious course pack.
 
 ## Now
+
+Merge review: sign-in now requires Google email_verified=true, the Google provider, and matching allowed profile/user email. The isolated sign-in copy accurately describes browser-local saves. A fresh npm ci caught missing @emnapi lock entries; regenerated lock passes npm ci, auth checks, focused lint, and production build. No authentication gate, cloud persistence, or judge-password provider was added. Preserved Hussein's concurrent README update rather than overwriting it.
 
 Merge handoff: PR #7 was merged into main and its overlapping documentation reconciled into the voice branch without dropping newer work. PR #5 has David's explicit merge approval. All implementation changes were already committed and pushed; this integration changes documentation only. The tested voice/whiteboard baseline includes 5cef623 and fresh-task handoff 179544c. Continue diagram work from this integrated baseline. GitHub PR state records merge completion. No Hussein implementation branch was changed.
 
@@ -114,9 +110,13 @@ David and Hussein stress-tested the desk and reported premature problem selectio
 
 Uploads and ink no longer start autonomous speech. The orb starts or submits only. A separate Pause button and Escape stop voice without leaving the desk, avoiding the automatic-endpoint/tap-to-cancel race. Local Silero v5 speech detection replaces RMS triggering; the endpoint is about 1.1s of non-speech. Startup and request stalls have deadlines and visible recovery. All response chunks are spoken, with captions/history following sentence playback and upcoming audio prepared ahead. Unit/symbol normalization is applied only to TTS. Board equations and queued visual narration are supported; writing on the board stops speech. PDF scrolling targets the requested region using measured zoomed geometry.
 
-Context first slice is ready for David's review on PR #6. `lib/context/*` chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Chunk IDs are deterministic and page-aware, repeated source ingestion is deduplicated, malformed identity/page fields fail early, and mathematical Unicode survives chunking. Student retrieval is course-scoped and always excludes solutions, including non-solution document kinds explicitly flagged as private answers. Its public result contains only document kind, title, page, and text; course IDs, storage paths, embeddings, solution flags, and internal chunk records cannot cross that boundary. Solution retrieval has a separate server-runtime-only entry point. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
+Shell first slice is ready for review on PR #9. Stable NextAuth v4 provides a Google OAuth route and `/sign-in` shell without replacing or gating the working `VoiceSession`. The policy accepts Yale addresses and reserves the documented judge address, normalizes authenticated identity, and disables sign-in with an explicit missing-configuration message unless all three auth environment variables are present. A dedicated Google Cloud project and internal Yale OAuth web client now exist for local development. Its localhost origin and callback are configured, credentials are stored only in the ignored `.env.local`, and a real Yale sign-in successfully reached the signed-in shell. The judge password provider, root-route gate, course identity, and persistence wiring remain intentionally absent pending review.
 
-Recap first slice is ready for review on stacked PR #8. `lib/session/*` validates and canonically serializes the existing `Recap` contract, rejects incomplete review references and explicit answer-key disclosures in displayed fields, and proposes an authenticated, course-scoped, idempotent repository boundary. `components/recap/*` renders an accessible cream-desk card with the sticking point, what changed, and a real review location when available; it states honestly when no course reference exists. Student calculations and spoken transcript text are deliberately not rendered. This slice does not add persistence, API routes, auth, or voice-loop wiring.
+Submission README follow-up: the README now follows the required demo-first structure, includes the verified PNAS learning-safeguards citation, accurately documents local Yale OAuth setup and current prototype limits, and leaves explicit placeholders for the live URL, video, Cursor screenshot, judge instructions, and Grok Bot link/GIF. No unmerged course retrieval, recap, persistence, or deployment feature is claimed as live.
+
+Context first slice merged through PR #6. `lib/context/*` chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Chunk IDs are deterministic and page-aware, repeated source ingestion is deduplicated, malformed identity/page fields fail early, and mathematical Unicode survives chunking. Student retrieval is course-scoped and always excludes solutions, including non-solution document kinds explicitly flagged as private answers. Its public result contains only document kind, title, page, and text; course IDs, storage paths, embeddings, solution flags, and internal chunk records cannot cross that boundary. Solution retrieval has a separate server-runtime-only entry point. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
+
+Recap first slice merged through PR #8. `lib/session/*` validates and canonically serializes the existing `Recap` contract, rejects incomplete review references and explicit answer-key disclosures in displayed fields, and proposes an authenticated, course-scoped, idempotent repository boundary. `components/recap/*` renders an accessible cream-desk card with the sticking point, what changed, and a real review location when available; it states honestly when no course reference exists. Student calculations and spoken transcript text are deliberately not rendered. This slice does not add persistence, API routes, auth, or voice-loop wiring.
 
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
@@ -131,9 +131,10 @@ Whiteboard state parks separately with homework and concept sessions and restore
 ## What to do next
 
 1. David's fresh diagram task continues the integrated voice/whiteboard baseline with the documented pedagogy and no scripted runtime scenes.
-2. Leave Hussein's PRs #6, #8, and #9 open for David's later review. PR #8 is based on lane/context, so review its dependency deliberately. No merge permission has been given for these PRs.
+2. Review Hussein's remaining shell PR #9. PRs #6 and #8 are merged; no merge permission has been given for #9.
 3. Retest live drawing cadence and real-device voice when convenient. Planning latency, diagram quality, and physical correctness still need observation; do not weaken pedagogy or microphone interruption to make a fixture pass.
 4. Canvas/Grok Bot operation and live cross-lane wiring still require a separate assignment.
+5. Before submission, replace the README placeholders with the deployed URL, demo video, Cursor screenshot, judge instructions, and verified Grok Bot link/GIF.
 
 ## Validation
 
@@ -143,6 +144,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 - The live upload-only model probe still chose problem one despite revised wording. Automatic readiness turns are now disabled in the client. The live general-equation probe produced a DRAW text equation and one question (about 5.8s to first token in the reasoning lane). These are isolated probes, not broad model-quality validation.
 
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. The current branch also fixes the earlier voice-hook ref lint failures; the harness passes lint.
+- Shell: `node scripts/check-auth.mjs`, focused ESLint, `npx tsc --noEmit`, production build, voice lifecycle, workspace, and animation unit checks pass. Browser verified the honest missing-config `/sign-in` state, real Yale Google OAuth callback, authenticated session endpoint, signed-in shell, and unchanged tutor home. `npm ci --dry-run` validates the synchronized lockfile; a later local clean install hit Windows `EPERM` locks on native binaries in the OneDrive checkout and is recorded in NOTES.
 - Context refresh: `node scripts/check-context.mjs`, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass after merging current main.
 - Recap refresh: `node scripts/check-recap.mjs`, context checks, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass after merging the updated context base.
 
@@ -181,8 +183,8 @@ Whiteboard state parks separately with homework and concept sessions and restore
 | voice | David | next voice branch from main | custom voice loop and delayed-input isolation included in main |
 | workspace | David | next workspace branch from main | adaptive PDF desk included in main |
 | whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
-| context | Hussein | `lane/context` from main | chunking and solution-safe retrieval ready for review; persistence and API contracts pending |
-| recap | Hussein | `lane/recap`, stacked on context | card, validation/serialization, and repository interface ready for review |
+| context | Hussein | `lane/context` | PR #6 merged; ingestion and live wiring next |
+| recap | Hussein | `lane/recap` | PR #8 merged; student-first close flow next |
 | shell | Hussein | `lane/shell` from main | PR #9 open; Google/Yale auth verified locally; tutor remains ungated |
 
 ## Run
@@ -198,6 +200,8 @@ Open http://localhost:3100. Allow the mic. Tap the orb. Upload a pset, ask to dr
 Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.mjs`, `node scripts/check-lanes.mjs`.
 
 ## Blockers
+
+Shell integration needs a reviewed authenticated identity contract and a decision on secure judge-password storage before it can gate the tutor. Production deployment also needs its final URL added to the Google OAuth client and deployment environment.
 
 Recap persistence requires authenticated session identity and a reviewed storage adapter. Spoken close flow requires a coordinated change in David's voice lane.
 
