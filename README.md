@@ -35,13 +35,32 @@ The tutor elicits the student's thinking first, advances one hint at a time, ask
 
 The team built and coordinated this project in Cursor across separate voice, workspace, whiteboard, context, recap, and shell lanes.
 
-<!-- Add the required Cursor screenshot here before submission. -->
+![Better Office Hours open in Cursor, with the running voice tutor beside the project conversation](docs/images/cursor-live-tutor.png)
+
+Developing and running Better Office Hours in Cursor.
+
+<details>
+<summary>More screenshots from the build</summary>
+
+![Project setup and repository creation in Cursor](docs/images/cursor-project-setup.png)
+
+Setting up the public repository and coordinating the build in Cursor.
+
+![Testing the homework PDF workspace and tutor transcript inside Cursor](docs/images/cursor-homework-testing.png)
+
+An earlier development session testing the PDF workspace and tutor responses.
+
+</details>
 
 ## Grok Bot course context
 
 Course Pack Collector uses Grok Bot to gather a student's Canvas course profile, syllabus, lecture material, assignments, and posted solutions after the student approves Yale Duo. Student-visible retrieval must exclude solution text. The app supplies a scoped two-hour connection task, and accepts profile and extracted page-text uploads. See [grokbot/TASK.md](grokbot/TASK.md). The bot is signed into Canvas and collecting the selected archived PHYS 180 course. The actual course profile and first syllabus, Class 1 lecture notes and Homework 1 uploads were verified in the deployed app. The reusable bot share link is still pending.
 
-<!-- Add the Grok Bot share link and collection GIF here after the collector is verified. -->
+![Grok Bot Course Pack Collector accessing Canvas and collecting the selected PHYS 180 course](docs/images/grok-bot-course-collector.png)
+
+Course Pack Collector during the read-only Canvas collection run. This screenshot shows the collection stage; the resulting source uploads were subsequently verified in the deployed app.
+
+<!-- Add the reusable Grok Bot share link and collection GIF when available. -->
 
 ## Stack
 

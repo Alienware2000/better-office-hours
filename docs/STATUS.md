@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 23:27 EDT
+Updated: 2026-09-11 23:40 EDT
 By: Codex for David, consolidating reviewed lanes
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, integrating current main
@@ -13,6 +13,8 @@ Review: David explicitly authorized consolidation. Hussein's PRs #6, #8, and #9 
 David explicitly authorized merging Hussein's slices and live integration. Context #6, recap #8, and shell #9 are merged, preserving their dependency. Earlier wait-for-review instructions below are historical and superseded. Keep frozen lib/types.ts and human PROMPT/PEDAGOGY unchanged. Grok Bot must collect real Canvas materials for the live demo.
 
 ## Now
+
+Submission screenshots: David supplied three Cursor build screenshots and one Grok Bot collection screenshot. All four originals are now in docs/images and embedded in README; the Cursor section satisfies the screenshot evidence requirement. The public 1-2 minute demo-video URL is still missing and must be added before answering Yes to the form. David is recording in regular Chrome on his laptop and explicitly chose to skip Canvas setup. Leave Chrome alone. Its guest context is separate from the in-app browser where PHYS 180 sources were verified; do not claim Chrome is connected or greeted by name. No recording browser changes or new app deployment in this docs-only slice.
 
 Recording polish (23:24): David requested clearer workspace entry, useful titles, and a better Canvas position. Read the actual saved exchange: an audio repair became its name, then physics homework received a broad question despite an empty PDF desk. Runtime routing now invites a PDF upload or spoken problem description, avoids repeat uploads, and asks for a concept only when unnamed. Titles skip common repairs/greetings, use topic/document names when available, and preserve manual names; old library rows derive their display title again. Canvas is a compact book control in the reserved session header, with a wrapping phone row and explicit optional-connection copy. Build, focused lint, saved-session/structured-routing checks, and full isolated browser recovery pass. Five real fast-Grok probes chose the expected upload/topic/teaching behaviors. Desktop/700px/390px renders and connected state inspected. Human acoustic quality is not established by these checks. Live update is deployment dpl_AWysH7j86epXocxZfSayGeafDdQx (runtime fc80ffa). The public header and optional Canvas dialog are verified; the collector continues uploading and the header reached 24 PHYS 180 sources during inspection. The newly opened public tab has PHYS 180 selected and voice off. Local :3102 remains the older frozen fallback.
 
