@@ -1,3 +1,4 @@
+import { validateRecap } from '@/lib/session/recap';
 import type { LivePage } from "@/lib/pdf/live-page";
 import type {
   AgentTurn,
@@ -68,10 +69,18 @@ function readJson(source: string, openAt: number): { value: unknown; end: number
 type PageAnchors = Pick<LivePage, "page" | "textRegions"> | null;
 
 function applyTag(turn: TeachingTurn, name: string, body: string, source?: PageAnchors) {
-  if (name === "RECAP") {
-    turn.recap = true;
+  if (name === "COURSE") {
+    try { const value = JSON.parse(body); if (typeof value.id === 'string' && value.id.length <= 300) turn.courseId = value.id; } catch { /* Partial tag. */ }
     return;
   }
+  if (name === "RECAP") {
+    turn.recap = true;
+    if (body.trim()) {
+      try { const parsed = validateRecap(JSON.parse(body)); if (parsed.ok) turn.recapData = parsed.value; } catch { /* Never expose partial recap JSON. */ }
+    }
+    return;
+  }
+  if (name === "SUMMARY_REQUEST") return;
   if (name === "THINK") {
     turn.think = true;
     return;
@@ -182,7 +191,7 @@ export function parseAgentTurn(raw: string, source?: PageAnchors, inheritedInten
     let end = -1;
     let inner = "";
 
-    if (/^\[(?:DRAW|ANIM|ANIM_PROGRAM)\b/.test(raw.slice(i)) && brace !== -1 && (close === -1 || brace < close)) {
+    if (/^\[(?:DRAW|ANIM|ANIM_PROGRAM|RECAP|COURSE)\b/.test(raw.slice(i)) && brace !== -1 && (close === -1 || brace < close)) {
       const json = readJson(raw, brace);
       if (!json) {
         // Tag JSON is still streaming; wait for the next chunk.
@@ -210,6 +219,8 @@ export function parseAgentTurn(raw: string, source?: PageAnchors, inheritedInten
       "ANIM",
       "MODE",
       "RECAP",
+      "COURSE",
+      "SUMMARY_REQUEST",
       "THINK",
     ];
     if (name === 'TEACH') {
@@ -244,7 +255,7 @@ export function takeSpeechChunks(spoken: string, emitted: number): {
 export function visualBeats(raw: string, source?: PageAnchors): { speechBefore: string; turn: AgentTurn }[] {
   const beats: { speechBefore: string; turn: AgentTurn }[] = [];
   let lastEnd = 0;
-  const starts = /\[(?:BOARD|DRAW|POINT|HIGHLIGHT|ANIM)\b/g;
+  const starts = /\[(?:BOARD|DRAW|POINT|HIGHLIGHT|ANIM|RECAP)\b/g;
   for (const match of raw.matchAll(starts)) {
     const start = match.index;
     if (start < lastEnd) continue;

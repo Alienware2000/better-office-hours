@@ -4,6 +4,7 @@ import type { BBox } from "@/lib/types";
 import { DropZone } from "./DropZone";
 import { LeaveButton } from "./LeaveButton";
 import { PdfViewer } from "./PdfViewer";
+import type { PdfViewState } from '@/lib/pdf/view-state';
 import "./workspace.css";
 
 export type LoadedPset = { id: string; title: string; fileUrl: string };
@@ -18,6 +19,8 @@ export function WorkspacePane({
   onPsetReady,
   onExit,
   onRemove,
+  savedView,
+  onViewChange,
 }: {
   // Held by the session rather than here, so closing the workspace and coming
   // back does not lose the student's upload.
@@ -32,6 +35,8 @@ export function WorkspacePane({
   onPsetReady?: (info: { title: string; pages: number }) => void;
   onExit?: () => void;
   onRemove?: () => void;
+  savedView?: PdfViewState;
+  onViewChange?: (id: string, state: PdfViewState) => void;
 }) {
   if (!pset) {
     return (
@@ -60,6 +65,8 @@ export function WorkspacePane({
         onReady={onPsetReady}
         onExit={onExit}
         onRemove={onRemove}
+        savedView={savedView}
+        onViewChange={onViewChange}
       />
     </div>
   );

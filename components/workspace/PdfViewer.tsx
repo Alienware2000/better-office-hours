@@ -7,6 +7,7 @@ import { revealPageTarget } from "@/lib/pdf/coordinates";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { BBox } from "@/lib/types";
+import type { PdfViewState } from '@/lib/pdf/view-state';
 import { detectQuestionRegions, textRegions, type PdfTextItem } from "@/lib/pdf/questions";
 import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
 import { InkBar } from "./InkBar";
@@ -31,6 +32,8 @@ function clampZoom(value: number) {
 
 type PageView = {
   index: number;
+  width: number;
+  height: number;
   displayUrl: string;
   visionUrl: string;
   text: string;
@@ -49,6 +52,8 @@ export function PdfViewer({
   onReady,
   onExit,
   onRemove,
+  savedView,
+  onViewChange,
 }: {
   psetId: string;
   documentKind?: "pset" | "notes";
@@ -60,12 +65,18 @@ export function PdfViewer({
   active?: boolean;
   pointer?: { page: number; x: number; y: number; label?: string };
   highlight?: { page: number; bbox: BBox };
+  savedView?: PdfViewState;
+  onViewChange?: (id: string, state: PdfViewState) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const initialView = useRef(savedView);
+  const restoredScroll = useRef(false);
+  const onViewChangeRef = useRef(onViewChange);
+  useEffect(() => { onViewChangeRef.current = onViewChange; }, [onViewChange]);
   const frameRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PageView[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [inkHistory, setInkHistory] = useState<{past: InkStroke[][]; present: InkStroke[]; future: InkStroke[][]}>({past: [], present: [], future: []});
+  const [inkHistory, setInkHistory] = useState<{past: InkStroke[][]; present: InkStroke[]; future: InkStroke[][]}>(savedView?.ink ?? {past: [], present: [], future: []});
   const strokes = inkHistory.present;
   const setStrokes = (update: (current: InkStroke[]) => InkStroke[]) => setInkHistory(history => ({past: [...history.past, history.present].slice(-30), present: update(history.present), future: []}));
   const undoInk = () => { window.dispatchEvent(new Event('boh:student-writing')); setInkHistory(h => h.past.length ? {past:h.past.slice(0,-1),present:h.past.at(-1)!,future:[h.present,...h.future]} : h); };
@@ -73,8 +84,8 @@ export function PdfViewer({
   const publishedStrokesRef = useRef(strokes);
   const [tool, setTool] = useState<InkTool>("hand");
   const [color, setColor] = useState<InkColor>("ink");
-  const [current, setCurrent] = useState(0);
-  const [zoom, setZoom] = useState(1);
+  const [current, setCurrent] = useState(savedView?.current ?? 0);
+  const [zoom, setZoom] = useState(savedView?.zoom ?? 1);
   const zoomRef = useRef(1);
   zoomRef.current = zoom;
   const [fitWidth, setFitWidth] = useState(0);
@@ -94,6 +105,9 @@ export function PdfViewer({
   const resetFitRef = useRef(false);
   const gestureZoomRef = useRef(1);
   const reduceMotion = useReducedMotion() ?? false;
+  useEffect(() => {
+    if (pages.length) onViewChangeRef.current?.(psetId, { current, zoom, ink: inkHistory });
+  }, [psetId, current, zoom, inkHistory, pages.length]);
 
   const zoomAround = (next: number, clientX?: number, clientY?: number) => {
     const stack = hostRef.current;
@@ -210,6 +224,8 @@ export function PdfViewer({
 
         nextPages.push({
           index: i,
+          width: canvas.width,
+          height: canvas.height,
           displayUrl: canvas.toDataURL("image/jpeg", 0.85),
           visionUrl: snapshot(canvas),
           text: strings.join(" "),
@@ -220,23 +236,24 @@ export function PdfViewer({
 
       if (cancelled) return;
       setPages(nextPages);
-      setCurrent(0);
-      setInkHistory({past: [], present: [], future: []});
-      setZoom(1);
-      if (nextPages[0]) {
+      const restoredPage = Math.min(Math.max(0, initialView.current?.current ?? 0), Math.max(0, nextPages.length - 1));
+      setCurrent(restoredPage);
+      if (nextPages[restoredPage]) {
+        const restoredImage = await paintInkOnImage(nextPages[restoredPage].visionUrl, initialView.current?.ink.present.filter(s => s.page === restoredPage) ?? []);
+        if (cancelled) return;
         // Publish before onReady so the pset_ready turn can actually see the page.
         if (activeRef.current) {
           setLivePage({
             psetId,
             documentKind,
             title,
-            page: 0,
+            page: restoredPage,
             pages: nextPages.length,
-            imageUrl: nextPages[0].visionUrl,
-            text: nextPages[0].text,
-            questionRegions: nextPages[0].questionRegions,
-            textRegions: nextPages[0].textRegions,
-            studentMarks: 0,
+            imageUrl: restoredImage,
+            text: nextPages[restoredPage].text,
+            questionRegions: nextPages[restoredPage].questionRegions,
+            textRegions: nextPages[restoredPage].textRegions,
+            studentMarks: initialView.current?.ink.present.filter(s => s.page === restoredPage).length ?? 0,
           });
         }
         onReadyRef.current?.({ title, pages: nextPages.length });
@@ -254,6 +271,17 @@ export function PdfViewer({
       if (getLivePage()?.psetId === psetId) setLivePage(null);
     };
   }, [fileUrl, psetId, title, documentKind]);
+
+  useLayoutEffect(() => {
+    if (!pages.length || !fitWidth || restoredScroll.current) return;
+    const host = hostRef.current;
+    const index = Math.min(initialView.current?.current ?? 0, pages.length - 1);
+    const target = host?.querySelector<HTMLElement>(`[data-page="${index}"]`);
+    if (target && host) {
+      host.scrollTop += target.getBoundingClientRect().top - host.getBoundingClientRect().top;
+      restoredScroll.current = true;
+    }
+  }, [pages.length, fitWidth]);
 
   // Whichever page the student is looking at is the page the tutor sees. This
   // used to update only when the tutor pointed, so scrolling left it blind.
@@ -597,7 +625,7 @@ export function PdfViewer({
               >
                 <div data-page={page.index} className="page-sheet">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={page.displayUrl} alt={`Page ${pageNumber}`} />
+                  <img src={page.displayUrl} width={page.width} height={page.height} alt={`Page ${pageNumber}`} />
                   <Overlay
                     page={page.index}
                     highlight={pageHighlight}

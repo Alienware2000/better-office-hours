@@ -37,7 +37,7 @@ export function snapshotBoard(
   ctx.scale(w, h);
   ctx.lineWidth = 2.3 / w;
   const animated = animation
-    ? animationFrame(animation.spec, animation.time)
+    ? animationFrame(animation.spec, animation.time, groups, student)
     : null;
   const layers = [{ groups, camera: null }, ...(animated ? [animated] : [])];
   for (const layer of layers) {
@@ -51,7 +51,7 @@ export function snapshotBoard(
       const opacity =
         ("opacity" in group ? Number(group.opacity) : 1) *
         (layer.camera && animation?.focus && animation.focus !== group.id
-          ? 0.4
+          ? 0.72
           : 1);
       ctx.globalAlpha = opacity;
       for (const mark of group.drawables) {

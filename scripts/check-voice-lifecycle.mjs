@@ -15,7 +15,7 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false } = {}) {
+async function mount({ llmText = '', llmResponse = null, manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, realIntent = false, startup = {} } = {}) {
   const effects = [], states = [], requests = [], recordings = [];
   const inputAudioState = { value: 'running' };
   const stt = deferred();
@@ -27,7 +27,11 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
   let now = 1000, loud = false, frame, stateIndex = 0;
   const listeners = new Map();
   let probabilityCallback = () => {};
+  let mediaRequests = 0;
+  let initializing = true;
+  let closedContexts = 0, destroyedDetectors = 0;
   const track = { enabled: true, muted: false, readyState: 'live', stop() { this.readyState = 'ended'; } };
+  const inputStream = { getAudioTracks: () => [track], getTracks: () => [track] };
   const react = {
     useRef: value => ({ current: value }),
     useCallback: callback => callback,
@@ -39,11 +43,16 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     useEffect: effect => effects.push(effect),
   };
   const noOp = () => {};
-  const board = new Proxy({}, { get: (_, key) => key === 'getBoardState' ? () => ({ playing: false }) : key === 'applyDrawCommands' ? commands => marks.push(...commands) : noOp });
+  const board = new Proxy({}, { get: (_, key) => key === 'getBoardState' ? () => ({ playing: false, groups: [] }) : key === 'applyDrawCommands' ? commands => marks.push(...commands) : noOp });
   const imports = {
     react,
     './speech-detector': {
-      createSpeechDetector: async (_stream, _context, callback) => { probabilityCallback = callback; return { destroy: async () => {} }; },
+      createSpeechDetector: async (_stream, _context, callback) => {
+        probabilityCallback = callback;
+        if (startup.detector) await startup.detector;
+        if (startup.ended === 'detector') track.stop();
+        return { destroy: async () => { destroyedDetectors++; } };
+      },
       isSpeechFrame: (probability, recording, playback) => probability >= (playback ? .85 : recording ? .35 : .65),
     },
     '@/lib/agent/intent': { detectMode: () => null },
@@ -60,7 +69,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     Audio: class {
       paused = false;
       constructor() { audio.push(this); }
-      play() { if (!deferPlaying) this.onplaying?.(); if (!manualAudio) queueMicrotask(() => this.onended?.()); return Promise.resolve(); }
+      play() { if (initializing || !deferPlaying) this.onplaying?.(); if (initializing || !manualAudio) queueMicrotask(() => this.onended?.()); return Promise.resolve(); }
       pause() { this.paused = true; }
     },
     structuredClone, queueMicrotask,
@@ -72,13 +81,19 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     clearTimeout: timer => { timers.delete(timer); clearTimeout(timer); },
     crypto: { randomUUID: () => 'test-tab' },
     performance: { now: () => now },
-    navigator: { mediaDevices: { getUserMedia: async () => ({ getAudioTracks: () => [track], getTracks: () => [track] }) } },
+    navigator: { mediaDevices: { getUserMedia: async () => {
+      mediaRequests++;
+      track.readyState = 'live';
+      if (startup.media) await startup.media;
+      if (startup.ended === 'permission') track.stop();
+      return inputStream;
+    } } },
     AudioContext: class {
       get state() { return inputAudioState.value; }
       createMediaStreamSource() { return { connect: noOp }; }
       createAnalyser() { return { fftSize: 2048, getFloatTimeDomainData: data => data.fill(loud && track.enabled ? 0.1 : 0) }; }
-      resume() { return Promise.resolve(); }
-      close() { return Promise.resolve(); }
+      resume() { return startup.resume ?? Promise.resolve(); }
+      close() { closedContexts++; return Promise.resolve(); }
     },
     requestAnimationFrame: callback => { frame = callback; return 1; },
     cancelAnimationFrame: noOp,
@@ -86,12 +101,13 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     window: { matchMedia: () => ({ matches: false }), addEventListener: (name, cb) => listeners.set(name, cb), removeEventListener: noOp, setTimeout },
     fetch: async (url, options) => {
       requests.push({ url, ...options });
-      if (url.endsWith('/health')) return Response.json({ grok: true, elevenlabs: true });
+      if (url.endsWith('/health')) return startup.health ?? Response.json({ grok: true, elevenlabs: true });
       if (url.endsWith('/stt')) return (sttCount++ ? sttNext : stt).promise; // Deliberately ignores abort.
       if (url.endsWith('/llm') && JSON.parse(options.body).visualRepair && repairResponse) return repairResponse;
-      if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: llmText } }] })}\n\ndata: [DONE]\n\n`);
-      if (url.endsWith('/tts') && deferredTts) return deferredTts;
-      if (url.endsWith('/tts')) return failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
+      if (url.endsWith('/llm') && llmResponse) return typeof llmResponse === 'function' ? llmResponse(JSON.parse(options.body)) : llmResponse;
+      if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: typeof llmText === 'function' ? llmText(JSON.parse(options.body)) : llmText } }] })}\n\ndata: [DONE]\n\n`);
+      if (url.endsWith('/tts') && !initializing && deferredTts) return deferredTts;
+      if (url.endsWith('/tts')) return !initializing && failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
       throw new Error(`Unexpected request: ${url}`);
     },
   };
@@ -108,6 +124,7 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     }, loaded, loaded.exports);
     return loaded.exports;
   }
+  if (realIntent) imports['@/lib/agent/intent'] = load('lib/agent/intent.ts');
   imports['./speech'] = load('app/(session)/voice/speech.ts');
   const { SpeechAudioCapture } = load('app/(session)/voice/audio-capture.ts');
   imports['./audio-capture'] = { SpeechAudioCapture: class extends SpeechAudioCapture {
@@ -118,7 +135,17 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
   const hook = load('app/(session)/voice/useVoiceLoop.ts').useVoiceLoop();
   const cleanups = effects.map(effect => effect());
   await settle();
-  hook.interrupt(); // Activate voice without relying on a rendered health update.
+  assert.equal(mediaRequests, 0, "Mounting never opens the microphone");
+  if (autoStart) {
+    hook.interrupt(); // Explicit user activation begins acquisition.
+    await settle();
+    assert.equal(states[9], true, 'Explicit activation makes the input ready');
+    assert.equal(states[10], false, 'Startup settles before conversation');
+    assert.equal(requests.filter(r => r.url.endsWith('/tts')).length, 1, 'Start speaks the initial greeting once');
+    requests.length = 0;
+    audio.length = 0;
+    initializing = false;
+  }
   const tick = (volume, elapsed, detectorFrame = true) => { loud = volume; now += elapsed; if (detectorFrame) probabilityCallback(typeof volume === 'number' ? volume : volume ? .98 : .01, new Float32Array(Math.max(1,Math.round(elapsed*16))).fill(volume ? .25 : 0)); frame(); };
   async function record() {
     tick(true, 1000);
@@ -128,10 +155,18 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     tick(false, 1000);
     await settle();
     assert.equal(states[0], 'thinking', 'Show processing while STT is pending');
+    assert.equal(states[13], 'transcribing', 'Pending STT identifies the actual stage');
     assert.equal(recordings.length, 1, 'One recording before the first transcription');
   }
   return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks,
     track,
+    resourceCounts: () => ({ mediaRequests, closedContexts, destroyedDetectors }),
+    expireStartup: milliseconds => {
+      const pending = [...timers].find(([, entry]) => entry.milliseconds === milliseconds);
+      assert.ok(pending, `A ${milliseconds}ms startup deadline is pending`);
+      const [timer, entry] = pending;
+      clearTimeout(timer); timers.delete(timer); entry.callback();
+    },
     expireTranscription: () => {
       const pending = [...timers].find(([, entry]) => entry.milliseconds === 12000);
       assert.ok(pending, 'An STT deadline is pending');
@@ -140,8 +175,114 @@ async function mount({ llmText = '', manualAudio = false, failTts = false, liveP
     },
     setAudioState: value => { inputAudioState.value = value; },
     suspendAudio: () => { inputAudioState.value = 'suspended'; },
+    restartEffects: () => { cleanups.forEach(cleanup => cleanup?.()); cleanups.splice(0, cleanups.length, ...effects.map(effect => effect())); },
     cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
+
+{
+  const test = await mount({ llmText: request => request.deep ? '[TEACH move=consolidate visual=none] Zero, from rest. Go ahead with your substitution.' : '[THINK]' });
+  await test.hook.sendUtterance('Zero');
+  const calls = test.requests.filter(request => request.url.endsWith('/llm'));
+  assert.equal(calls.length, 2, 'A silent handoff still starts exactly one reasoning pass');
+  assert.equal(JSON.parse(calls[1].body).deep, true);
+  assert.ok(JSON.parse(calls[1].body).messages.every(message => !message.content.includes('THINK')), 'Internal routing never enters spoken history');
+  const speech = test.requests.filter(request => request.url.endsWith('/tts')).map(request => JSON.parse(request.body).text).join(' ');
+  assert.equal(speech, 'Zero, from rest. Go ahead with your substitution.', 'Only the substantive response is synthesized');
+  assert.equal(test.states[0], 'listening');
+  test.cleanup();
+}
+
+// Startup uses simulated permissions/devices, including providers that ignore abort.
+{
+  const permission = deferred();
+  const test = await mount({ autoStart: false, startup: { media: permission.promise } });
+  assert.equal(test.states[10], false, 'An unopened page is idle, not preparing');
+  test.hook.interrupt();
+  test.hook.interrupt();
+  assert.equal(test.resourceCounts().mediaRequests, 1, 'Repeated starts share one permission request');
+  assert.equal(test.states[10], true);
+  assert.equal(test.requests.some(r => r.url.endsWith('/tts')), false, 'Greeting waits for usable input');
+  permission.resolve();
+  await settle();
+  assert.equal(test.states[9], true);
+  assert.equal(test.states[10], false);
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1);
+  test.track.stop();
+  test.tick(false, 100);
+  await settle();
+  assert.equal(test.states[9], false);
+  test.hook.retryMicrophone();
+  await settle();
+  assert.equal(test.states[9], true, 'Retry acquires usable input');
+  assert.equal(test.states[4], false, 'Retry resumes the conversation');
+  assert.equal(test.resourceCounts().mediaRequests, 2);
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1, 'Retry does not repeat the greeting');
+  await test.record();
+  test.stt.resolve(Response.json({ text: 'Can you hear me now?' }));
+  await settle();
+  assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, 1, 'Replacement input handles the next utterance');
+  test.cleanup();
+}
+for (const [phase, milliseconds, message] of [
+  ['media', 15000, /permission is still pending/],
+  ['health', 8000, /configuration could not load/],
+  ['resume', 5000, /audio could not start/],
+  ['detector', 20000, /could not get ready/],
+]) {
+  const pending = deferred();
+  const test = await mount({ autoStart: false, startup: { [phase]: pending.promise } });
+  test.hook.interrupt();
+  await settle();
+  test.expireStartup(milliseconds);
+  await settle();
+  assert.equal(test.states[9], false, `${phase}: never claims ready`);
+  assert.equal(test.states[10], false, `${phase}: exits preparing`);
+  assert.equal(test.states[4], true, `${phase}: returns control to the learner`);
+  assert.match(test.states[3], message);
+  pending.resolve(phase === 'health' ? Response.json({ grok: true, elevenlabs: true }) : undefined);
+  await settle();
+  assert.equal(test.track.readyState, 'ended', `${phase}: releases even a late microphone grant`);
+  assert.equal(test.resourceCounts().closedContexts, 1, `${phase}: closes failed audio context`);
+  if (phase === 'detector') assert.equal(test.resourceCounts().destroyedDetectors, 1, 'Late detector is destroyed');
+  assert.equal(test.requests.some(r => r.url.endsWith('/tts')), false, `${phase}: late completion cannot speak`);
+  test.cleanup();
+}
+for (const ended of ['permission', 'detector']) {
+  const test = await mount({ autoStart: false, startup: { ended } });
+  test.hook.interrupt();
+  await settle();
+  assert.equal(test.states[9], false, `${ended}: rejects an ended track before reporting readiness`);
+  assert.equal(test.states[10], false);
+  assert.match(test.states[3], /disconnected the microphone during startup/);
+  assert.equal(test.resourceCounts().closedContexts, 1);
+  test.cleanup();
+}
+{
+  const permission = deferred();
+  const test = await mount({ autoStart: false, startup: { media: permission.promise } });
+  test.hook.interrupt();
+  permission.reject(new DOMException('Denied', 'NotAllowedError'));
+  await settle();
+  assert.match(test.states[3], /Microphone access is blocked/);
+  assert.equal(test.states[10], false);
+  test.cleanup();
+}
+for (const action of ['ready', 'pause', 'unmount']) {
+  const permission = deferred();
+  const test = await mount({ autoStart: false, startup: { media: permission.promise } });
+  await test.hook.sendUtterance('Explain a concept');
+  assert.equal(test.requests.some(r => r.url.endsWith('/llm')), false, 'A chip waits for microphone readiness');
+  if (action === 'pause') test.hook.pauseVoice();
+  if (action === 'unmount') test.cleanup();
+  permission.resolve();
+  await settle();
+  assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, action === 'ready' ? 1 : 0, `${action}: only an active selection proceeds`);
+  assert.equal(test.requests.some(r => r.url.endsWith('/tts')), false, 'A chip skips the lobby greeting');
+  if (action === 'pause') assert.equal(test.states[4], true);
+  if (action === 'unmount') assert.equal(test.track.readyState, 'ended', 'Unmount releases late permission grants');
+  else test.cleanup();
+}
+console.log('PASS: explicit startup, bounded permission/configuration/audio/detector waits, ended-track rejection, late resource cleanup, deferred chips, and one-click retry.');
 
 for (const action of ['pause', 'resume', 'leave', 'enter', 'remove', 'hide', 'unmount']) {
   const test = await mount();
@@ -169,9 +310,26 @@ for (const result of ['valid', 'noise', 'failure']) {
   await settle();
   assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, result === 'valid' ? 1 : 0);
   assert.equal(test.states[0], 'listening', `${result} settles back to listening`);
+  assert.equal(test.states[13], null, `${result} clears the processing stage`);
   test.cleanup();
 }
 console.log('PASS: pending STT state, single recording, late-response isolation on pause/resume/desk changes/hide/unmount, valid speech, noise, and failure recovery.');
+
+{
+  const route = deferred(), lesson = deferred();
+  const test = await mount({ llmResponse: request => request.deep ? lesson.promise : route.promise });
+  const turn = test.hook.sendUtterance('Help me picture this situation');
+  await settle();
+  assert.equal(test.states[13], 'thinking', 'Routing reports actual thinking');
+  route.resolve(new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: '[THINK]' } }] })}\n\ndata: [DONE]\n\n`));
+  await settle();
+  assert.equal(test.states[13], 'explaining', 'The actual deep request advances the waiting stage');
+  test.hook.pauseVoice();
+  lesson.resolve(new Response('data: [DONE]\n\n'));
+  await turn;
+  assert.equal(test.states[13], null, 'A late deep response cannot restore the cancelled waiting stage');
+  test.cleanup();
+}
 
 // Finish-speaking taps submit useful input; idle taps simply pause.
 {
@@ -473,11 +631,13 @@ for (const cancel of [false, true]) {
   const speaking = test.hook.sendUtterance('Picture this situation');
   await settle();
   assert.equal(test.marks.length, 0, 'Pending synthesis leaves this beat pending');
+  assert.equal(test.states[13], 'voice', 'Pending synthesis is not presented as model thinking');
   tts.resolve(new Response(new Blob(['audio'])));
   await settle();
   assert.equal(test.marks.length, 0, 'Calling play before the playing event cannot start the visual');
   if (cancel) test.hook.pauseVoice();
   test.audio[0].onplaying();
+  assert.equal(test.states[13], null, 'Playing or cancellation clears the waiting stage');
   assert.equal(test.marks.length, cancel ? 0 : 1, 'Only an audible, uncancelled sentence releases its drawing');
   test.audio[0].onplaying();
   assert.equal(test.marks.length, cancel ? 0 : 1, 'Buffer recovery does not repeat drawing commands');
@@ -485,3 +645,98 @@ for (const cancel of [false, true]) {
   await speaking; test.cleanup();
 }
 console.log('PASS: delayed synthesis, buffered playback, repeated playing events, and cancellation preserve visual/narration synchronization.');
+
+// The first completed sentence must not wait for an expensive later figure.
+for (const cancel of [false, true]) {
+  let output;
+  const response = new Response(new ReadableStream({ start(controller) { output = controller; } }));
+  const test = await mount({ llmResponse: response, manualAudio: true });
+  const speaking = test.hook.sendUtterance('Explain this picture');
+  const emit = content => output.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ bohSpeechBoundary: true, choices: [{ delta: { content } }] })}\n\n`));
+  emit('[TEACH move=explain visual=diagram]\nThese arrows describe two independent directions.\n');
+  await settle();
+  assert.equal(test.audio.length, 1, 'A complete introduction plays while the next beat is still generating');
+  assert.equal(test.marks.length, 0, 'Upcoming visuals have not arrived yet');
+  if (cancel) test.hook.pauseVoice(); else test.audio[0].onended();
+  emit('[BOARD open][DRAW {"op":"arrow","id":"direction","from":{"x":0.2,"y":0.5},"to":{"x":0.7,"y":0.5}}]\nThis arrow shows the first direction.\n');
+  await settle();
+  assert.equal(test.marks.length, cancel ? 0 : 1, 'The later beat draws only at its own uncancelled audio start');
+  if (!cancel) { assert.equal(test.audio.length, 2); test.audio[1].onended(); }
+  output.close(); await speaking; test.cleanup();
+}
+console.log('PASS: completed sentence boundaries release speech before the next diagram, without duplicate speech or early/cancelled drawings.');
+
+{
+  const test = await mount({ autoStart: false, llmText: 'Yes, that comparison still applies.' });
+  const archive = { kind: 'concept', current: {
+    history: [{ role: 'user', content: 'Compare these two directions.' }, { role: 'assistant', content: 'They share the same time.' }],
+    turns: [{ role: 'student', text: 'Compare these two directions.', at: '2026-09-11T20:00:00Z' }, { role: 'tutor', text: 'They share the same time.', at: '2026-09-11T20:00:01Z' }],
+    board: { groups: [], playing: false },
+  }, parked: { pset: null, concept: null } };
+  test.hook.restoreSession(archive);
+  assert.equal(test.resourceCounts().mediaRequests, 0, 'Restore requires a fresh user action before listening');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 0, 'Restore does not speak a new greeting');
+  const copy = test.hook.captureSession();
+  copy.current.history[0].content = 'An unrelated edit';
+  assert.equal(test.hook.captureSession().current.history[0].content, archive.current.history[0].content, 'Exported snapshots do not alias live conversation memory');
+  test.hook.interrupt(); await settle();
+  await test.hook.sendUtterance('Does that still apply?');
+  const messages = JSON.parse(test.requests.find(r => r.url.endsWith('/llm')).body).messages;
+  assert.deepEqual(messages.slice(0, 2), archive.current.history, 'The next voice request receives restored student and tutor context');
+  assert.equal(messages.at(-1).content, 'Does that still apply?');
+  test.cleanup();
+}
+console.log('PASS: paused session recovery restores conversation memory for the next voice turn without restarting a greeting.');
+
+{
+  const test = await mount();
+  test.restartEffects(); await settle();
+  assert.equal(test.states[9],false,'Fast Refresh invalidates input whose effect resources were destroyed');
+  assert.equal(test.states[4],true,'Fast Refresh leaves voice visibly paused');
+  assert.equal(test.resourceCounts().mediaRequests,1,'Effect restart never silently reacquires microphone');
+  test.hook.interrupt(); await settle();
+  assert.equal(test.states[9],true,'Next explicit start reacquires live input');
+  assert.equal(test.resourceCounts().mediaRequests,2);
+  await test.record(); test.stt.resolve(Response.json({text:'Can you hear me after that update?'})); await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,1,'Reacquired input actually transcribes the next utterance');
+  test.cleanup();
+}
+{
+  const permission=deferred();
+  const test=await mount({autoStart:false,realIntent:true,startup:{media:permission.promise}});
+  await test.hook.sendUtterance('Explain a concept');
+  assert.equal(test.states[5],'concept','An explicit choice reveals the workspace before microphone permission resolves');
+  assert.equal(test.states[10],true);
+  permission.resolve();await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,1);
+  test.cleanup();
+}
+for(const [mode,expected] of [['','concept'],['[MODE pset]','pset']]) {
+  const test=await mount({llmText:mode+'[BOARD open] Here is the picture.'});
+  await test.hook.sendUtterance('Help with this idea');
+  assert.equal(test.states[5],expected,'Generated board opens the desk; explicit homework mode takes priority');
+  test.cleanup();
+}
+console.log('PASS: Fast Refresh microphone reacquisition, immediate concept desk during permissions, and generated-board workspace visibility.');
+
+{
+  const test = await mount({ llmText: '[SUMMARY_REQUEST]What is one idea you are taking away?' });
+  await test.hook.sendUtterance('Let us finish for today.');
+  assert.equal(test.hook.captureSession().current.history.at(-1).content, '[SUMMARY_REQUEST]What is one idea you are taking away?', 'Summary state is recorded only with audible tutor speech');
+  assert.equal(test.hook.captureSession().current.turns.at(-1).text, 'What is one idea you are taking away?', 'Control metadata is never spoken or shown');
+  test.cleanup();
+}
+for (const cancel of [false, true]) {
+  const recap = { stuckOn: 'Distinguishing two directions.', unlockedBy: 'The learner compared them in their own words.', studentSummary: 'The directions share time.', reviewNext: { documentTitle: '', where: '' }, spokenText: 'You connected the two directions through time.' };
+  const test = await mount({ llmText: `[RECAP ${JSON.stringify(recap)}]${recap.spokenText}`, deferPlaying: true, manualAudio: true });
+  const response = test.hook.sendUtterance('The directions share time.');
+  await settle();
+  assert.equal(test.hook.captureSession().recap, null, 'Recap card waits for audio playback');
+  if (cancel) test.hook.pauseVoice();
+  test.audio[0].onplaying?.(); test.audio[0].onended?.();
+  await response;
+  assert.deepEqual(test.hook.captureSession().recap, cancel ? null : recap, 'Only uncancelled audible recap is saved');
+  if (!cancel) { const archive = test.hook.captureSession(); test.hook.restoreSession(archive); assert.deepEqual(test.hook.captureSession().recap, recap, 'Recap survives paused recovery'); }
+  test.cleanup();
+}
+console.log('PASS: student-first summary metadata, recap/audio synchronization, interruption, and recap recovery.');

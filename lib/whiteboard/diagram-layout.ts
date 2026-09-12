@@ -3,12 +3,26 @@ import type { Drawable, ShapeGroup } from './geometry';
 import { isMathText } from './text';
 import { textWidth, writingBounds } from './writing';
 import { typesetMath } from './math-layout';
+import { isCompactMath } from './math-source';
 
 type TextMark = Extract<Drawable, { kind: 'text' }>;
 type Box = ReturnType<typeof writingBounds>;
 const margin = .045;
 const gap = .018;
-const overlaps = (a: Box, b: Box) => a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;
+export const labelsOverlap = (a: Box, b: Box) => a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;
+
+// If avoiding a collision displaces a label, retain an explicit visual link to
+// its feature. The quiet leader has no arrowhead or physical-vector meaning.
+export function annotationDrawables(original: TextMark, placed: TextMark): Drawable[] {
+  const anchor = original.labelAnchor, preferred = original.preferredAt ?? original.at;
+  if (!anchor || Math.hypot(placed.at.x - preferred.x, placed.at.y - preferred.y) < .045) return [placed];
+  const box = writingBounds(placed), center = { x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2 };
+  const dx = anchor.x - center.x, dy = anchor.y - center.y;
+  const fraction = Math.min(Math.abs((box.right - box.left) / 2 / (dx || .00001)), Math.abs((box.bottom - box.top) / 2 / (dy || .00001)));
+  if (fraction >= 1) return [placed];
+  const end = { x: center.x + dx * fraction, y: center.y + dy * fraction };
+  return [{ kind: 'path', key: `${original.key}-leader`, annotation: true, d: `M ${anchor.x} ${anchor.y} L ${end.x} ${end.y}`, color: original.color, width: 1, opacity: .4 }, placed];
+}
 
 // Liang-Barsky segment/rectangle intersection catches sparse strokes too.
 export function crossesLabel(from: Pt, to: Pt, box: Box): boolean {
@@ -31,9 +45,10 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
   const traces = [...groups.flatMap(group => group.geometry ?? []), ...ink.map(stroke => stroke.points)];
   const segments = traces.flatMap(points => points.length === 1 ? [[points[0], points[0]]] : points.slice(1).map((point, i) => [points[i], point]));
   const isLabel = (group: T, mark: TextMark) => mark.diagramLabel || Boolean(group.geometry?.length) ||
-    (!mark.heading && !/^(?:topic(?:-|$)|(?:given|note|definition)-)/.test(group.id) && !isMathText(mark.text));
+    (!mark.heading && !/^(?:topic(?:-|$)|(?:given|note|definition)-)/.test(group.id) && (!isMathText(mark.text) || isCompactMath(mark.text)));
   const occupied: Box[] = groups.flatMap(group => group.drawables.flatMap(mark => mark.kind === 'text' && !isLabel(group, mark) ? [writingBounds(mark)] : []));
-  return groups.map(group => ({ ...group, drawables: group.drawables.map(mark => {
+  return groups.map(group => ({ ...group, drawables: group.drawables.flatMap((mark): Drawable | Drawable[] => {
+    if (mark.kind === 'path' && mark.annotation) return [];
     if (mark.kind === 'text' && mark.heading) return { ...mark, fontSize: .048 };
     if (mark.kind !== 'text' || !isLabel(group, mark)) return mark;
     const preferred = mark.preferredAt ?? mark.at;
@@ -41,7 +56,7 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
     const half = textWidth(mark.text, size, isMathText(mark.text)) / 2;
     // Overlong labels keep their existing wrapping rather than becoming tiny.
     if (half > .455) { occupied.push(writingBounds(mark)); return mark; }
-    const base: TextMark = { ...mark, diagramLabel: true, preferredAt: preferred, fontSize: size, textAnchor: 'middle', math: isMathText(mark.text), mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color) ?? undefined : undefined };
+    const base: TextMark = { ...mark, diagramLabel: true, preferredAt: preferred, fontSize: size, textAnchor: 'middle', math: isMathText(mark.text), mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color, false) ?? undefined : undefined };
     const fit = (at: Pt) => ({ x: Math.max(margin + half, Math.min(1 - margin - half, at.x)), y: Math.max(margin + size, Math.min(1 - margin - size * .25, at.y)) });
     const candidates = [fit(preferred)];
     // Small concentric offsets retain association with the labeled object.
@@ -52,12 +67,12 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
     for (const at of candidates) {
       const box = writingBounds({ ...base, at });
       const clashes = segments.filter(([from, to]) => crossesLabel(from, to, box)).length;
-      const labels = occupied.filter(other => overlaps(box, other)).length;
+      const labels = occupied.filter(other => labelsOverlap(box, other)).length;
       const cost = labels * 100 + clashes * 10 + Math.hypot(at.x - preferred.x, at.y - preferred.y);
       if (cost < score) { best = at; score = cost; }
     }
     const placed = { ...base, at: best };
     occupied.push(writingBounds(placed));
-    return placed;
+    return annotationDrawables(base, placed);
   }) }));
 }

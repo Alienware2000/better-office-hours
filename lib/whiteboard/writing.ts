@@ -1,7 +1,7 @@
 import type { Drawable, ShapeGroup } from './geometry';
 import { boardStyle, boardTextSize } from './style';
 import { isMathText, LABEL_FONT, MATH_FONT } from './text';
-import { hasLatex } from './math-source';
+import { hasLatex, isCompactMath } from './math-source';
 import { typesetMath } from './math-layout';
 
 type TextMark = Extract<Drawable, { kind: 'text' }>;
@@ -33,12 +33,13 @@ export function writingBounds(mark: TextMark): Box {
 
 // Resolve writing once in board coordinates. The snapshot and rendered board
 // consume the same lines; existing writing never jumps when a new line arrives.
-export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { points: { x: number; y: number }[] }[]): ShapeGroup | null {
+export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { points: { x: number; y: number }[] }[], motion: ShapeGroup[] = []): ShapeGroup | null {
   if (group.drawables.length !== 1 || group.drawables[0].kind !== 'text') return group;
   const mark = group.drawables[0];
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
   const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
+  if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color, false) ?? undefined }] };
   if (!note && !math && width(mark.text, .038, false) <= .91 && groups.some(group => group.geometry?.length)) return group;
   let fontSize = heading ? .057 : mark.size === 'm' ? .085 : .068;
   const available = 1 - margin * 2;
@@ -68,7 +69,21 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
     if (line) lines.push(line);
     line = '';
   }
-  const occupied: Box[] = groups.filter(g => g.id !== group.id).flatMap(g => g.drawables.filter((d): d is TextMark => d.kind === 'text').map(writingBounds));
+  const obstacles = [...groups.filter(g => g.id !== group.id), ...motion];
+  const occupied: Box[] = obstacles.flatMap(g => g.drawables.filter((d): d is TextMark => d.kind === 'text').map(writingBounds));
+  // Reserve actual geometry as well as labels. Each small segment gets its
+  // own bounds so a curved path does not unnecessarily block its entire box.
+  for (const obstacle of obstacles) {
+    for (const points of obstacle.geometry ?? []) {
+      if (!points.length) continue;
+      const pieces = obstacle.drawables.some(d => d.kind === 'fill') ? [points]
+        : points.length === 1 ? [points] : points.slice(1).map((point, i) => [points[i], point]);
+      for (const piece of pieces) occupied.push({
+        left: Math.min(...piece.map(p => p.x)) - .008, right: Math.max(...piece.map(p => p.x)) + .008,
+        top: Math.min(...piece.map(p => p.y)) - .008, bottom: Math.max(...piece.map(p => p.y)) + .008,
+      });
+    }
+  }
   for (const stroke of ink) {
     if (!stroke.points.length) continue;
     occupied.push({ left: Math.min(...stroke.points.map(p => p.x)), right: Math.max(...stroke.points.map(p => p.x)), top: Math.min(...stroke.points.map(p => p.y)), bottom: Math.max(...stroke.points.map(p => p.y)) });

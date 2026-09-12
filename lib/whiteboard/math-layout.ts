@@ -43,9 +43,9 @@ const document = mathjax.document('', {
 });
 const cache = new Map<string, MathDrawing | null>();
 
-export function typesetMath(text: string, color: string): MathDrawing | null {
+export function typesetMath(text: string, color: string, semanticColors = true): MathDrawing | null {
   const source = mathSource(text);
-  const key = `${color}:${source}`;
+  const key = `${semanticColors}:${color}:${source}`;
   if (cache.has(key)) return cache.get(key)!;
   let result: MathDrawing | null = null;
   try {
@@ -64,7 +64,7 @@ export function typesetMath(text: string, color: string): MathDrawing | null {
         const n = parseInt(code, 16);
         // Italic identifiers and Greek symbols keep the board's semantic colors;
         // upright unit text stays in the equation's ink color.
-        if (n >= 0x1d400 || (n >= 0x391 && n <= 0x3c9)) {
+        if (semanticColors && (n >= 0x1d400 || (n >= 0x391 && n <= 0x3c9))) {
           const symbol = String.fromCodePoint(n).normalize('NFKC');
           fill = textRuns(`${symbol} =`, color)[0]?.color ?? color;
         }

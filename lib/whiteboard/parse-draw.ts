@@ -213,7 +213,7 @@ export function parseDrawCommand(body: string): DrawCommand | null {
     const normalized = { ...value, op };
     // A live model trace flattened the local style/attachment options. Accept
     // those exact aliases without inferring anything from labels or op names.
-    const diagramFields = ['fill', 'weight', 'surface', 'labelSide', 'contact', 'attach'];
+    const diagramFields = ['fill', 'weight', 'surface', 'labelSide', 'contact', 'attach', 'component', 'interpolation'];
     const flatDiagram = Object.fromEntries(diagramFields.filter(key => key in value).map(key => [key, value[key]]));
     if (!('diagram' in value) && Object.keys(flatDiagram).length) Object.assign(normalized, { diagram: flatDiagram });
     // Normalize common point spellings before geometry validation, not after

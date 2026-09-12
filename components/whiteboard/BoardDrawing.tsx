@@ -23,7 +23,7 @@ export function BoardDrawing({ groups, student, animation, time, focus, entering
             : <BoardShape key={mark.key} mark={mark} entering={entering} />)}
         </g>;
       })}
-      {animation && <AnimLayer spec={animation} time={time} focus={focus} />}
+      {animation && <AnimLayer spec={animation} time={time} focus={focus} backdrop={groups} student={student} />}
     </g>
     <g className="board-your-layer"><title>Your ink</title>
       {student.map(stroke => <path key={stroke.id} className={`board-student ${stroke.tool === 'highlighter' ? 'is-high' : 'is-pen'}`} data-ink-id={stroke.id} d={inkPath(stroke.points)} stroke={STUDENT_HEX[stroke.color]}><title>Your ink</title></path>)}

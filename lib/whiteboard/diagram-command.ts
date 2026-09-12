@@ -3,12 +3,14 @@ import type { DrawCommand, Pt } from '@/lib/types';
 // Optional local DRAW metadata. The shared DrawCommand contract stays frozen;
 // the voice/board adapter resolves relationships into ordinary geometry.
 export type DiagramOptions = {
+  interpolation?: 'linear' | 'smooth';
   fill?: 'paper' | 'tint';
   weight?: 'light' | 'normal' | 'strong';
   surface?: 'left' | 'right';
   labelSide?: 'left' | 'right';
   contact?: { with: string; t: number; side: 'left' | 'right' };
   attach?: { to: string; anchor: 'center' | 'start' | 'end'; offset?: Pt };
+  component?: { of: string; axis: 'x' | 'y' };
 };
 export type DiagramCommand = DrawCommand & { diagram?: DiagramOptions };
 
@@ -20,6 +22,7 @@ export function diagramOptions(command: DrawCommand): DiagramOptions | null {
   const input: unknown = (command as DiagramCommand).diagram;
   if (input === undefined) return {};
   if (!object(input)) return null;
+  if (input.interpolation !== undefined && (command.op !== 'curve' || !['linear', 'smooth'].includes(String(input.interpolation)))) return null;
   if (input.fill !== undefined && !['paper', 'tint'].includes(String(input.fill))) return null;
   if (input.weight !== undefined && !['light', 'normal', 'strong'].includes(String(input.weight))) return null;
   for (const key of ['surface', 'labelSide']) if (input[key] !== undefined && !['left', 'right'].includes(String(input[key]))) return null;
@@ -34,5 +37,9 @@ export function diagramOptions(command: DrawCommand): DiagramOptions | null {
     if (a.offset !== undefined && (!object(a.offset) || !finite(a.offset.x) || !finite(a.offset.y) || Math.abs(a.offset.x) > .3 || Math.abs(a.offset.y) > .3)) return null;
   }
   if (input.contact && input.attach) return null;
+  if (input.component !== undefined) {
+    const c = input.component;
+    if (command.op !== 'arrow' || !object(c) || !id(c.of) || !['x', 'y'].includes(String(c.axis)) || input.attach) return null;
+  }
   return input as DiagramOptions;
 }

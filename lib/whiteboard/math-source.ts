@@ -1,6 +1,9 @@
 // The existing DRAW text contract accepts either plain notation or LaTeX.
 export const hasLatex = (text: string) => /\\[a-zA-Z]+|\\[([]|\$|[_^]\{/.test(text);
-export const isMathNotation = (text: string) => hasLatex(text) || /[=≈∝≤≥∫∑√]|[²³₀-₉]/.test(text);
+// Standalone symbols are labels, not prose or full-size equation rows. Accept
+// ordinary TeX scripts too: v_x must render just like v_{x}.
+export const isCompactMath = (text: string) => /^(?:[a-zA-Zα-ωΑ-Ω]|\\(?:theta|alpha|beta|gamma|phi|omega|Delta|pi))(?:[_^](?:\{[^{}]+\}|[a-zA-Z0-9+-]+)|[²³₀-₉])*$/u.test(text.trim());
+export const isMathNotation = (text: string) => isCompactMath(text) || hasLatex(text) || /[=≈∝≤≥∫∑√]|[²³₀-₉]/.test(text);
 
 export function mathSource(text: string): string {
   const source = hasLatex(text) ? text : text.replace(/\b([a-zA-Z])_?(\d+)\b/g, (_, symbol: string, digits: string) => `${symbol}_{${digits}}`);
