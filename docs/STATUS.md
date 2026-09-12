@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 23:13 EDT
+Updated: 2026-09-11 23:16 EDT
 By: Codex for David, consolidating reviewed lanes
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, integrating current main
@@ -22,7 +22,7 @@ Hosted voice verification already passed real Grok, ElevenLabs TTS and STT reque
 
 Grok Bot access is confirmed, correcting the earlier stale sign-in status. It signed into Canvas at 22:53, found actual archived PHYS 180 course 99254 (Fall 2024), and is collecting syllabus, kinematics notes, and Homework 1. At 23:07 the app-generated two-hour scoped production connection was delivered to Course Pack Collector. No long-lived storage/signing secret was sent. Actual first uploads are verified in the deployed app: profile with ten courses, syllabus (6 pages), Class 1 notes (8 pages), and Homework 1 (3 pages). PHYS 180 is selected in the intended public browser. Image-only HW1-HW5 solutions were retained separately by the collector, not uploaded as lecture content. The intended demo browser is the newly opened https://better-office-hours.vercel.app tab; its connection belongs to that browser. Do not ask David to redo completed NetID/Duo.
 
-Consolidation PR #10 is merged, baseline main eedb3ad. #6/#8/#9 are included. Release follow-up PR #12 is open and now includes the storage addition. New Hussein PR #11, head c1a69d8, remains open: its Google root gate and shared-bearer/body-email ingestion need reconciliation with the working optional-login/scoped connection. No SQL migration applied. Sessions/transcripts/boards/recaps remain browser-local, not cross-device cloud history or learner memory.
+Consolidation PR #10 is merged, baseline main eedb3ad. #6/#8/#9 are included. Release follow-up PR #12 contains the verified deployment configuration and private storage addition. New Hussein PR #11, head c1a69d8, remains open: its Google root gate and shared-bearer/body-email ingestion need reconciliation with the working optional-login/scoped connection. No SQL migration applied. Sessions/transcripts/boards/recaps remain browser-local, not cross-device cloud history or learner memory.
 
 Recap stays a small optional takeaway grounded in the conversation and actual retrieved review sources. Do not equate assent/tutor notes with understanding; leaving does not require a recap. One synthetic real-model sample suggested an earlier sketch without clear grounding, recorded as a quality follow-up. Stop broad visual/model polish before recording.
 
@@ -244,7 +244,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 1. The actual collector profile and first three documents are visible in the public app, with PHYS 180 selected. Rehearse one human teacher exchange against this real course and its sources. Do not restart completed login or request Supabase setup.
 2. Rehearse and record the public PDF/voice/diagram flow now that durable storage checks pass. Include interruption, student ink, and optional recap. Real human microphone behavior still needs that rehearsal.
-3. Finish/merge release PR #12. Add the real demo video, Cursor screenshot, and verified reusable bot link/GIF to README and submit before 23:59.
+3. Add the real demo video, Cursor screenshot, and verified reusable bot link/GIF to README and submit before 23:59.
 4. After submission: reconcile PR #11, add cloud session memory if desired, and compare model latency. OpenRouter remains deferred.
 
 ## Validation

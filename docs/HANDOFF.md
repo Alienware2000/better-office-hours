@@ -1,4 +1,4 @@
-# Active release handoff, September 11, 23:13 EDT
+# Active release handoff, September 11, 23:16 EDT
 
 Read STATUS first. Latest user direction: Grok Bot integration must hold on Vercel. Google remains optional; Supabase setup is not needed because private Vercel Blob has been created and linked. Do not revive the earlier local-only recording plan as a technical limitation.
 
@@ -8,11 +8,11 @@ Verified on the public deployment: clean install/build/typecheck, focused lint, 
 
 Grok Bot is authenticated and found actual PHYS 180 course 99254, Fall 2024. Its active collection is syllabus, kinematics lecture notes and Homework 1. At 23:07 the app-generated scoped production connection was sent to Course Pack Collector; no root storage/signing secret. The first actual upload is verified in the public UI: ten-course profile, syllabus (6 pages), Class 1 lecture (8 pages), Homework 1 (3 pages). PHYS 180 is selected. The bot reports image-only solutions stayed separate and were not uploaded. The new public IAB tab has the owning cookie and the Canvas dialog open. It should survive as the user-facing demo tab. Do not redo completed login. Clipboard API said Copied but returned empty through IAB tooling; read the actual visible connection textarea instead without displaying its token. Two message attempts were interrupted by concurrent user interaction; final send was visibly confirmed at 23:07.
 
-Git: branch lane/drawing-continuity, main integration eedb3ad includes merged PRs #6/#8/#9/#10. PR #12 is open for deployment config/release docs and the private Vercel storage follow-up. New Hussein PR #11 c1a69d8 remains open because its forced Google root/shared-token body-email ingestion conflicts with current ownership/guest behavior. No SQL migration or cross-device history. Frozen lib/types.ts and human PROMPT/PEDAGOGY unchanged.
+Git: branch lane/drawing-continuity, main integration eedb3ad includes merged PRs #6/#8/#9/#10. Release PR #12 contains deployment config/release docs and the verified private Vercel storage follow-up. New Hussein PR #11 c1a69d8 remains open because its forced Google root/shared-token body-email ingestion conflicts with current ownership/guest behavior. No SQL migration or cross-device history. Frozen lib/types.ts and human PROMPT/PEDAGOGY unchanged.
 
 Local :3102 remains /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-release-l18y09_9 using npm start -- --port 3102. Keep frozen, .data symlink added after build. Existing origin/data retained. :3103 stopped. Localhost and production browser histories are separate.
 
-Next: rehearse one source-grounded human teacher exchange in the public tab, finish PR #12, record, then add real video/Cursor screenshot/reusable bot link/GIF and submit before 23:59. No broad diagram/provider/microphone tuning. Recap remains optional and small. Full session history is browser-local; cloud course/PDF persistence does not imply cross-session learner memory.
+Next: rehearse one source-grounded human teacher exchange in the public tab, record, then add real video/Cursor screenshot/reusable bot link/GIF and submit before 23:59. No broad diagram/provider/microphone tuning. Recap remains optional and small. Full session history is browser-local; cloud course/PDF persistence does not imply cross-session learner memory.
 
 ---
 

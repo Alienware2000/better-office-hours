@@ -4,6 +4,8 @@ Each lane keeps a few lines here: what works, what is stubbed, what other lanes 
 
 ## voice
 
+23:16 recording release is live at https://better-office-hours.vercel.app. Preserve the public tab’s PHYS 180 selection and local :3102 fallback. Human microphone rehearsal and submission assets are next.
+
 23:09 Vercel integration: created private boh-private Blob store and linked production/preview. The existing storage adapter uses @vercel/blob 2.8.0 for private JSON/files, uncached mutable reads and scoped signed PDF transfers. Real hosted regression covers persistence/update consistency, solution exclusion, owner isolation, >4.5 MB uploads, private URL and overwrite denial. Actual browser PDF+ink recovery rendered correctly. Google optional, no Supabase setup needed. Grok Bot is signed in (earlier blocked status was stale), found PHYS 180 99254, and received the production scoped connection at 23:07; first real profile plus syllabus/Class 1/Homework 1 uploads are verified in the public UI (6/8/3 pages). UI send was interrupted twice by concurrent user interaction, then visibly succeeded; no repeated login. See STATUS/HANDOFF/DEPLOYMENT.
 
 22:56 deadline decision: David parked Google and Supabase. Freeze the working local release for recording; guest concept voice remains hosted, PDF/course storage remains local. Bot requires human NetID/Duo and cannot reach localhost; a downloaded JSON collector artifact can use the existing local ingest API, but this handoff is not yet verified. No new tunnel installation or further model/visual polish.
