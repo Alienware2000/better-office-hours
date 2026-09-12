@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 14:39 ET
+Updated: 2026-09-11 20:50 ET
 By: Hussein (shell lane)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/shell`, from `origin/main`
@@ -10,7 +10,7 @@ Review: David authorized Hussein's independent shell first slice while the conte
 
 ## Now
 
-Shell first slice is ready for review. Stable NextAuth v4 provides a Google OAuth route and `/sign-in` shell without replacing or gating the working `VoiceSession`. The policy accepts Yale addresses and reserves the documented judge address, normalizes authenticated identity, and disables sign-in with an explicit missing-configuration message unless all three existing auth environment variables are present. The judge password provider, root-route gate, course identity, and persistence wiring are intentionally absent. The README distinguishes this first slice from finished authentication.
+Shell first slice is ready for review. Stable NextAuth v4 provides a Google OAuth route and `/sign-in` shell without replacing or gating the working `VoiceSession`. The policy accepts Yale addresses and reserves the documented judge address, normalizes authenticated identity, and disables sign-in with an explicit missing-configuration message unless all three existing auth environment variables are present. The judge password provider, root-route gate, course identity, and persistence wiring are intentionally absent. The README distinguishes this first slice from finished authentication. A dedicated Google Cloud project and internal Yale OAuth web client now exist for local development. Its localhost origin and callback are configured, credentials are stored only in the ignored `.env.local`, and a real Yale sign-in successfully reached the signed-in shell.
 
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
@@ -34,7 +34,7 @@ Next proposed David voice slice: reduce gaps between spoken sentences by prepari
 
 ## Validation
 
-- Shell: `node scripts/check-auth.mjs`, focused ESLint, `npx tsc --noEmit`, production build, voice lifecycle, workspace, and animation unit checks pass. Browser verified the honest missing-config `/sign-in` state and unchanged tutor home. `npm ci --dry-run` validates the synchronized lockfile; a later local clean install hit Windows `EPERM` locks on native binaries in the OneDrive checkout and is recorded in NOTES.
+- Shell: `node scripts/check-auth.mjs`, focused ESLint, `npx tsc --noEmit`, production build, voice lifecycle, workspace, and animation unit checks pass. Browser verified the honest missing-config `/sign-in` state, real Yale Google OAuth callback, authenticated session endpoint, signed-in shell, and unchanged tutor home. `npm ci --dry-run` validates the synchronized lockfile; a later local clean install hit Windows `EPERM` locks on native binaries in the OneDrive checkout and is recorded in NOTES.
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. Existing hook ref-access/immutability lint failures remain; the new harness passes lint.
 
 - `npm run build` and `npx tsc --noEmit` pass.
@@ -90,7 +90,7 @@ Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.
 
 ## Blockers
 
-Shell integration needs real Google OAuth credentials, a reviewed authenticated identity contract, and a decision on secure judge-password storage before it can gate the tutor.
+Shell integration needs a reviewed authenticated identity contract and a decision on secure judge-password storage before it can gate the tutor. Production deployment also needs its final URL added to the Google OAuth client and deployment environment.
 
 Pointer quality depends on Grok seeing the page image.
 
