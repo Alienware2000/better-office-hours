@@ -20,11 +20,11 @@ Office hours are crowded, time-conflicting, and intimidating. Generic AI tutors 
 - Draws and animates generated explanations on a shared SVG whiteboard.
 - Guides graded work with short hints and questions instead of final answers.
 - Supports homework, concept explanations, and other office-hours conversations in one desk.
-- Provides Yale Google sign-in through the isolated `/sign-in` shell when OAuth is configured.
+- Requires a verified Yale Google identity before opening the tutor.
 
 ## It has the answer key and will not give it to you
 
-The tutor elicits the student's thinking first, advances one hint at a time, asks for predictions before explanations, and never bottoms out to the final answer on graded work. Solution retrieval and spoken recap integration are still under review, so this is the enforced teaching design rather than a claim that every planned context source is live. See [PEDAGOGY.md](docs/PEDAGOGY.md) for the learning basis and [PROMPT.md](docs/PROMPT.md) for the human-maintained tutor policy.
+The tutor elicits the student's thinking first, advances one hint at a time, asks for predictions before explanations, and never bottoms out to the final answer on graded work. Stored solution chunks are available only through a server-only reference path and are never returned by the student retrieval API. Spoken recap generation is still being coordinated with the voice loop. See [PEDAGOGY.md](docs/PEDAGOGY.md) for the learning basis and [PROMPT.md](docs/PROMPT.md) for the human-maintained tutor policy.
 
 ## Built in Cursor
 
@@ -46,7 +46,7 @@ The planned Course Pack Collector uses Grok Bot to gather a student's Canvas cou
 - ElevenLabs STT and TTS with local Silero voice activity detection
 - Grok through the OpenAI-compatible xAI API
 - NextAuth with Google OAuth for Yale sign-in
-- Supabase with Postgres and pgvector planned for durable context and recaps
+- Supabase Postgres for authenticated course context and recap persistence
 
 ## Try it
 
@@ -67,7 +67,9 @@ XAI_API_KEY=your_key_here
 ELEVENLABS_API_KEY=your_key_here
 ```
 
-Google sign-in additionally requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`. Without all three values, `/sign-in` reports that authentication is unavailable. Never commit `.env.local`.
+Google sign-in additionally requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`. Durable context and recap APIs require `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, plus the tables in `lib/db/schema.sql`. Without the authentication values, `/sign-in` reports that authentication is unavailable. Never commit `.env.local`.
+
+Production setup, OAuth callback configuration, and verification steps are in [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ```bash
 npm run dev -- -p 3100
@@ -77,7 +79,7 @@ Open [localhost:3100](http://localhost:3100), allow microphone access, and activ
 
 ## Current prototype limits
 
-Authentication is not yet enforced at the tutor route or connected to course and recap persistence. Local PDF storage is not durable or user-isolated for serverless deployment. The context retrieval core and recap card are awaiting review, and their live integrations are not complete. Generated visual quality and microphone interruption still require real-device testing.
+The tutor and persistence APIs require a verified Google session. The Supabase schema and adapters are implemented but are not live until a project is configured and the schema is applied. Local PDF files are still not durable serverless storage. Course retrieval and recap persistence are not yet wired into David's voice loop, and generated visual quality and microphone interruption still require real-device testing.
 
 ## Development checks
 
@@ -85,6 +87,9 @@ Authentication is not yet enforced at the tutor route or connected to course and
 npm run build
 npx tsc --noEmit
 node scripts/check-auth.mjs
+node scripts/check-context.mjs
+node scripts/check-recap.mjs
+node scripts/check-persistence.mjs
 node scripts/check-workspace.mjs
 node scripts/check-anim.mjs --unit
 ```
