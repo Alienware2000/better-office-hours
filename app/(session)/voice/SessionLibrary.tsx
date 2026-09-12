@@ -4,6 +4,7 @@ import { useCallback, useMemo, useEffect, useRef, useState, type ComponentType }
 import { allTranscript, deleteSession as deleteOwnedSession, downloadSession, hasSessionContent, newSession, readSession as readOwnedSession, readSessions as readOwnedSessions, selectSession as selectOwnedSession, sessionForResume, sessionTitle, writeSession as writeOwnedSession, type SavedSession } from './saved-sessions';
 
 export type SessionPersistence = {
+  headerActions?: HTMLElement | null;
   studentName?: string;
   saved: SavedSession;
   onSave: (session: SavedSession) => void;
@@ -30,6 +31,7 @@ export function SessionLibrary({ Desk, ownerKey = 'guest', accountName, signInAv
     deleteSession: (id: string) => deleteOwnedSession(id, ownerKey),
   }), [ownerKey]);
   const [initial, setInitial] = useState<SavedSession | null>(null);
+  const [headerActions, setHeaderActions] = useState<HTMLDivElement | null>(null);
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState('Opening sessions');
@@ -63,7 +65,7 @@ export function SessionLibrary({ Desk, ownerKey = 'guest', accountName, signInAv
       savedVersions.current = new Map(result.sessions.map(s => [s.id, s.updatedAt]));
       queued.current = new Map(result.sessions.map(s => [s.id, signature(s)]));
       current.current = active;
-      setSessions(result.sessions.filter(hasSessionContent)); setInitial(active); setTitle(sessionTitle(active));
+      setSessions(result.sessions.filter(hasSessionContent).map(session => ({ ...session, title: sessionTitle(session) }))); setInitial(active); setTitle(sessionTitle(active));
       setStatus(hasSessionContent(active) ? 'Saved in this browser' : 'Starts saving when you begin');
     }).catch(error => {
       if (cancelled) return;
@@ -155,10 +157,11 @@ export function SessionLibrary({ Desk, ownerKey = 'guest', accountName, signInAv
     <header className="session-header">
       <button ref={entry} className="session-history-button" type="button" aria-label="Sessions" aria-expanded={open} onClick={() => { suspend.current?.(); setOpen(true); }}>☰ <span>Sessions</span></button>
       <div className="session-current"><strong title={title}>{title}</strong><span role="status">{failure ? 'Not saved' : status}</span></div>
+      <div className="session-header-actions" ref={setHeaderActions} />
       <button className="session-new-button" type="button" disabled={switching} onClick={onNew}>+ New session</button>
     </header>
     {failure && <p className="session-save-error" role="alert">{failure} Your current work remains open. <button type="button" onClick={() => onExport('json')}>Export a copy</button></p>}
-    <div className="session-desk">{initial ? <Desk studentName={studentName} key={initial.id} saved={initial} onSave={onSave} bindCapture={bindCapture} bindSuspend={bindSuspend} onNew={onNew} onExport={onExport} /> : <main className="session-shell" />}</div>
+    <div className="session-desk">{initial ? <Desk headerActions={headerActions} studentName={studentName} key={initial.id} saved={initial} onSave={onSave} bindCapture={bindCapture} bindSuspend={bindSuspend} onNew={onNew} onExport={onExport} /> : <main className="session-shell" />}</div>
     {open && <div className="session-library-scrim" onClick={closeLibrary}>
       <section ref={dialog} className="session-library" role="dialog" aria-modal="true" aria-label="Saved sessions" onClick={event => event.stopPropagation()} onKeyDown={event => {
         if (event.key === 'Escape') { event.stopPropagation(); closeLibrary(); }

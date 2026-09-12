@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 23:16 EDT
+Updated: 2026-09-11 23:27 EDT
 By: Codex for David, consolidating reviewed lanes
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, integrating current main
@@ -14,9 +14,11 @@ David explicitly authorized merging Hussein's slices and live integration. Conte
 
 ## Now
 
+Recording polish (23:24): David requested clearer workspace entry, useful titles, and a better Canvas position. Read the actual saved exchange: an audio repair became its name, then physics homework received a broad question despite an empty PDF desk. Runtime routing now invites a PDF upload or spoken problem description, avoids repeat uploads, and asks for a concept only when unnamed. Titles skip common repairs/greetings, use topic/document names when available, and preserve manual names; old library rows derive their display title again. Canvas is a compact book control in the reserved session header, with a wrapping phone row and explicit optional-connection copy. Build, focused lint, saved-session/structured-routing checks, and full isolated browser recovery pass. Five real fast-Grok probes chose the expected upload/topic/teaching behaviors. Desktop/700px/390px renders and connected state inspected. Human acoustic quality is not established by these checks. Live update is deployment dpl_AWysH7j86epXocxZfSayGeafDdQx (runtime fc80ffa). The public header and optional Canvas dialog are verified; the collector continues uploading and the header reached 24 PHYS 180 sources during inspection. The newly opened public tab has PHYS 180 selected and voice off. Local :3102 remains the older frozen fallback.
+
 Deadline integration (23:09): David clarified that Grok Bot integration must work on Vercel. Google remains optional and Supabase setup is parked. Created and connected a private Vercel Blob store, boh-private (store_JUhOE7x3GnBLnamY), to this app's production/preview. The existing storage adapter now uses it when configured; Supabase remains an optional alternative and local disk remains the unconfigured local fallback. No login redesign, frozen contract, human prompt, or microphone threshold change.
 
-Live app: https://better-office-hours.vercel.app, deployment dpl_4pjLaz26juco8JFjzeKPFBeXMroe. The initial generic Vercel preset returned 404; explicit framework: nextjs fixed it. Remote npm ci/build/typecheck and focused storage lint pass. New scripts/check-deployed-storage.mjs passed real private profile/source writes, successive uncached pack updates, solution exclusion, owner isolation, >4.5 MB direct PDF upload/download, raw private URL protection, and overwrite denial. Data in this regression is explicitly synthetic and isolated. Fresh Chrome additionally verified actual direct browser upload, PDF.js rendering, a student pen mark, and PDF/ink recovery after refresh. Artifact /tmp/boh-hosted-pdf-recovery.png inspected.
+Live app: https://better-office-hours.vercel.app, deployment dpl_AWysH7j86epXocxZfSayGeafDdQx. The initial generic Vercel preset returned 404; explicit framework: nextjs fixed it. Remote npm ci/build/typecheck and focused storage lint pass. New scripts/check-deployed-storage.mjs passed real private profile/source writes, successive uncached pack updates, solution exclusion, owner isolation, >4.5 MB direct PDF upload/download, raw private URL protection, and overwrite denial. Data in this regression is explicitly synthetic and isolated. Fresh Chrome additionally verified actual direct browser upload, PDF.js rendering, a student pen mark, and PDF/ink recovery after refresh. Artifact /tmp/boh-hosted-pdf-recovery.png inspected.
 
 Hosted voice verification already passed real Grok, ElevenLabs TTS and STT requests, real Silero startup, actual greeting/clarification playback, concept entry, desktop/phone layout and paused saved-session reload. Microphone input was muted synthetic, not human acoustics. A short topic clarification took 1.45s and TTS 1.02s; do not present these as substantive teaching latency. Reasoning remains slower.
 

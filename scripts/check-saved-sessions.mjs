@@ -38,6 +38,9 @@ assert.deepEqual(second.voice,null,'A new session does not inherit previous conv
 console.log('PASS: unique sessions/exports, parked-transcript deduplication, timestamps/roles, renamed titles, structured board/ink/animation/timing export.');
 
 const route = load('app/api/agent/llm/route.ts', {
+  '@/lib/context/ownership': { courseOwner: async () => null },
+  '@/lib/context/catalog': { studentCourseContext: async () => ({}) },
+  '@/lib/auth/server': { currentIdentity: async () => null },
   '@/lib/agent/events': { asSessionEvent: () => null },
   '@/lib/agent/grok': { GROK_MODEL:'test-fast', GROK_DEEP_MODEL:'test-deep', usesConceptLesson:()=>true,
     streamGrok:async function*(){ yield '[TEACH move=explain visual=none]\nA complete sentence.\n'; throw new SyntaxError('Unterminated string in JSON at position 218'); } },
@@ -66,3 +69,11 @@ assert.equal(recovered.voice.current,first.voice.current);
 assert.equal(recovered.voice.parked,legacy.voice.parked,'Legacy parked work remains intact');
 assert.equal(sessionForResume({...legacy,voice:{...legacy.voice,current:first.voice.current}}).voice.kind,'lobby','A new lobby exchange is not replaced');
 console.log('PASS: empty-draft filtering, automatic conversation titles, explicit start, legacy parked desk recovery.');
+const withSpeech = (...texts) => ({...second, voice:{...greeting,kind:'pset',current:{...greeting.current,turns:texts.map((text,index)=>({...student,text,at:new Date(1000+index).toISOString()}))}}});
+const repair = 'Sorry, could you please repeat that? I said WhatsApp. Can you please help?';
+assert.equal(sessionTitle(withSpeech(repair)), 'Homework conversation');
+assert.equal(sessionTitle(withSpeech(repair, 'I need help with my physics homework.')), 'Physics homework');
+assert.equal(sessionTitle(withSpeech('Hello', 'Homework')), 'Homework conversation');
+assert.equal(sessionTitle({...withSpeech(repair),pset:{title:'Homework 1',id:'example',fileUrl:'/example.pdf'}}), 'Homework 1');
+assert.equal(sessionTitle({...withSpeech(repair),renamed:true,title:'My recording'}), 'My recording');
+console.log('PASS: repair/greeting-safe titles, later meaningful request, document priority, and manual naming.');

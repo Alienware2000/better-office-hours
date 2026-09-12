@@ -401,11 +401,16 @@
   .agent-stage .orb-frame, .agent-stage .orb-status { flex-shrink: 0; }
 }
 
-.course-bar { display: flex; gap: 8px; position: absolute; top: 70px; left: 24px; z-index: 12; }
-.course-bar > button { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line, #ded8ce); border-radius: 24px; background: #fffcf6; padding: 8px 16px; color: #635e56; font-size: 13px; }
-.course-bar span { color: #918879; font-size: 11px; }
-.session-desk:has(.course-bar) { padding-top: 38px; position: relative; }
-.session-desk .course-bar { top: 4px; }
+.session-header-actions { flex-shrink: 0; min-width: 0; max-width: 40%; }
+.session-header-actions:empty { display: none; }
+.session-new-button { flex-shrink: 0; white-space: nowrap; }
+.course-bar { display: flex; align-items: center; gap: .4rem; min-width: 0; }
+.session-header .course-bar > button { display: flex; align-items: center; gap: .5rem; background: transparent; border-color: #d9d1c4; color: #635e56; min-width: 0; }
+.course-entry { max-width: 16rem; }
+.course-entry svg { flex-shrink: 0; color: #8b7c64; }
+.course-entry-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.course-source-count { color: #918879; font-size: .65rem; white-space: nowrap; }
+.session-header .course-bar > button:hover { background: #eee7db; border-color: #c5bba9; }
 .course-dialog { margin: auto; width: min(540px, calc(100vw - 32px)); max-height: 85dvh; padding: 26px; border: 1px solid #ded8ce; border-radius: 24px; background: #fffcf6; color: #37332c; box-shadow: 0 18px 80px #26201830; }
 .course-dialog::backdrop { background: #302b2455; backdrop-filter: blur(5px); }
 .course-dialog header { display: flex; align-items: center; justify-content: space-between; }
@@ -424,7 +429,13 @@
 .course-dialog details { margin-top: 12px; font-size: 12px; }
 .course-dialog .course-privacy { margin-top: 24px; font-size: 12px; }
 .recap-container { padding: 12px 0 24px; }
-@media (max-width: 700px) { .course-bar { left: 12px; } .course-bar > button { padding: 6px 12px; } .course-bar span { display: none; } }
+@media (max-width: 700px) {
+  .session-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .3rem .5rem; }
+  .session-header-actions { grid-row: 2; grid-column: 2 / -1; max-width: 100%; justify-self: end; }
+  .session-header .session-new-button { grid-column: 3; grid-row: 1; }
+  .course-entry { max-width: 14rem; }
+  .course-source-count { display: none; }
+}
 
 .takeaway-dialog > article { box-shadow: none; }
 .takeaway-dialog > article > header { display: none; }
