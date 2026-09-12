@@ -1,6 +1,6 @@
 # Better Office Hours handoff
 
-Updated: 2026-09-11 21:21 EDT, Codex for David.
+Updated: 2026-09-11 21:53 EDT, Codex for David.
 
 ## Start here
 
@@ -8,7 +8,7 @@ Read AGENTS.md and STATUS, DESIGN, ARCHITECTURE, human PROMPT, PEDAGOGY, DEMO, N
 
 - Checkout `/Users/davidantwi/.codex/worktrees/b640/boh`, branch `lane/drawing-continuity`. Original checkout `/Users/davidantwi/Dev/boh`. Run git status/log and preserve new changes.
 - Baseline `22590ca` is included. David's PRs #5/#7 are merged. This slice follows `5a229d9` and is on [PR #10](https://github.com/Alienware2000/better-office-hours/pull/10), **Preserve tutoring sessions and improve narrated visuals**. Do not push main or merge without David's request.
-- `http://localhost:3102/` now serves a frozen production build from `/var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-startup-check-dn0cyag1`. Its `.data` symlink uses this worktree's existing PDF storage. Same origin, same local saved sessions. Do not edit/rebuild this running preview. Continue source work in the repo and use another isolated copy/port for verification, then replace :3102 intentionally while idle. :3103 is stopped. No fixture is wired into runtime.
+- `http://localhost:3102/` now serves a frozen production build from `/var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-response-check-yj_pqfax`. Its `.data` symlink uses this worktree's existing PDF storage. Same origin, same local saved sessions. Do not edit/rebuild this running preview. Continue source work in the repo and use another isolated copy/port for verification, then replace :3102 intentionally while idle. :3103 is stopped. No fixture is wired into runtime.
 - The stable preview runs `npm run start -- --port 3102`. If it stops, use that command in the frozen copy, or build a fresh isolated release. `npm run dev -- --port 3102` in the repo returns to HMR and can interrupt voice turns.
 - Keep `lib/types.ts`, `docs/PROMPT.md`, and `docs/PEDAGOGY.md` unchanged. David owns voice/workspace/whiteboard. Hussein's #6/#8/#9 remain open, untouched, and awaiting separate reviews. #8 targets lane/context, not main.
 
@@ -20,7 +20,23 @@ The visual goal is a professor building an explanation with simple objects, mean
 
 David explicitly requested multiple saved sessions, refresh recovery, and exportable transcripts/data for review. That overrides the old no-library/disposable-session decision. He wants to progress the broader build after this slice. He has not requested creating a new Codex task yet. OpenRouter remains a deferred comparison option, not an instruction to migrate now.
 
-## Latest session and startup fixes
+## Submission-night priority
+
+Submission closes at 23:59 on September 11. David wants a complete, reliable demo before more broad visual optimization. The current voice/board/session base is usable, but this is not a finished course-aware product. Record a backup of the core flow now. Next coordinate review and integration of context #6 and the dependent recap #8; review shell #9 without replacing the working desk. Preserve the separate merge-approval boundary. Load one real course's notes, get student-first spoken recap + card working, verify a deployed run, then finish the video/README/submission. Manual materials are the fallback if the Grok Bot collector is not ready. Check deployment storage: current PDF bytes live on local disk; browser-local sessions are not cloud persistence. README must describe custom SVG and custom ElevenLabs STT/TTS accurately, not the old tldraw/managed-agent plan.
+
+This follow-up adds truthful silent waiting stages and a long-wait cue, not a latency reduction. Voice pipeline: local Silero, Scribe v2, fast Grok routing, Grok 4.6 low-effort teaching/visuals, ElevenLabs v3 conversational TTS. Changing TTS alone cannot remove Grok's planning delay. Keep OpenRouter as a deferred measured comparison.
+
+The saved Rocket launch, engine on session was available this time: repeated velocity choices, then repeated self-explanation after explicit confusion, were the main pedagogy finding. It protected the graded answer and identified gravity, but did not demonstrate resolved understanding. Runtime guidance now changes representation after repeated struggle and avoids unsolicited stale dates/refusal preambles. One new real-model synthetic-history probe adopted a ball-toss analogy, but needed 15.6s before content and 28.7s total; its Follow dot incorrectly stayed at the path end. Artifact /tmp/boh-struggle-probe.json is local only. Do not overclaim model reliability or start another broad prompt iteration tonight.
+
+The tutor sees supplied current-page/board images, annotation context, and transcript, not the entire browser or raw vocal tone. This inspected save contained no student ink. A spoken reference to a fresh student mark belongs in the real demo rehearsal. Two IAB export attempts returned no accessible download, so this audit used the visible transcript and board; exact per-turn timing for this save was not recovered.
+
+Validation: production build, focused lint, voice lifecycle, structured lesson, and teaching-disclosure regressions pass. The new scripts/check-response-status.mjs uses a fresh browser with real Silero and synthetic audio, deferred STT/model/TTS fixtures, and verifies each actual wait stage, the eight-second cue, cancellation/late-response cleanup, reduced motion, no early drawing, and stable status height. Desktop and phone screenshots were inspected. The first phone render exposed Pause/status overlap; the final layout and overlap assertion pass. Artifacts: /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-response-status-XwsuTI. Services were stubbed in this UI regression; the separate model probe above was real inference, not real acoustic validation.
+
+Live :3102 now serves the verified frozen production copy at /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-response-check-yj_pqfax. Its .data symlink was added after build and retains the worktree's PDFs. The idle user tab was reloaded once; the actual saved rocket transcript, board/paused animation, and three-page PDF remained visible. :3103 is stopped. Keep this build frozen while testing. No changes to lib/types.ts, human PROMPT/PEDAGOGY, model selection, or microphone thresholds. The next task is integration/rehearsal, not another polish pass.
+
+Repeat the wait-state browser regression against an isolated server with BOH_TEST_BASE_URL=http://localhost:3103, BOH_TEST_AUDIO=/tmp/boh-fake-input.wav, and PLAYWRIGHT_MODULE=/Users/davidantwi/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright. The test fixture is never used for live lessons. Add .data only after building because Turbopack rejects its external symlink during tracing.
+
+## Earlier session and startup fixes
 
 - Explicit concept choice opens the desk during microphone preparation. A natural lobby request goes through the same compact semantic router as other desks and opens concept mode before the existing deep call. A generated board also reveals a lobby-hidden desk if MODE was omitted. Existing homework mode takes priority. No extra model call, topic triggers, or new provider.
 - A real header reserves space for Sessions, the current name/save state, and New session. The drawer groups by date and supports search and per-row rename/export/delete. Empty drafts are not saved. A conversation creates one entry automatically; titles reuse the opening request or first board topic, without a naming call. Leave saves and returns to a clean draft. Selecting a legacy lobby save restores its parked conversation.

@@ -165,6 +165,7 @@ export function useVoiceLoop() {
 
   const finishRecordingRef = useRef<() => void>(() => {});
   const [recording, setRecording] = useState(false);
+  const [responsePhase, setResponsePhase] = useState<'transcribing' | 'thinking' | 'explaining' | 'voice' | null>(null);
   const hasStartedRef = useRef(false);
   const discardRecordingRef = useRef<() => void>(() => {});
   const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
@@ -176,6 +177,7 @@ export function useVoiceLoop() {
   const setOrb = useCallback((next: OrbState) => {
     stateRef.current = next;
     setState(next);
+    if (next !== 'thinking') setResponsePhase(null);
   }, []);
 
   const stopPlayback = useCallback(() => {
@@ -197,6 +199,10 @@ export function useVoiceLoop() {
       const controller = abortRef.current ?? new AbortController();
       abortRef.current = controller;
       setInputEnabledRef.current(!pausedRef.current);
+      if (!pausedRef.current) {
+        setResponsePhase('voice');
+        setOrb('thinking');
+      }
 
       let url: string | null = null;
       try {
@@ -259,7 +265,10 @@ export function useVoiceLoop() {
         if (epoch === playbackEpochRef.current) {
           playingRef.current = false;
           playbackEndedAtRef.current = performance.now();
-          if (!pausedRef.current) setOrb(turnAbortRef.current ? "thinking" : "listening");
+          if (!pausedRef.current) {
+            setResponsePhase(turnAbortRef.current ? 'thinking' : null);
+            setOrb(turnAbortRef.current ? "thinking" : "listening");
+          }
         }
       }
     },
@@ -426,6 +435,9 @@ export function useVoiceLoop() {
       });
       const visualSource = getLivePage();
       const requestedAt = performance.now();
+      if (!signal.aborted && playbackEpoch === playbackEpochRef.current && !playingRef.current) {
+        setResponsePhase(deep ? 'explaining' : 'thinking');
+      }
       const response = await fetch("/api/agent/llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -950,6 +962,7 @@ export function useVoiceLoop() {
         !controller.signal.aborted && epoch === playbackEpochRef.current;
       setOrb("thinking");
       const blob = audioCapture.finish();
+      setResponsePhase('transcribing');
       recordingRef.current = false;
       setRecording(false);
       const meaningful = voicedMs >= 160;
@@ -1262,6 +1275,7 @@ export function useVoiceLoop() {
     state,
     level,
     recording,
+    responsePhase,
     inputReady,
     inputStarting,
     retryMicrophone,

@@ -104,7 +104,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
       if (url.endsWith('/health')) return startup.health ?? Response.json({ grok: true, elevenlabs: true });
       if (url.endsWith('/stt')) return (sttCount++ ? sttNext : stt).promise; // Deliberately ignores abort.
       if (url.endsWith('/llm') && JSON.parse(options.body).visualRepair && repairResponse) return repairResponse;
-      if (url.endsWith('/llm') && llmResponse) return llmResponse;
+      if (url.endsWith('/llm') && llmResponse) return typeof llmResponse === 'function' ? llmResponse(JSON.parse(options.body)) : llmResponse;
       if (url.endsWith('/llm')) return new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: typeof llmText === 'function' ? llmText(JSON.parse(options.body)) : llmText } }] })}\n\ndata: [DONE]\n\n`);
       if (url.endsWith('/tts') && !initializing && deferredTts) return deferredTts;
       if (url.endsWith('/tts')) return !initializing && failTts ? new Response('', { status: 502 }) : new Response(new Blob(['audio']));
@@ -155,6 +155,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     tick(false, 1000);
     await settle();
     assert.equal(states[0], 'thinking', 'Show processing while STT is pending');
+    assert.equal(states[13], 'transcribing', 'Pending STT identifies the actual stage');
     assert.equal(recordings.length, 1, 'One recording before the first transcription');
   }
   return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks,
@@ -309,9 +310,26 @@ for (const result of ['valid', 'noise', 'failure']) {
   await settle();
   assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, result === 'valid' ? 1 : 0);
   assert.equal(test.states[0], 'listening', `${result} settles back to listening`);
+  assert.equal(test.states[13], null, `${result} clears the processing stage`);
   test.cleanup();
 }
 console.log('PASS: pending STT state, single recording, late-response isolation on pause/resume/desk changes/hide/unmount, valid speech, noise, and failure recovery.');
+
+{
+  const route = deferred(), lesson = deferred();
+  const test = await mount({ llmResponse: request => request.deep ? lesson.promise : route.promise });
+  const turn = test.hook.sendUtterance('Help me picture this situation');
+  await settle();
+  assert.equal(test.states[13], 'thinking', 'Routing reports actual thinking');
+  route.resolve(new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: '[THINK]' } }] })}\n\ndata: [DONE]\n\n`));
+  await settle();
+  assert.equal(test.states[13], 'explaining', 'The actual deep request advances the waiting stage');
+  test.hook.pauseVoice();
+  lesson.resolve(new Response('data: [DONE]\n\n'));
+  await turn;
+  assert.equal(test.states[13], null, 'A late deep response cannot restore the cancelled waiting stage');
+  test.cleanup();
+}
 
 // Finish-speaking taps submit useful input; idle taps simply pause.
 {
@@ -613,11 +631,13 @@ for (const cancel of [false, true]) {
   const speaking = test.hook.sendUtterance('Picture this situation');
   await settle();
   assert.equal(test.marks.length, 0, 'Pending synthesis leaves this beat pending');
+  assert.equal(test.states[13], 'voice', 'Pending synthesis is not presented as model thinking');
   tts.resolve(new Response(new Blob(['audio'])));
   await settle();
   assert.equal(test.marks.length, 0, 'Calling play before the playing event cannot start the visual');
   if (cancel) test.hook.pauseVoice();
   test.audio[0].onplaying();
+  assert.equal(test.states[13], null, 'Playing or cancellation clears the waiting stage');
   assert.equal(test.marks.length, cancel ? 0 : 1, 'Only an audible, uncancelled sentence releases its drawing');
   test.audio[0].onplaying();
   assert.equal(test.marks.length, cancel ? 0 : 1, 'Buffer recovery does not repeat drawing commands');

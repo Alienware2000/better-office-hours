@@ -10,6 +10,7 @@ import { LeaveButton } from "@/components/workspace/LeaveButton";
 import { Whiteboard } from "@/components/whiteboard/Whiteboard";
 import { Captions } from "./Captions";
 import { Orb } from "./Orb";
+import { ResponseStatus } from './ResponseStatus';
 import type { OrbState } from "./constants";
 import { useVoiceLoop } from "./useVoiceLoop";
 import { SessionLibrary, type SessionPersistence } from './SessionLibrary';
@@ -27,6 +28,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
     state,
     level,
     recording,
+    responsePhase,
     inputReady,
     inputStarting,
     retryMicrophone,
@@ -204,7 +206,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
                 onPause={pauseVoice}
               />
             </motion.div>
-            <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error), inputStarting)}</p>
+            <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase)} busy={inputReady && !paused && !recording && state === 'thinking'} />
 
             <div className="chip-row">
               {chips.map((chip) => (
@@ -362,7 +364,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
                     onPause={pauseVoice}
                   />
                 </motion.div>
-                <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error), inputStarting)}</p>
+                <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase)} busy={inputReady && !paused && !recording && state === 'thinking'} />
                 <Captions turns={turns} onExport={onExport} />
                 {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
                 {error ? (
@@ -377,12 +379,17 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
   );
 }
 
-function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean): string {
+function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean, phase: ReturnType<typeof useVoiceLoop>['responsePhase']): string {
   if (!inputReady) return inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to start";
   if (paused) return "Tap to start";
   if (recording) return "Listening · tap when finished";
   if (state === "speaking") return "Speaking";
-  if (state === "thinking") return "Thinking";
+  if (state === "thinking") {
+    if (phase === 'transcribing') return 'Transcribing';
+    if (phase === 'explaining') return 'Working through your question';
+    if (phase === 'voice') return 'Preparing voice';
+    return 'Thinking';
+  }
   if (state === "listening") return "Listening";
   return "Ready";
 }
