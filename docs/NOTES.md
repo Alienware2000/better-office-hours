@@ -4,6 +4,8 @@ Each lane keeps a few lines here: what works, what is stubbed, what other lanes 
 
 ## voice
 
+23:27 public deployment dpl_AWysH7j86epXocxZfSayGeafDdQx verified; course sources continue arriving (24 visible in the header). Runtime fc80ffa. Local :3102 is still the prior fallback.
+
 23:24 requested recording polish: Canvas control now portals into a reserved header slot; dialogs/selection still belong to the desk. No extra model calls for names: conservative greeting/repair filtering, real topic/document priority, manual names preserved. Existing saved rows refresh their displayed title. Router entry guidance invites an optional PDF/spoken problem and avoids repeated topic selection. Real routing probes passed; header renders and the full session/PDF/ink recovery harness passed. Local :3102 is unchanged.
 
 23:16 recording release is live at https://better-office-hours.vercel.app. Preserve the public tab’s PHYS 180 selection and local :3102 fallback. Human microphone rehearsal and submission assets are next.
