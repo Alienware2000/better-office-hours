@@ -4,7 +4,7 @@ Read DESIGN.md first. This doc defines the system shape and the contracts betwee
 
 ## Implementation baseline
 
-The diagram and interfaces below include target integrations. Read LANES.md for an inventory of actual files and first PR boundaries. Currently the browser owns the custom voice loop and calls the LLM route; STT and TTS are separate ElevenLabs API calls. The whiteboard is custom SVG. Auth, Supabase, ingest/retrieve endpoints, persistent session/recap endpoints, and the spoken recap flow are not implemented. Shared types describe their target data, not working services.
+The diagram and interfaces below include target integrations. Read LANES.md for an inventory of actual files and first PR boundaries. Currently the browser owns the custom voice loop and calls the LLM route; STT and TTS are separate ElevenLabs API calls. The whiteboard is custom SVG. Verified Google authentication gates the tutor. Server-only Supabase adapters and authenticated ingest, retrieval, and recap endpoints are implemented against `lib/db/schema.sql`; they remain inactive until a Supabase project is configured. Live voice retrieval and the spoken recap flow are not wired. Shared types remain frozen.
 
 Keep the existing adaptive desk in `app/(session)/voice/VoiceSession.tsx`. All three entry choices use the same shell; PDF and Whiteboard are views within it. Client speech intent switches the desk before waiting for model tags. Reference notes use optional `documentKind: notes` in the local LivePage adapter and do not replace the homework PDF. The working orb and captions remain in the voice lane until a coordinated integration explicitly moves them.
 
@@ -44,7 +44,7 @@ Next.js API routes
   ├─ /api/ingest           receives course pack files from the Grok Bot or fallbacks
   ├─ /api/pset/upload      pset PDF upload, page rasterization, text extraction
   ├─ /api/session/*        session state, transcript, recap
-  └─ /api/retrieve         chunk retrieval (pgvector)
+  └─ /api/retrieve         authenticated course-scoped lexical retrieval
             │
             ▼
 Supabase (Postgres + pgvector + storage)
@@ -65,7 +65,7 @@ Each lane is a branch off `main` named `lane/<name>`. Lanes touch only their own
 | recap | Hussein | `app/api/session/*`, `lib/session/*`, `components/recap/*` |
 | shell | Hussein | `app/(auth)/*`, `app/layout.tsx`, `components/orb/*`, `components/transcript/*`, `README.md` |
 
-Shared: `lib/types.ts` (contracts below), `.env.example`, package manifests, root entry/layout, and database schema. The types are frozen pending coordination. `lib/db/schema.sql` does not exist yet; the context lane may propose its initial version in a PR as described in LANES.md.
+Shared: `lib/types.ts` (contracts below), `.env.example`, package manifests, root entry/layout, and database schema. The types remain frozen. `lib/db/schema.sql` defines service-role-only users, course memberships, context chunks, and idempotent recaps with row-level security enabled and no browser policies.
 
 ## 3. Contracts
 
@@ -365,7 +365,7 @@ type LayoutState = "orb_only" | "pset" | "concept";
 
 ### 3.8 Auth and test account (shell lane)
 
-Planned: Google OAuth via NextAuth. No auth provider is installed yet. Allowlist `@yale.edu` plus a judge account `judge@betterofficehours.app` with password login enabled only for that account, preloaded with PHYS 180 and pset 3. Credentials in the README.
+NextAuth Google OAuth accepts only a verified Google profile whose normalized email matches the returned user and is either `@yale.edu` or the reserved judge address. The tutor route redirects unauthenticated users to `/sign-in`. Persistence routes derive identity from the server session; only `/api/ingest` may use `INGEST_TOKEN` with an explicit allowed user email for the trusted collector. No route accepts a browser-supplied user ID. Password-based judge access and preloaded PHYS 180 data are not implemented.
 
 ## 4. Environment
 
@@ -377,6 +377,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 INGEST_TOKEN=
 NEXTAUTH_SECRET=
+NEXTAUTH_URL=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ```

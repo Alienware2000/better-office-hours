@@ -12,3 +12,8 @@ export type {
   RecapScope,
   StoredRecap,
 } from "./persistence";
+export {
+  loadAuthenticatedRecap,
+  saveAuthenticatedRecap,
+  SupabaseRecapRepository,
+} from "./supabase-repository";

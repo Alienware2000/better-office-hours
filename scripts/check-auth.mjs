@@ -54,6 +54,7 @@ function load(file) {
 
 const {
   getAuthReadiness,
+  getProductionAuthReadiness,
   isAllowedEmail,
   JUDGE_EMAIL,
   normalizeEmail,
@@ -93,6 +94,38 @@ assert.deepEqual(
     NEXTAUTH_SECRET: "session-secret",
   }),
   { ready: true, missing: [] },
+);
+assert.deepEqual(getProductionAuthReadiness({}), {
+  ready: false,
+  missing: [
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "NEXTAUTH_SECRET",
+    "NEXTAUTH_URL",
+  ],
+});
+assert.deepEqual(
+  getProductionAuthReadiness({
+    GOOGLE_CLIENT_ID: "client",
+    GOOGLE_CLIENT_SECRET: "secret",
+    NEXTAUTH_SECRET: "session-secret",
+    NEXTAUTH_URL: "https://better-office-hours.vercel.app",
+  }),
+  {
+    ready: true,
+    missing: [],
+    callbackUrl:
+      "https://better-office-hours.vercel.app/api/auth/callback/google",
+  },
+);
+assert.equal(
+  getProductionAuthReadiness({
+    GOOGLE_CLIENT_ID: "client",
+    GOOGLE_CLIENT_SECRET: "secret",
+    NEXTAUTH_SECRET: "session-secret",
+    NEXTAUTH_URL: "http://better-office-hours.vercel.app",
+  }).ready,
+  false,
 );
 
 assert.deepEqual(
