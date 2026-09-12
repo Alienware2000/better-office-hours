@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+const external = createRequire(import.meta.url);
 // Routing and desk isolation checks, without microphone or model variability.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -16,7 +18,7 @@ function load(file) {
       target: ts.ScriptTarget.ES2022,
     },
   }).outputText;
-  const require = (name) =>
+  const require = (name) => name.startsWith('@mathjax/') ? external(name) :
     load(
       (name.startsWith("@/")
         ? path.resolve(name.slice(2))
@@ -48,6 +50,15 @@ assert.equal(detectMode("Why does this work?", "pset"), null);
 assert.equal(detectMode("Explain a concept", "pset"), "concept");
 assert.equal(detectMode("I want to do homework", "concept"), "pset");
 assert.equal(detectMode("Hello"), null);
+for (const phrase of [
+  "How did you know that equation? We did not do it in lecture two",
+  "I thought we covered it in lecture one",
+  "Teach me what acceleration means",
+  "Can we talk about the initial velocity?",
+  "I do not understand this concept",
+  "Can you explain a concept in this equation?",
+]) assert.equal(detectMode(phrase, "pset"), null, phrase);
+assert.equal(detectMode("Can we switch topic?", "pset"), "concept");
 const board = load("lib/whiteboard/store.ts");
 board.applyDrawCommands([
   {
@@ -90,3 +101,6 @@ assert.equal(asSessionEvent({ kind: "notes_ready" }).kind, "notes_ready");
 console.log(
   "PASS: supplemental notes retain concept context and have an allowlisted ready event.",
 );
+
+assert.equal(detectMode('This concept appeared in our homework', 'concept'), 'concept');
+assert.equal(detectMode('Go back to homework', 'concept'), 'pset');

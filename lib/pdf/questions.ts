@@ -10,7 +10,7 @@ export type PdfTextItem = {
   pageHeight: number;
 };
 
-const LABEL = /^(?:q(?:uest(?:ion)?)?[\s.]*)?(\d+[a-z]?)[.)]?$/i;
+const LABEL = /^(?:q(?:uest(?:ion)?)?[\s.]*)?(\d+[a-z]?)[.)](?:\s|$)/i;
 
 export function detectQuestionRegions(
   items: PdfTextItem[],
@@ -30,4 +30,15 @@ export function detectQuestionRegions(
     });
   }
   return regions;
+}
+
+// PDF text fragments carry measured full-page geometry. These are anchors,
+// not model-estimated coordinates; ambiguous repeated text remains explicit.
+export function textRegions(items: PdfTextItem[]): { label: string; bbox: BBox }[] {
+  return items.filter(item => item.str.trim() && item.w > 0 && item.h > 0).slice(0, 180).map(item => ({
+    label: item.str.trim().slice(0, 160),
+    bbox: { x: item.x / item.pageWidth, y: item.y / item.pageHeight,
+      w: Math.min(item.w / item.pageWidth, 1 - item.x / item.pageWidth),
+      h: item.h / item.pageHeight },
+  }));
 }

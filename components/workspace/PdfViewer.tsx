@@ -1,9 +1,13 @@
 "use client";
 
+import { HistoryIcon } from "@/components/workspace/HistoryIcon";
+
+import { revealPageTarget } from "@/lib/pdf/coordinates";
+
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import type { BBox } from "@/lib/types";
-import { detectQuestionRegions, type PdfTextItem } from "@/lib/pdf/questions";
+import { detectQuestionRegions, textRegions, type PdfTextItem } from "@/lib/pdf/questions";
 import { getLivePage, setLivePage } from "@/lib/pdf/live-page";
 import { InkBar } from "./InkBar";
 import { LeaveButton } from "./LeaveButton";
@@ -31,6 +35,7 @@ type PageView = {
   visionUrl: string;
   text: string;
   questionRegions: { label: string; bbox: BBox }[];
+  textRegions: { label: string; bbox: BBox }[];
 };
 
 export function PdfViewer({
@@ -60,7 +65,11 @@ export function PdfViewer({
   const frameRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PageView[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [strokes, setStrokes] = useState<InkStroke[]>([]);
+  const [inkHistory, setInkHistory] = useState<{past: InkStroke[][]; present: InkStroke[]; future: InkStroke[][]}>({past: [], present: [], future: []});
+  const strokes = inkHistory.present;
+  const setStrokes = (update: (current: InkStroke[]) => InkStroke[]) => setInkHistory(history => ({past: [...history.past, history.present].slice(-30), present: update(history.present), future: []}));
+  const undoInk = () => { window.dispatchEvent(new Event('boh:student-writing')); setInkHistory(h => h.past.length ? {past:h.past.slice(0,-1),present:h.past.at(-1)!,future:[h.present,...h.future]} : h); };
+  const redoInk = () => { window.dispatchEvent(new Event('boh:student-writing')); setInkHistory(h => h.future.length ? {past:[...h.past,h.present],present:h.future[0],future:h.future.slice(1)} : h); };
   const publishedStrokesRef = useRef(strokes);
   const [tool, setTool] = useState<InkTool>("hand");
   const [color, setColor] = useState<InkColor>("ink");
@@ -70,7 +79,7 @@ export function PdfViewer({
   zoomRef.current = zoom;
   const [fitWidth, setFitWidth] = useState(0);
   const [panning, setPanning] = useState(false);
-  const [laser, setLaser] = useState<{ x: number; y: number; label?: string } | null>(
+  const [laser, setLaser] = useState<{ x: number; y: number } | null>(
     null,
   );
   const onReadyRef = useRef(onReady);
@@ -205,13 +214,14 @@ export function PdfViewer({
           visionUrl: snapshot(canvas),
           text: strings.join(" "),
           questionRegions: detectQuestionRegions(items),
+          textRegions: textRegions(items),
         });
       }
 
       if (cancelled) return;
       setPages(nextPages);
       setCurrent(0);
-      setStrokes([]);
+      setInkHistory({past: [], present: [], future: []});
       setZoom(1);
       if (nextPages[0]) {
         // Publish before onReady so the pset_ready turn can actually see the page.
@@ -225,6 +235,7 @@ export function PdfViewer({
             imageUrl: nextPages[0].visionUrl,
             text: nextPages[0].text,
             questionRegions: nextPages[0].questionRegions,
+            textRegions: nextPages[0].textRegions,
             studentMarks: 0,
           });
         }
@@ -372,7 +383,7 @@ export function PdfViewer({
 
     const publish = async () => {
       const imageUrl = pageStrokes.length
-        ? await paintInkOnImage(page.visionUrl, pageStrokes)
+        ? await paintInkOnImage(page.visionUrl, pageStrokes, hostRef.current?.querySelector(`[data-page="${current}"]`)?.getBoundingClientRect().width)
         : page.visionUrl;
       if (cancelled) return;
       setLivePage({
@@ -384,6 +395,7 @@ export function PdfViewer({
         imageUrl,
         text: page.text,
         questionRegions: page.questionRegions,
+        textRegions: page.textRegions,
         studentMarks: pageStrokes.length,
       });
       if (marksChanged) markTimer = setTimeout(() => {
@@ -407,52 +419,67 @@ export function PdfViewer({
   };
 
   useEffect(() => {
-    if (!pointer || !hostRef.current) return;
-    const index = Math.max(0, pointer.page - 1);
-    hostRef.current
-      .querySelector(`[data-page="${index}"]`)
-      ?.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
-  }, [pointer]);
+    const stack = hostRef.current;
+    if (!active || !stack) return;
+    const target = pointer ?? (highlight ? {
+      page: highlight.page, x: highlight.bbox.x,
+      y: highlight.bbox.y + highlight.bbox.h / 2,
+    } : null);
+    if (!target) return;
+    const frame = requestAnimationFrame(() => {
+      const sheet = stack.querySelector<HTMLElement>(`[data-page="${Math.max(0, target.page - 1)}"]`);
+      if (!sheet) return;
+      const delta = revealPageTarget(stack.getBoundingClientRect(), sheet.getBoundingClientRect(), target);
+      if (delta.left || delta.top) stack.scrollBy({ ...delta, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pointer, highlight, active, reduceMotion]);
 
-  // The laser lives on the visible frame, not on a single page sheet, so it
-  // can travel between problems instead of unmounting and appearing again.
+  // The cue lives on the visible frame and follows measured page geometry.
   useEffect(() => {
     const frame = frameRef.current;
     const stack = hostRef.current;
-    if (!frame || !pointer) {
+    const target = highlight ? { page: highlight.page, x: highlight.bbox.x, y: highlight.bbox.y + highlight.bbox.h / 2 } : pointer;
+    if (!frame || !target) {
       setLaser(null);
       return;
     }
 
     const update = () => {
       const sheet = frame.querySelector<HTMLElement>(
-        `[data-page="${Math.max(0, pointer.page - 1)}"]`,
+        `[data-page="${Math.max(0, target.page - 1)}"]`,
       );
       if (!sheet) return;
       const frameBox = frame.getBoundingClientRect();
       const sheetBox = sheet.getBoundingClientRect();
       if (frameBox.width < 1 || frameBox.height < 1) return;
-      const x =
-        (sheetBox.left - frameBox.left + pointer.x * sheetBox.width) / frameBox.width;
-      const y =
-        (sheetBox.top - frameBox.top + pointer.y * sheetBox.height) / frameBox.height;
-      // Off the visible frame: hide rather than pin a laser to the margin.
+      const anchor = highlight?.bbox ?? pages[target.page - 1]?.textRegions.find(region => {
+        const b = region.bbox;
+        return target.x >= b.x && target.x <= b.x + b.w && target.y >= b.y && target.y <= b.y + b.h;
+      })?.bbox;
+      // Park beside a measured text fragment, never on top of its letters.
+      const x = (sheetBox.left - frameBox.left + (anchor?.x ?? target.x) * sheetBox.width - (anchor ? 23 : 0)) / frameBox.width;
+      const y = (sheetBox.top - frameBox.top + (anchor ? anchor.y + anchor.h / 2 : target.y) * sheetBox.height) / frameBox.height;
+      // Off the visible frame: hide the cue until the passage is visible.
       if (x < -0.04 || x > 1.04 || y < -0.04 || y > 1.04) {
         setLaser(null);
         return;
       }
-      setLaser({ x, y, label: pointer.label });
+      setLaser({ x, y });
     };
 
     update();
     stack?.addEventListener("scroll", update, { passive: true });
     const observer = new ResizeObserver(update);
     observer.observe(frame);
+    if (stack) observer.observe(stack);
+    const sheet = frame.querySelector<HTMLElement>(`[data-page="${Math.max(0, target.page - 1)}"]`);
+    if (sheet) observer.observe(sheet);
     return () => {
       stack?.removeEventListener("scroll", update);
       observer.disconnect();
     };
-  }, [pointer, zoom]);
+  }, [pointer, highlight, zoom, pages]);
 
   if (error) {
     return <p className="p-6 text-sm text-zinc-500">{error}</p>;
@@ -487,6 +514,10 @@ export function PdfViewer({
             if (tool === "hand" || tool === "eraser") setTool("pen");
           }}
         >
+          <div className="ink-cluster" role="group" aria-label="Annotation history">
+            <button className="ink-tool" type="button" aria-label="Undo PDF annotation" title="Undo PDF annotation" disabled={!inkHistory.past.length} onClick={undoInk}><HistoryIcon /></button>
+            <button className="ink-tool" type="button" aria-label="Redo PDF annotation" title="Redo PDF annotation" disabled={!inkHistory.future.length} onClick={redoInk}><HistoryIcon redo /></button>
+          </div>
           <div className="ink-cluster" role="group" aria-label="Zoom">
             <button
               type="button"
@@ -592,7 +623,6 @@ export function PdfViewer({
           <Pointer
             x={laser.x}
             y={laser.y}
-            label={laser.label}
             reduceMotion={reduceMotion}
           />
         ) : null}

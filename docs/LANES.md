@@ -2,11 +2,19 @@
 
 David owns voice, workspace, and whiteboard. Hussein owns context, recap, and shell. This handoff describes the current baseline and the first reviewable slices; it does not authorize replacing the working desk or starting every roadmap feature.
 
+## Unblocked now (2026-09-11)
+
+**Hussein may begin the isolated recap card slice immediately** while David's stress-test PR (#6 or equivalent on `lane/voice-stress-fixes`) awaits review. That PR is not a blocker for Hussein's lanes.
+
+He may open additional PRs for context and shell first slices the same way: branch from `origin/main`, stay inside the slice boundary below, open a PR to `main`, wait for David's review. Do not wait for mic hardware checks or for David's open voice PRs to merge.
+
+Preferred first move: `lane/recap` → isolated card + validation/serialization + persistence interface proposal (see Recap: first PR).
+
 ## Start from main, work through PRs
 
-Read STATUS, DESIGN, ARCHITECTURE, PROMPT, PEDAGOGY where relevant, DEMO, NOTES, then this file. Create `lane/context`, `lane/recap`, or `lane/shell` from the latest `origin/main`. Do not start from the old scaffold or an old lane/voice checkout. Use separate checkouts if working on multiple lanes at once.
+Read STATUS, DESIGN, ARCHITECTURE, PROMPT, PEDAGOGY where relevant, DEMO, NOTES, then this file. Create `lane/context`, `lane/recap`, or `lane/shell` from the latest `origin/main`. Do not start from the old scaffold, David's open stress-test branch, or an old lane/voice checkout. Use separate checkouts if working on multiple lanes at once.
 
-Commit and push the lane branch, then open a PR to `main`. David reviews and merges Hussein's PRs. Agents must not merge their own PRs or push directly to main without David explicitly asking. A pending mic or iPad review of David's desk does not block Hussein's first slices below. Stop at the boundary of the selected slice and report its remaining integration needs.
+Commit and push the lane branch, then open a PR to `main`. David reviews and merges Hussein's PRs. Agents must not merge their own PRs or push directly to main without David explicitly asking. A pending mic, iPad review, or open David PR (including PR #5) does not block Hussein's first slices below. Stop at the boundary of the selected slice and report its remaining integration needs.
 
 Every PR must state the problem, changed behavior, affected contracts, setup/migrations, validation, and any missing integration. Update only the relevant lane's notes and STATUS entries; preserve other agents' status. No automatic code-author attribution in commits or docs.
 

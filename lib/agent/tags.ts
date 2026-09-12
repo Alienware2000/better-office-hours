@@ -1,3 +1,4 @@
+import type { LivePage } from "@/lib/pdf/live-page";
 import type {
   AgentTurn,
   AnimationProgram,
@@ -5,6 +6,8 @@ import type {
   BBox,
 } from "@/lib/types";
 import { parseDrawCommand } from "@/lib/whiteboard/parse-draw";
+import { teachingIntent, teachingDraw, canRevealRelationship, isRelationship, type TeachingIntent, type TeachingTurn } from './teaching-intent';
+import { validateAnimation } from '@/lib/whiteboard/animation';
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -62,7 +65,9 @@ function readJson(source: string, openAt: number): { value: unknown; end: number
   return null;
 }
 
-function applyTag(turn: AgentTurn, name: string, body: string) {
+type PageAnchors = Pick<LivePage, "page" | "textRegions"> | null;
+
+function applyTag(turn: TeachingTurn, name: string, body: string, source?: PageAnchors) {
   if (name === "RECAP") {
     turn.recap = true;
     return;
@@ -93,6 +98,15 @@ function applyTag(turn: AgentTurn, name: string, body: string) {
   }
   if (name === "HIGHLIGHT") {
     const a = attrs(body);
+    if (a.anchor !== undefined) {
+      // Anchor IDs refer only to the page supplied with this model request.
+      const index = Number(a.anchor);
+      const region = /^\d+$/.test(a.anchor) && Number.isInteger(index) && index >= 0 ? source?.textRegions?.[index] : undefined;
+      if (region && Number(a.page) === (source?.page ?? -1) + 1) {
+        turn.highlight = { page: Number(a.page), bbox: { ...region.bbox } };
+      } else delete turn.highlight;
+      return;
+    }
     const bbox: BBox = {
       x: num(a.x),
       y: num(a.y),
@@ -103,7 +117,8 @@ function applyTag(turn: AgentTurn, name: string, body: string) {
     return;
   }
   if (name === "DRAW") {
-    const command = parseDrawCommand(body);
+    const parsed = parseDrawCommand(body);
+    const command = parsed && teachingDraw(parsed, turn.teaching);
     if (!command) return;
     turn.board = turn.board ?? { commands: [] };
     turn.board.commands.push(command);
@@ -134,14 +149,26 @@ function applyTag(turn: AgentTurn, name: string, body: string) {
     const json = readJson(trimmed, trimmed.indexOf("{"));
     if (!json) return;
     turn.board = turn.board ?? { commands: [] };
-    turn.board.animation = json.value as AnimationSpec;
+    const animation = validateAnimation(json.value);
+    if (!animation) return;
+    turn.board.animation = canRevealRelationship(turn.teaching) ? animation : {
+      ...animation,
+      shapes: animation.shapes.filter(shape => shape.kind !== 'text' || !isRelationship(shape.text)).map(shape => ({ ...shape,
+        ...('label' in shape && shape.label && isRelationship(shape.label) ? { label: undefined } : {}),
+        ...(shape.kind === 'axes' ? {
+          xLabel: shape.xLabel && isRelationship(shape.xLabel) ? undefined : shape.xLabel,
+          yLabel: shape.yLabel && isRelationship(shape.yLabel) ? undefined : shape.yLabel,
+        } : {}),
+      })),
+    } as AnimationSpec;
   }
 }
 
-export function parseAgentTurn(raw: string): AgentTurn {
-  const turn: AgentTurn = { speech: "" };
+export function parseAgentTurn(raw: string, source?: PageAnchors, inheritedIntent?: TeachingIntent): TeachingTurn {
+  const turn: TeachingTurn = { speech: "", ...(inheritedIntent ? { teaching: inheritedIntent } : {}) };
   let speech = "";
   let i = 0;
+  let teachingChosen = Boolean(inheritedIntent);
 
   while (i < raw.length) {
     if (raw[i] !== "[") {
@@ -155,7 +182,7 @@ export function parseAgentTurn(raw: string): AgentTurn {
     let end = -1;
     let inner = "";
 
-    if (brace !== -1 && (close === -1 || brace < close)) {
+    if (/^\[(?:DRAW|ANIM|ANIM_PROGRAM)\b/.test(raw.slice(i)) && brace !== -1 && (close === -1 || brace < close)) {
       const json = readJson(raw, brace);
       if (!json) {
         // Tag JSON is still streaming; wait for the next chunk.
@@ -185,8 +212,12 @@ export function parseAgentTurn(raw: string): AgentTurn {
       "RECAP",
       "THINK",
     ];
-    if (known.includes(name)) {
-      applyTag(turn, name, body);
+    if (name === 'TEACH') {
+      // A late/second tag cannot retroactively authorize earlier visuals.
+      if (!teachingChosen && !speech.trim() && !turn.board) turn.teaching = teachingIntent(attrs(body));
+      teachingChosen = true;
+    } else if (known.includes(name)) {
+      applyTag(turn, name, body, source);
     } else {
       speech += raw.slice(i, end);
     }
@@ -202,9 +233,38 @@ export function takeSpeechChunks(spoken: string, emitted: number): {
   consumed: number;
 } {
   const pending = spoken.slice(emitted);
-  const match = pending.match(/^([\s\S]*?[.!?])(?:\s|$)/);
-  if (match && match[1].trim().split(/\s+/).length >= 2) {
-    return { chunk: match[1].trim(), consumed: emitted + match[0].length };
+  const match = pending.match(/^([\s\S]*?[.!?])\s+/);
+  if (match) {
+    return { chunk: match[1].trim(), consumed: emitted + match[1].length };
   }
   return { chunk: "", consumed: emitted };
+}
+
+/** Complete visual tags and the speech preceding each, in stream order. */
+export function visualBeats(raw: string, source?: PageAnchors): { speechBefore: string; turn: AgentTurn }[] {
+  const beats: { speechBefore: string; turn: AgentTurn }[] = [];
+  let lastEnd = 0;
+  const starts = /\[(?:BOARD|DRAW|POINT|HIGHLIGHT|ANIM)\b/g;
+  for (const match of raw.matchAll(starts)) {
+    const start = match.index;
+    if (start < lastEnd) continue;
+    const close = raw.indexOf(']', start);
+    const brace = raw.indexOf('{', start);
+    let end = close + 1;
+    if (brace >= 0 && (close < 0 || brace < close)) {
+      const json = readJson(raw, brace);
+      if (!json || raw[json.end] !== ']') break;
+      end = json.end + 1;
+    } else if (close < 0) break;
+    // Skip tag-looking strings inside a preceding JSON tag.
+    if (beats.length && start < lastEnd) continue;
+    const turn = parseAgentTurn(raw.slice(0, end), source);
+    // Pointer/highlight are momentary actions. Do not replay an earlier page
+    // target when a later board tag arrives.
+    if (match[0] !== '[POINT') delete turn.pointer;
+    if (match[0] !== '[HIGHLIGHT') delete turn.highlight;
+    beats.push({ speechBefore: parseAgentTurn(raw.slice(0, start), source).speech, turn });
+    lastEnd = end;
+  }
+  return beats;
 }

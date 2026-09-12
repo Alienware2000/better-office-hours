@@ -3,6 +3,7 @@ import { GROK_DEEP_MODEL, GROK_MODEL, streamGrok } from "@/lib/agent/grok";
 import { setLivePage, type LivePage } from "@/lib/pdf/live-page";
 import { asLiveBoard, setLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
+import { parseAgentTurn } from "@/lib/agent/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,10 @@ function asLivePage(body: unknown): LivePage | null {
     questionRegions: Array.isArray(page.questionRegions)
       ? page.questionRegions
       : [],
+    textRegions: Array.isArray(page.textRegions) ? page.textRegions.slice(0, 180).filter(region =>
+      typeof region?.label === "string" && region.bbox &&
+      [region.bbox.x, region.bbox.y, region.bbox.w, region.bbox.h].every(n => Number.isFinite(n) && n >= 0 && n <= 1)
+    ) : [],
     studentMarks: typeof page.studentMarks === "number" ? page.studentMarks : 0,
   };
 }
@@ -57,6 +62,7 @@ export async function POST(req: Request) {
   );
   const deep: boolean =
     !!body && typeof body === "object" && (body as { deep?: unknown }).deep === true;
+  const visualRepair = !!body && typeof body === "object" && (body as { visualRepair?: unknown }).visualRepair === true;
   setLivePage(asLivePage(body));
   setLiveBoard(
     body && typeof body === "object"
@@ -64,17 +70,27 @@ export async function POST(req: Request) {
       : null,
   );
   const model = deep ? GROK_DEEP_MODEL : GROK_MODEL;
-  const id = "chatcmpl-boh";
+  const id = `tutor-${crypto.randomUUID()}`;
+  const started = Date.now();
   const created = Math.floor(Date.now() / 1000);
   const encoder = new TextEncoder();
 
+  let cancelled = false;
+  const upstream = new AbortController();
+  const cancel = () => { cancelled = true; upstream.abort(); };
+  req.signal.addEventListener("abort", cancel, { once: true });
+  if (req.signal.aborted) cancel();
   const stream = new ReadableStream({
     async start(controller) {
       const send = (payload: unknown) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+        if (!cancelled) controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
       };
+      let raw = '';
+      let firstVisualMs: number | null = null;
       try {
-        for await (const content of streamGrok(history, event, deep)) {
+        for await (const content of streamGrok(history, event, deep, upstream.signal, visualRepair)) {
+          raw += content;
+          if (firstVisualMs === null && /\[(?:DRAW|ANIM) /.test(raw)) firstVisualMs = Date.now() - started;
           send({
             id,
             object: "chat.completion.chunk",
@@ -83,6 +99,10 @@ export async function POST(req: Request) {
             choices: [{ index: 0, delta: { content }, finish_reason: null }],
           });
         }
+        if (process.env.NODE_ENV !== 'production') {
+          const turn = parseAgentTurn(raw);
+          console.info('Tutor visual response ' + JSON.stringify({ request: id, deep, visualRepair, elapsedMs: Date.now() - started, firstVisualMs, think: turn.think === true, teaching: turn.teaching, commands: turn.board?.commands.length ?? 0, animation: Boolean(turn.board?.animation), control: Boolean(turn.board?.animControl) }));
+        }
         send({
           id,
           object: "chat.completion.chunk",
@@ -90,14 +110,17 @@ export async function POST(req: Request) {
           model,
           choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
         });
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        if (!cancelled) controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (error) {
+        if (process.env.NODE_ENV !== 'production') console.info('Tutor visual incomplete ' + JSON.stringify({ request: id, deep, visualRepair, elapsedMs: Date.now() - started, firstVisualMs, cancelled, receivedCharacters: raw.length }));
         const message = error instanceof Error ? error.message : "Grok request failed";
         send({ error: { message } });
       } finally {
-        controller.close();
+        req.signal.removeEventListener("abort", cancel);
+        if (!cancelled) controller.close();
       }
     },
+    cancel,
   });
 
   return new Response(stream, {
@@ -105,6 +128,7 @@ export async function POST(req: Request) {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
+      "X-Tutor-Request": id,
     },
   });
 }
