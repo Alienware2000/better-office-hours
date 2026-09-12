@@ -2,7 +2,7 @@
 
 A voice tutor that knows your course and talks you to the answer instead of handing it to you.
 
-Built by David Antwi and Hussein for the Yale AI Association x SpaceXAI hackathon.
+Built by David Antwi and Hussein Zindonda for the Yale AI Association x SpaceXAI hackathon.
 
 ## Demo
 
