@@ -43,16 +43,25 @@ export function sessionForResume(session: SavedSession): SavedSession {
   return kind ? { ...session, voice: { ...voice, kind, current: voice.parked[kind]! } } : session;
 }
 
+function titleFromUtterance(text: string): string | undefined {
+  const cleaned = text.trim().replace(/^(?:(?:um|uh|okay|ok|well)[,.]?\s+)+/i, '')
+    .replace(/^(?:can|could|would) you (?:please )?/i, '').replace(/^please /i, '').replace(/[.!?]+$/, '');
+  // A repair, greeting, or navigation choice is not the subject of a lesson.
+  // Wait for a meaningful request rather than preserving microphone chatter.
+  if (!cleaned || /\b(?:repeat that|say that again|hear me|hear you|microphone|misheard)\b/i.test(cleaned) ||
+    /^(?:sorry\b|i said\b|hi\b|hello\b|hey\b|what'?s up\b|whatsapp\b)/i.test(cleaned) ||
+    /^(?:homework|explain a concept|something else|yes|no|okay|ok|thanks?|thank you|help|help me|help me please|help me with (?:my )?homework|can you please help|i need help)$/i.test(cleaned)) return;
+  return cleaned.replace(/^(?:i (?:need|want)(?: some)? help (?:with|on)|help me with|i(?:'d| would) like to (?:work on|learn about)|i want to (?:work on|learn about)) (?:my |the )?/i, '');
+}
+
 export function sessionTitle(session: SavedSession): string {
   if (session.renamed) return session.title;
   const work = session.voice?.current;
   const boards = [...(work?.board.earlierPages ?? []), work?.board];
   const topic = boards.flatMap(board => board?.groups ?? []).find(g => g.id === 'topic' || g.id.startsWith('topic-'))?.drawables.find(d => d.kind === 'text');
-  const firstQuestion = allTranscript(session).find(t => t.role === 'student' && !['Homework', 'Explain a concept', 'Something else'].includes(t.text))?.text;
+  const opening = allTranscript(session).filter(t => t.role === 'student').map(t => titleFromUtterance(t.text)).find(Boolean);
   // Reuse conversation/board content; no extra model request delays the tutor.
-  const opening = firstQuestion?.replace(/^(?:(?:um|uh|okay|ok|well)[,.]?\s+)+/i, '')
-    .replace(/^(?:can|could|would) you (?:please )?/i, '').replace(/^please /i, '').replace(/[.!?]+$/, '');
-  const candidate = (topic?.kind === 'text' ? topic.text : '') || opening || session.pset?.title || session.notes?.title;
+  const candidate = (topic?.kind === 'text' ? topic.text : '') || session.pset?.title || session.notes?.title || opening;
   if (candidate) {
     const title = candidate.split(/\s+/).slice(0, 10).join(' ').slice(0, 70);
     return title.charAt(0).toUpperCase() + title.slice(1);

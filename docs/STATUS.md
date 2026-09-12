@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 23:16 EDT
+Updated: 2026-09-11 23:24 EDT
 By: Codex for David, consolidating reviewed lanes
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, integrating current main
@@ -13,6 +13,8 @@ Review: David explicitly authorized consolidation. Hussein's PRs #6, #8, and #9 
 David explicitly authorized merging Hussein's slices and live integration. Context #6, recap #8, and shell #9 are merged, preserving their dependency. Earlier wait-for-review instructions below are historical and superseded. Keep frozen lib/types.ts and human PROMPT/PEDAGOGY unchanged. Grok Bot must collect real Canvas materials for the live demo.
 
 ## Now
+
+Recording polish (23:24): David requested clearer workspace entry, useful titles, and a better Canvas position. Read the actual saved exchange: an audio repair became its name, then physics homework received a broad question despite an empty PDF desk. Runtime routing now invites a PDF upload or spoken problem description, avoids repeat uploads, and asks for a concept only when unnamed. Titles skip common repairs/greetings, use topic/document names when available, and preserve manual names; old library rows derive their display title again. Canvas is a compact book control in the reserved session header, with a wrapping phone row and explicit optional-connection copy. Build, focused lint, saved-session/structured-routing checks, and full isolated browser recovery pass. Five real fast-Grok probes chose the expected upload/topic/teaching behaviors. Desktop/700px/390px renders and connected state inspected. Human acoustic quality is not established by these checks. Production update follows this commit; local :3102 remains frozen.
 
 Deadline integration (23:09): David clarified that Grok Bot integration must work on Vercel. Google remains optional and Supabase setup is parked. Created and connected a private Vercel Blob store, boh-private (store_JUhOE7x3GnBLnamY), to this app's production/preview. The existing storage adapter now uses it when configured; Supabase remains an optional alternative and local disk remains the unconfigured local fallback. No login redesign, frozen contract, human prompt, or microphone threshold change.
 

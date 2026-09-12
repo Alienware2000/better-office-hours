@@ -24,7 +24,7 @@ export function VoiceSession(props: { ownerKey?: string; studentName?: string; a
   return <SessionLibrary {...props} Desk={SessionDesk} />;
 }
 
-function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport, studentName }: SessionPersistence) {
+function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport, studentName, headerActions }: SessionPersistence) {
   const [courseId, setCourseId] = useState(saved.courseId);
   const {
     state,
@@ -188,7 +188,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
 
   return (
     <>
-    <CourseConnection recap={recap} selected={courseId} onSelect={id => { pauseVoice(); setCourseId(id); }} onOpen={pauseVoice} />
+    <CourseConnection headerActions={headerActions} recap={recap} selected={courseId} onSelect={id => { pauseVoice(); setCourseId(id); }} onOpen={pauseVoice} />
     <main className="session-shell">
       <LayoutGroup id="session-layout">
         {!split ? (
