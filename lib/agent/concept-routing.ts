@@ -46,7 +46,8 @@ export function parseConceptRoute(raw: string): { kind: RouteKind; speech: strin
   return { kind: value.kind as RouteKind, speech, handoff };
 }
 
-export function conceptRoute(raw: string): string {
+export function conceptRoute(raw: string, inLobby = false): string {
   const route = parseConceptRoute(raw);
-  return route.handoff ? '[THINK]' : route.speech;
+  const workspace = inLobby && (route.handoff || route.kind === 'definition') ? '[MODE concept]' : '';
+  return workspace + (route.handoff ? '[THINK]' : route.speech);
 }

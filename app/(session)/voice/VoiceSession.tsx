@@ -36,7 +36,6 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
     sendEvent,
     interrupt,
     pauseVoice,
-    exitWorkspace,
     enterWorkspace,
     putAwayPset,
     bindDiscardPset,
@@ -61,6 +60,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
   const captureRef = useRef(capture);
   useEffect(() => { captureRef.current = capture; bindCapture(capture); }, [capture, bindCapture]);
   useEffect(() => {
+    if (hydrated.current) return;
     if (saved.voice) restoreSession(saved.voice); else resetBoard();
     hydrated.current = true;
   }, [saved, restoreSession]);
@@ -252,7 +252,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
             >
               <div className="concept-desk adaptive-desk">
                 <div className="concept-toolbar">
-                  <LeaveButton onLeave={exitWorkspace} />
+                  <LeaveButton onLeave={onNew} />
                   <div
                     className="concept-views"
                     role="group"

@@ -14,7 +14,7 @@ function load(file, imports = {}) {
   }, mod, mod.exports);
   return mod.exports;
 }
-const { newSession, exportSession, allTranscript, sessionTitle } = load('app/(session)/voice/saved-sessions.ts');
+const { newSession, exportSession, allTranscript, sessionTitle, hasSessionContent, sessionForResume } = load('app/(session)/voice/saved-sessions.ts');
 const first = newSession(), second = newSession();
 assert.notEqual(first.id, second.id);
 const student = { role: 'student', text: 'Explain this idea', at: '2026-09-11T20:00:00.000Z' };
@@ -51,3 +51,18 @@ assert.equal(events[0].bohSpeechBoundary,true,'Completed structured units retain
 assert.ok(events.at(-1).error.message.includes('Your work is still here'));
 assert.ok(!events.at(-1).error.message.includes('JSON at position'),'Parser internals stay out of the user-facing error');
 console.log('PASS: structured SSE playback boundary and safe incomplete-response error, without discarding earlier streamed content.');
+
+assert.equal(hasSessionContent(newSession()),false,'An unopened draft is not a saved conversation');
+const blankBoard={groups:[],student:[],earlierPages:[]};
+const greeting={kind:'lobby',current:{turns:[tutor],history:[],board:blankBoard},parked:{pset:null,concept:null}};
+assert.equal(hasSessionContent({...second,voice:greeting}),false,'Greeting alone does not clutter the library');
+assert.equal(hasSessionContent({...second,voice:{...greeting,kind:'concept'}}),true,'An explicit workspace choice begins a session');
+assert.equal(hasSessionContent(first),true);
+assert.equal(sessionTitle({...first,voice:{...first.voice,current:{...first.voice.current,turns:[{...student,text:'Um, can you explain conservation of energy?'}] },parked:{pset:null,concept:null}}}), 'Explain conservation of energy');
+const legacy={...first,voice:{...greeting,parked:{pset:null,concept:first.voice.current}}};
+const recovered=sessionForResume(legacy);
+assert.equal(recovered.voice.kind,'concept');
+assert.equal(recovered.voice.current,first.voice.current);
+assert.equal(recovered.voice.parked,legacy.voice.parked,'Legacy parked work remains intact');
+assert.equal(sessionForResume({...legacy,voice:{...legacy.voice,current:first.voice.current}}).voice.kind,'lobby','A new lobby exchange is not replaced');
+console.log('PASS: empty-draft filtering, automatic conversation titles, explicit start, legacy parked desk recovery.');

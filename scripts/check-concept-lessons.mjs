@@ -138,7 +138,12 @@ assert.equal(routedMessages.at(-1).content, routingHistory.at(-1).content, 'Actu
 assert.ok(routedMessages[1].content.includes('NOT a student attempt'), 'Board provenance survives the compact routing context');
 assert.ok(!routedMessages.some(m => m.content.includes('Old tool and teaching instructions.')));
 setLivePage(null); setLiveBoard(null);
-assert.equal(usesConceptRouter(), false, 'The lobby stays fast conversation');
+assert.equal(usesConceptRouter(), true, 'The lobby uses the same compact semantic router without an extra model call');
+assert.equal(parseAgentTurn(conceptRoute('{"kind":"lesson","speech":""}', true)).mode, 'concept');
+assert.equal(parseAgentTurn(conceptRoute('{"kind":"logistics","speech":"Hello."}', true)).mode, undefined);
+assert.equal(parseAgentTurn(conceptRoute('{"kind":"clarify_topic","speech":"Which idea?"}', true)).mode, undefined);
+assert.equal(parseAgentTurn(conceptRoute('{"kind":"definition","speech":"A short definition."}', true)).mode, 'concept');
+assert.equal(parseAgentTurn(conceptRoute('{"kind":"lesson","speech":""}', false)).mode, undefined, 'An existing homework desk is retained');
 setLiveBoard(firstContext);
 assert.equal(usesConceptRouter(), true);
 assert.equal(usesConceptLesson(true), true);

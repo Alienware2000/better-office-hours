@@ -25,13 +25,38 @@ export function newSession(): SavedSession {
     voice: null, pset: null, notes: null, documentViews: { pset: true, concept: false }, pdf: {}, diagnostics: [] };
 }
 
+export function hasSessionContent(session: SavedSession): boolean {
+  const works = [session.voice?.current, session.voice?.parked.pset, session.voice?.parked.concept];
+  return Boolean(session.pset || session.notes || session.voice?.kind !== undefined && session.voice.kind !== 'lobby' ||
+    works.some(work => work && (work.turns.some(turn => turn.role === 'student') || work.board.student.length ||
+      work.board.groups.some(group => group.id !== 'topic') || work.board.earlierPages.length)));
+}
+
+// Older saves could park the only conversation behind a blank lobby. Resume
+// the most recent desk without erasing any other parked work.
+export function sessionForResume(session: SavedSession): SavedSession {
+  const voice = session.voice;
+  if (!voice || voice.kind !== 'lobby' || voice.current.turns.some(turn => turn.role === 'student')) return session;
+  const kind = (['pset', 'concept'] as const).filter(key => voice.parked[key]).sort((a, b) =>
+    (voice.parked[b]?.turns.at(-1)?.at ?? '').localeCompare(voice.parked[a]?.turns.at(-1)?.at ?? ''))[0];
+  return kind ? { ...session, voice: { ...voice, kind, current: voice.parked[kind]! } } : session;
+}
+
 export function sessionTitle(session: SavedSession): string {
   if (session.renamed) return session.title;
   const work = session.voice?.current;
-  const topic = work?.board.groups.find(g => g.id === 'topic')?.drawables.find(d => d.kind === 'text');
+  const boards = [...(work?.board.earlierPages ?? []), work?.board];
+  const topic = boards.flatMap(board => board?.groups ?? []).find(g => g.id === 'topic' || g.id.startsWith('topic-'))?.drawables.find(d => d.kind === 'text');
   const firstQuestion = allTranscript(session).find(t => t.role === 'student' && !['Homework', 'Explain a concept', 'Something else'].includes(t.text))?.text;
-  return ((session.voice?.kind === 'concept' ? session.notes?.title : session.pset?.title) ||
-    (topic?.kind === 'text' ? topic.text : '') || firstQuestion || session.title).slice(0, 80);
+  // Reuse conversation/board content; no extra model request delays the tutor.
+  const opening = firstQuestion?.replace(/^(?:(?:um|uh|okay|ok|well)[,.]?\s+)+/i, '')
+    .replace(/^(?:can|could|would) you (?:please )?/i, '').replace(/^please /i, '').replace(/[.!?]+$/, '');
+  const candidate = (topic?.kind === 'text' ? topic.text : '') || opening || session.pset?.title || session.notes?.title;
+  if (candidate) {
+    const title = candidate.split(/\s+/).slice(0, 10).join(' ').slice(0, 70);
+    return title.charAt(0).toUpperCase() + title.slice(1);
+  }
+  return session.voice?.kind === 'pset' ? 'Homework conversation' : session.voice?.kind === 'concept' ? 'Concept conversation' : 'New conversation';
 }
 
 // Parked desks can contain earlier exchanges. Keep their timestamps and role,

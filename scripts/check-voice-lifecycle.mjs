@@ -15,7 +15,7 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', llmResponse = null, manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, startup = {} } = {}) {
+async function mount({ llmText = '', llmResponse = null, manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, realIntent = false, startup = {} } = {}) {
   const effects = [], states = [], requests = [], recordings = [];
   const inputAudioState = { value: 'running' };
   const stt = deferred();
@@ -124,6 +124,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     }, loaded, loaded.exports);
     return loaded.exports;
   }
+  if (realIntent) imports['@/lib/agent/intent'] = load('lib/agent/intent.ts');
   imports['./speech'] = load('app/(session)/voice/speech.ts');
   const { SpeechAudioCapture } = load('app/(session)/voice/audio-capture.ts');
   imports['./audio-capture'] = { SpeechAudioCapture: class extends SpeechAudioCapture {
@@ -173,6 +174,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     },
     setAudioState: value => { inputAudioState.value = value; },
     suspendAudio: () => { inputAudioState.value = 'suspended'; },
+    restartEffects: () => { cleanups.forEach(cleanup => cleanup?.()); cleanups.splice(0, cleanups.length, ...effects.map(effect => effect())); },
     cleanup: () => cleanups.forEach(cleanup => cleanup?.()) };
 }
 
@@ -665,3 +667,34 @@ console.log('PASS: completed sentence boundaries release speech before the next 
   test.cleanup();
 }
 console.log('PASS: paused session recovery restores conversation memory for the next voice turn without restarting a greeting.');
+
+{
+  const test = await mount();
+  test.restartEffects(); await settle();
+  assert.equal(test.states[9],false,'Fast Refresh invalidates input whose effect resources were destroyed');
+  assert.equal(test.states[4],true,'Fast Refresh leaves voice visibly paused');
+  assert.equal(test.resourceCounts().mediaRequests,1,'Effect restart never silently reacquires microphone');
+  test.hook.interrupt(); await settle();
+  assert.equal(test.states[9],true,'Next explicit start reacquires live input');
+  assert.equal(test.resourceCounts().mediaRequests,2);
+  await test.record(); test.stt.resolve(Response.json({text:'Can you hear me after that update?'})); await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,1,'Reacquired input actually transcribes the next utterance');
+  test.cleanup();
+}
+{
+  const permission=deferred();
+  const test=await mount({autoStart:false,realIntent:true,startup:{media:permission.promise}});
+  await test.hook.sendUtterance('Explain a concept');
+  assert.equal(test.states[5],'concept','An explicit choice reveals the workspace before microphone permission resolves');
+  assert.equal(test.states[10],true);
+  permission.resolve();await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,1);
+  test.cleanup();
+}
+for(const [mode,expected] of [['','concept'],['[MODE pset]','pset']]) {
+  const test=await mount({llmText:mode+'[BOARD open] Here is the picture.'});
+  await test.hook.sendUtterance('Help with this idea');
+  assert.equal(test.states[5],expected,'Generated board opens the desk; explicit homework mode takes priority');
+  test.cleanup();
+}
+console.log('PASS: Fast Refresh microphone reacquisition, immediate concept desk during permissions, and generated-board workspace visibility.');

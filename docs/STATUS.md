@@ -2,10 +2,10 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 19:37 EDT
+Updated: 2026-09-11 21:21 EDT
 By: Codex for David
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/drawing-continuity`, continuation of 179544c with merged origin/main
+Branch: `lane/drawing-continuity`, continuation of 5a229d9 with merged origin/main
 Review: David explicitly approved merging his PRs #5 and #7. Hussein owns PRs #6 (context), #8 (recap, based on lane/context), and #9 (shell); keep all three open until David reviews them and gives separate merge approval.
 
 ## Hussein PRs remain open (read this first)
@@ -18,6 +18,24 @@ Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. D
 - Recap's first slice is the isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
 
 ## Now
+
+Session navigation and voice startup repair (2026-09-11): explicit concept choices open the desk while microphone setup runs. The compact semantic router now also handles lobby speech, so a natural explanation request opens the concept desk before its existing reasoning handoff. Generated board content reveals a hidden desk even if a MODE tag is omitted, while explicit homework mode and an existing homework desk take priority. No new model/provider/request or topic triggers.
+
+Session controls occupy a real header row above the desk instead of covering the orb. A conversation automatically creates one saved entry, with a title inherited from its opening request or board topic and no naming model call. Empty startup/draft pages do not create history entries. The date-grouped drawer supports search, resume, rename, per-session exports, and confirmed deletion of inactive records. New session and Leave save the current conversation and return to a clean draft. Legacy saves parked behind the lobby reopen their actual desk. Refresh still restores conversation/board/PDF history paused. Existing stale-tab write protection remains.
+
+Listening evidence: dev-server logs show compiled updates adjacent to VAD destruction and cancelled turns. Reproduced a lifecycle bug where Fast Refresh kept inputReady=true after destroying the microphone and detector. Effect teardown/recreation now invalidates readiness and pauses voice; the next explicit start reacquires working input. Hydration does not replay the original saved snapshot over newer in-memory work during an effect restart. Input-unavailable events enter local session diagnostics. No microphone thresholds changed. This explains one concrete failure mode, not every reported hardware failure.
+
+Hussein review rechecked after his new updates: #6 head 984ea02, #8 head 0ff0b27, #9 head ae2fda2, all OPEN. The new heads bring in merged main; shell also records real Yale OAuth verification on Hussein's machine. PRs still contain context core, isolated recap/interface, and auth shell respectively. They do not implement session navigation, a persistence adapter, concept workspace transitions, or the new voice lifecycle fixes. Nothing was merged, copied, closed, or retargeted. #8 still targets lane/context. Coordinate authenticated/cloud identity later instead of duplicating those modules.
+
+Validation: production build and focused lint pass. Saved-session/export, voice lifecycle (including preserved-ref effect restart and real next-utterance recovery), semantic/structured lesson, pedagogy/disclosure/repair, workspace, and animation checks pass. A fresh isolated browser verified no empty rows, automatic distinct creation, concept desk despite microphone failure, rename/search/export/delete, Leave/new-draft reload, PDF ink/page/zoom/undo recovery, and stale-tab conflict protection. Desktop/700px/380px layouts were inspected and header/orb non-overlap asserted. A real-model browser request, Can you explain projectile motion with a simple picture?, entered from the lobby through real Silero with synthetic audio, drew five groups in narration order, automatically titled the session Projectile path, exported it, and restored it on reload without opening the microphone. STT text and TTS audio were stubbed; this was not a real-device or acoustic-quality test. The first probe lacked the isolated copy's local API configuration and stopped at setup; it passed after configuration was copied privately. Browser regression initially waited for the deliberately hidden mobile transcript; the assertion was corrected to use a desktop viewport.
+
+Latency remains: that live-model sample took 3.8s for routing, then 13.5s from the reasoning request to first audio, with its first board beat at 17.2s. This fixes entry and recovery, not generation speed or consistent teaching quality. OpenRouter remains deferred. The available user save contained only a parked Homework entry, not the earlier test dialogue; no exact audit of the lost conversation is claimed.
+
+Stable preview: :3102 now serves the verified production build from /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-startup-check-dn0cyag1. This is a frozen local preview, not the editable checkout. Its .data links to this worktree's existing uploaded PDFs; browser origin is unchanged, preserving local sessions. Do not edit or rebuild that running copy. Work in the repo and validate a different copy/port, then replace the preview intentionally. The user's tab was idle and reloaded once onto the verified preview, showing its recovered Homework entry with voice paused. The isolated :3103 test server is stopped. See HANDOFF for the next task. Human PROMPT/PEDAGOGY and frozen lib/types.ts remain unchanged. Full-repo lint retains the previously recorded five PdfViewer ref-access findings.
+
+Next: review PR #10, test actual microphone speech and recovery with a friend on the stable preview, and export the named session JSON for analysis. Then progress Hussein's separate reviews, authenticated session identity/cloud persistence, student-first recap integration, course retrieval, and deployment. Avoid another broad microphone or diagram retuning pass without new evidence.
+
+### Earlier saved-session and visual slice
 
 Session recovery, review exports, and concrete playback/diagram fixes (2026-09-11): David explicitly requested saving separate sessions after two accidental refreshes destroyed valuable tests. The voice lane now has a browser-local Sessions drawer with automatic IndexedDB saving, rename/new/resume/delete, timestamped transcript export, and full session JSON export. Recovery restores current and parked desk histories, captions, board pages/student ink/undo, paused animation state, attachment references, and PDF ink/undo/page/zoom. Opening the library pauses voice; resuming a saved session requires a fresh microphone action and preserves conversation context. A stale tab cannot overwrite a newer save. The paper UI and drawing toolbar remain intact.
 

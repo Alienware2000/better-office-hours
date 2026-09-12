@@ -34,7 +34,7 @@ export function usesConceptLesson(deep = false, visualRepair = false): boolean {
 }
 
 export function usesConceptRouter(deep = false, visualRepair = false): boolean {
-  return !deep && usesConceptLesson(true, visualRepair);
+  return !deep && !visualRepair;
 }
 
 function client() {
@@ -233,7 +233,7 @@ export async function* streamGrok(
       const route = parseConceptRoute(lesson);
       console.info('Tutor teaching route ' + JSON.stringify({ kind: route.kind, handoff: route.handoff }));
     }
-    yield conceptRoute(lesson);
+    yield conceptRoute(lesson, !live && !board?.open);
   }
   if (conceptTeaching) {
     const complete = conceptResponse(lesson);

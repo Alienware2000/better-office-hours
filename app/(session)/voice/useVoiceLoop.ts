@@ -281,6 +281,12 @@ export function useVoiceLoop() {
   }, []);
 
   const applyTurn = useCallback((turn: AgentTurn) => {
+    // A generated board must be visible even if the model omitted MODE.
+    // This is driven by the actual visual action, never by its topic.
+    if (!turn.mode && kindRef.current === 'lobby' && (turn.board?.open || turn.board?.commands?.length || turn.board?.animation)) {
+      adoptKind('concept', false);
+      setLayout('concept');
+    }
     if (turn.mode === "pset" && kindRef.current === "lobby") {
       if (kindRef.current === "lobby") adoptKind("pset", false);
       setLayout("pset");
@@ -662,7 +668,11 @@ export function useVoiceLoop() {
         setInputEnabledRef.current(true);
         claimTabRef.current();
         if (!inputReadyRef.current) {
-          pendingStartTextRef.current = text;
+          const intent = detectMode(text, layoutRef.current);
+          const resumed = intent && kindRef.current !== intent && Boolean(parkedRef.current[intent]) &&
+            (intent === 'pset' ? isResumePsetPhrase(text) : isResumeConceptPhrase(text));
+          if (intent) { adoptKind(intent, Boolean(parkedRef.current[intent])); setLayout(intent); }
+          pendingStartTextRef.current = resumed ? null : text;
           startInputRef.current();
           return;
         }
@@ -678,7 +688,7 @@ export function useVoiceLoop() {
         setOrb(pausedRef.current ? "idle" : "listening");
       }
     },
-    [runTurn, setOrb, stopPlayback],
+    [adoptKind, runTurn, setLayout, setOrb, stopPlayback],
   );
 
   // Ink changes update snapshots, not turn ownership. The next student utterance
@@ -805,8 +815,14 @@ export function useVoiceLoop() {
   }, [sendUtterance, speak, stopPlayback]);
 
   useEffect(() => {
+    inputReadyRef.current = false;
+    pausedRef.current = true;
     let cancelled = false;
     let starting = false;
+    // Effect resources are new after Fast Refresh, even when React keeps state.
+    queueMicrotask(() => {
+      if (!cancelled && !starting) { setInputReady(false); setInputStarting(false); setPaused(true); setOrb('idle'); }
+    });
     let startup: AbortController | null = null;
     let stream: MediaStream | null = null;
     let detector: Awaited<ReturnType<typeof createSpeechDetector>> | null = null;
@@ -882,6 +898,7 @@ export function useVoiceLoop() {
         tracks: stream?.getAudioTracks().map(track => ({ state: track.readyState, muted: track.muted, enabled: track.enabled })),
         detectorAgeMs: Math.round(performance.now() - probabilityAt),
       }));
+      recordSessionDiagnostic({ kind: 'input_unavailable', message });
       inputReadyRef.current = false;
       setInputReady(false);
       suspendVoice(message);
@@ -1218,6 +1235,12 @@ export function useVoiceLoop() {
 
     return () => {
       cancelled = true;
+      inputReadyRef.current = false;
+      pausedRef.current = true;
+      setInputReady(false);
+      setInputStarting(false);
+      setPaused(true);
+      setOrb('idle');
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", handlePageHide);

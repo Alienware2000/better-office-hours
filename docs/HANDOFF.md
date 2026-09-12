@@ -1,14 +1,15 @@
 # Better Office Hours handoff
 
-Updated: 2026-09-11 19:39 EDT, Codex for David.
+Updated: 2026-09-11 21:21 EDT, Codex for David.
 
 ## Start here
 
 Read AGENTS.md and STATUS, DESIGN, ARCHITECTURE, human PROMPT, PEDAGOGY, DEMO, NOTES, and LANES in the prescribed order. STATUS is the live snapshot. Older chronological notes contain superseded behavior.
 
 - Checkout `/Users/davidantwi/.codex/worktrees/b640/boh`, branch `lane/drawing-continuity`. Original checkout `/Users/davidantwi/Dev/boh`. Run git status/log and preserve new changes.
-- Baseline `22590ca` is included. David's PRs #5/#7 are merged. This slice follows `01d9629` and is on [PR #10](https://github.com/Alienware2000/better-office-hours/pull/10), **Preserve tutoring sessions and improve narrated visuals**. Do not push main or merge without David's request.
-- `http://localhost:3102/` serves this worktree. Leave David's tab and active voice test alone; HMR can still interrupt a turn. :3103 was an isolated production copy for testing and is stopped after validation. No test scene is wired into the app.
+- Baseline `22590ca` is included. David's PRs #5/#7 are merged. This slice follows `5a229d9` and is on [PR #10](https://github.com/Alienware2000/better-office-hours/pull/10), **Preserve tutoring sessions and improve narrated visuals**. Do not push main or merge without David's request.
+- `http://localhost:3102/` now serves a frozen production build from `/var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-startup-check-dn0cyag1`. Its `.data` symlink uses this worktree's existing PDF storage. Same origin, same local saved sessions. Do not edit/rebuild this running preview. Continue source work in the repo and use another isolated copy/port for verification, then replace :3102 intentionally while idle. :3103 is stopped. No fixture is wired into runtime.
+- The stable preview runs `npm run start -- --port 3102`. If it stops, use that command in the frozen copy, or build a fresh isolated release. `npm run dev -- --port 3102` in the repo returns to HMR and can interrupt voice turns.
 - Keep `lib/types.ts`, `docs/PROMPT.md`, and `docs/PEDAGOGY.md` unchanged. David owns voice/workspace/whiteboard. Hussein's #6/#8/#9 remain open, untouched, and awaiting separate reviews. #8 targets lane/context, not main.
 
 ## Current direction
@@ -19,7 +20,19 @@ The visual goal is a professor building an explanation with simple objects, mean
 
 David explicitly requested multiple saved sessions, refresh recovery, and exportable transcripts/data for review. That overrides the old no-library/disposable-session decision. He wants to progress the broader build after this slice. He has not requested creating a new Codex task yet. OpenRouter remains a deferred comparison option, not an instruction to migrate now.
 
-## What changed in this slice
+## Latest session and startup fixes
+
+- Explicit concept choice opens the desk during microphone preparation. A natural lobby request goes through the same compact semantic router as other desks and opens concept mode before the existing deep call. A generated board also reveals a lobby-hidden desk if MODE was omitted. Existing homework mode takes priority. No extra model call, topic triggers, or new provider.
+- A real header reserves space for Sessions, the current name/save state, and New session. The drawer groups by date and supports search and per-row rename/export/delete. Empty drafts are not saved. A conversation creates one entry automatically; titles reuse the opening request or first board topic, without a naming call. Leave saves and returns to a clean draft. Selecting a legacy lobby save restores its parked conversation.
+- Fast Refresh previously retained inputReady after effect cleanup destroyed input. Lifecycle now clears readiness and pauses, then reacquires on the next explicit start. Existing saved-state hydration runs once per desk, avoiding HMR rollback to its initial snapshot. Input faults enter session diagnostics. Keep VAD thresholds unchanged.
+- User's available legacy record contained a parked Homework chip entry; after refresh it now shows that desk paused. The earlier full teaching transcript is still unavailable.
+- Rechecked Hussein's new heads #6=984ea02, #8=0ff0b27, #9=ae2fda2. They merge main into their branches; shell also documents successful local Yale OAuth. None implements these session-navigation/lifecycle fixes or a durable adapter. Keep all OPEN and #8 targeting lane/context. Do not copy their isolated modules ahead of coordinated review.
+
+The production build and focused lint pass. Lifecycle checks include actual next-input processing after effect restart, immediate concept choice during permission wait, and missing-MODE board display with explicit homework priority. The extended check-session-recovery browser script verifies automatic creation/no empty entries, search/title/rename/export/delete, reload/new/Leave, saved PDF ink/undo/page/zoom, stale-tab CAS, and header clearance at desktop/700px/380px. Latest screenshots: /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-session-recovery-qL7crO. No actual device/model calls in that regression.
+
+An additional real-model browser probe through real Silero with synthetic audio asked Can you explain projectile motion with a simple picture? from the lobby. It opened the desk, drew five narrated groups, auto-named Projectile path, exported session JSON, and reloaded conversation/board paused. STT text and TTS audio were stubbed. Artifacts: /tmp/boh-session-entry-live.{cjs,json,png}. Routing took 3.8s, reasoning first audio 13.5s and first board 17.2s. No latency or consistent-quality claim. First probe was blocked by missing config in the isolated copy; private configuration copy resolved it. The UI regression's initial mobile visibility assertion was corrected because captions are deliberately hidden there.
+
+## Earlier saved-session and visual changes
 
 - Voice-owned browser-local Sessions drawer: autosave, new/resume/rename, explicit deletion of an inactive save, transcript text and session JSON export. It pauses voice before navigation. Reopening a session restores current/parked conversation history and captions, all board pages and ink/history, paused animation spec/time, attachment references, and PDF ink/history/page/zoom. A resumed voice turn receives the restored conversation without another greeting.
 - IndexedDB updates one record at a time. Active selection is separate, and atomic expected-timestamp checks prevent stale tabs overwriting newer sessions. Save failures leave work open and exportable. Board writes are throttled at 500ms; text/document changes also trigger saves, with best-effort pagehide flush.
