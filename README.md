@@ -6,7 +6,9 @@ Built by David Antwi and Hussein Zindonda for the Yale AI Association x SpaceXAI
 
 ## Demo
 
-The public demo video and live application link will be added after the integrated build is deployed. The planned 90-second walkthrough is documented in [DEMO.md](docs/DEMO.md).
+[Open Better Office Hours](https://better-office-hours.vercel.app).
+
+The public demo video will be added after recording. The 90-second walkthrough is documented in [DEMO.md](docs/DEMO.md).
 
 ## The problem
 
@@ -54,7 +56,9 @@ Course Pack Collector uses Grok Bot to gather a student's Canvas course profile,
 
 ## Try it
 
-The hosted URL and judge instructions will be added after deployment. The demo course is archived PHYS 180 material; the same desk is designed to work with any course once its context has been loaded.
+Open [the hosted app](https://better-office-hours.vercel.app), allow the microphone, and tap the orb. No Google account is required for the guest concept tutor. Choose Explain a concept, then speak the topic. Pause stops voice; Sessions restores locally saved conversations.
+
+For this submission, PDF and collected-course storage work in the local app. Hosted storage and Google setup are deferred; the public deployment currently supports guest concept tutoring. The local rehearsal uses archived PHYS 180 material; the same desk is designed to work with other courses once their context is loaded. Deployment setup and checks are in [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 To run locally, install Node.js and configure xAI and ElevenLabs API keys:
 
