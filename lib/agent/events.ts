@@ -36,10 +36,10 @@ export function describeEvent(event: SessionEvent): string {
     const count = event.pages && event.pages > 1 ? ` It has ${event.pages} pages.` : "";
     return [
       `The student just put their problem set${named} on the desk next to you.${count}`,
-      "You can see the current page, the same way someone sitting beside them would. Speak now, without waiting to be asked.",
+      "You can see the current page, the same way someone sitting beside them would. An upload supplies context, not an agenda.",
       "Do not ask them to upload a PDF or which assignment it is. That is already in front of you.",
-      "In one short line, refer to something actually on the page (a heading, a problem number, a figure) so it is clear you can see their work, then ask which problem they want to start with or whether they would rather walk the set from the top.",
-      "Do not summarize the whole document and do not start solving anything.",
+      "Do not name a numbered problem, example, figure, or equation unless the student selected it. Ask what they came to work on. If they already stated their goal, stay with it without asking again. Never choose problem one or offer to walk from the top unprompted.",
+      "Do not summarize the whole document, explain an equation, or start solving anything. Ask at most one question, then wait for the student. Silence is not a request to continue.",
     ].join(" ");
   }
   return "";

@@ -1,5 +1,8 @@
 import type { AnimationSpec, AnimShape, DrawCommand, Pt } from "../types";
 import { interpretCommand, type ShapeGroup } from "./geometry";
+import { typesetMath } from './math-layout';
+import type { DiagramCommand } from './diagram-command';
+import { isMathText } from './text';
 
 const clamp = (n: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, n));
 type Frame = Record<string, unknown> & { t: number; ease?: string };
@@ -204,7 +207,7 @@ export function animationFrame(
           ...("at" in frame ? { at: resolve(frame.at) } : {}),
         })), t)
       : frames.get(s.id)!;
-    let command: DrawCommand;
+    let command: DrawCommand | DiagramCommand;
     switch (s.kind) {
       case "axes":
         command = {
@@ -231,6 +234,7 @@ export function animationFrame(
           id: s.id,
           center: resolve(f.at),
           r: clamp(Number(f.r), 0.006, 0.04),
+          diagram: { fill: "tint" },
           label: s.label,
         };
         break;
@@ -295,6 +299,10 @@ export function animationFrame(
           (m) => m.kind === "text",
         );
       }
+      // Moving labels keep their model attachment and stable size. Avoid a
+      // per-frame collision solver that would make them jump between sides.
+      op.group.drawables = op.group.drawables.map(mark => mark.kind === 'text'
+        ? { ...mark, fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color) ?? undefined : undefined } : mark);
       groups.push({ ...op.group, opacity: clamp(Number(f.opacity ?? 1)) });
     }
   }

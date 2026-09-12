@@ -18,11 +18,15 @@ export function VoiceSession() {
   const {
     state,
     level,
+    recording,
+    inputReady,
+    retryMicrophone,
     error,
     paused,
     sendUtterance,
     sendEvent,
     interrupt,
+    pauseVoice,
     exitWorkspace,
     enterWorkspace,
     putAwayPset,
@@ -81,21 +85,20 @@ export function VoiceSession() {
     [sendEvent],
   );
 
-  // sendEvent no-ops while paused, so do not mark the pset announced until
-  // the student is actually listening. Otherwise the tutor never sees the page.
+  // Retain readiness bookkeeping for the desk. Readiness is silent; the
+  // current page snapshot reaches the tutor with the next student utterance.
   useEffect(() => {
     if (paused || !homework || !pset || !deskReady) return;
     announceReady(deskReady, pset.id);
   }, [announceReady, deskReady, paused, pset, homework]);
 
   useEffect(() => {
-    if (!split) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") exitWorkspace();
+      if (event.key === "Escape") { event.preventDefault(); pauseVoice(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [exitWorkspace, split]);
+  }, [pauseVoice]);
 
   useEffect(() => {
     if (
@@ -111,13 +114,13 @@ export function VoiceSession() {
   }, [concept, paused, notes, notesReady, sendEvent]);
 
   useEffect(() => {
-    if (!pointer || !(concept ? notes : homework && pset)) return;
+    if ((!pointer && !highlight) || !(concept ? notes : homework && pset)) return;
     const mode = concept ? "concept" : "pset";
     const frame = requestAnimationFrame(() => setDocumentViews((current) =>
       current[mode] ? current : { ...current, [mode]: true },
     ));
     return () => cancelAnimationFrame(frame);
-  }, [pointer, concept, homework, notes, pset]);
+  }, [pointer, highlight, concept, homework, notes, pset]);
 
   const layoutTransition = reduceMotion
     ? { duration: 0 }
@@ -137,10 +140,15 @@ export function VoiceSession() {
                 state={state}
                 level={level}
                 paused={paused}
+                recording={recording}
+                inputReady={inputReady}
+                inputError={!inputReady && Boolean(error)}
+                onRetry={retryMicrophone}
                 onInterrupt={interrupt}
+                onPause={pauseVoice}
               />
             </motion.div>
-            <p className="orb-status">{statusText(state, paused)}</p>
+            <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error))}</p>
 
             <div className="chip-row">
               {chips.map((chip) => (
@@ -285,12 +293,17 @@ export function VoiceSession() {
                     state={state}
                     level={level}
                     paused={paused}
+                    recording={recording}
+                    inputReady={inputReady}
+                    inputError={!inputReady && Boolean(error)}
+                    onRetry={retryMicrophone}
                     onInterrupt={interrupt}
+                    onPause={pauseVoice}
                   />
                 </motion.div>
-                <p className="orb-status">{statusText(state, paused)}</p>
+                <p className="orb-status">{statusText(state, paused, recording, inputReady, Boolean(error))}</p>
                 <Captions turns={turns} />
-                {documentView && <Whiteboard active={split} />}
+                {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
                 {error ? (
                   <p className="session-note workspace-note">{error}</p>
                 ) : null}
@@ -303,10 +316,12 @@ export function VoiceSession() {
   );
 }
 
-function statusText(state: OrbState, paused: boolean): string {
+function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean): string {
+  if (!inputReady) return inputError ? "Microphone unavailable" : "Preparing microphone";
   if (paused) return "Tap to start";
-  if (state === "speaking") return "Speaking · tap to stop";
-  if (state === "thinking") return "Thinking · tap to cancel";
+  if (recording) return "Listening · tap when finished";
+  if (state === "speaking") return "Speaking";
+  if (state === "thinking") return "Thinking";
   if (state === "listening") return "Listening";
   return "Ready";
 }
