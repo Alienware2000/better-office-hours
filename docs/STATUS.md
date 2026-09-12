@@ -2,15 +2,15 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 22:01 ET
+Updated: 2026-09-11 22:03 ET
 By: Hussein (shell lane)
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/shell`, merged with current `origin/main`
-Review: David merged Hussein's context PR #6. Recap PR #8 is now based on main and remains open and clean. Shell PR #9 remains open and is being refreshed after the context merge.
+Review: David merged Hussein's context PR #6 and recap PR #8. Shell PR #9 is the only remaining Hussein PR and is being refreshed after both merges.
 
-## Remaining Hussein PRs (read this first)
+## Remaining Hussein PR (read this first)
 
-Hussein's context PR #6 merged on 2026-09-11. Recap PR #8 and shell PR #9 remain open for David's separate review. Do not merge, close, or recreate those PRs without David's approval.
+Hussein's context PR #6 and recap PR #8 merged on 2026-09-11. Shell PR #9 remains open for David's separate review. Do not merge, close, or recreate it without David's approval.
 
 - Branch from `origin/main`: `lane/recap` (or `lane/context` / `lane/shell`).
 - Follow `docs/LANES.md` for the first reviewable slice boundaries.
@@ -120,6 +120,8 @@ Submission README follow-up: the README now follows the required demo-first stru
 
 Context first slice merged through PR #6. `lib/context/*` chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Chunk IDs are deterministic and page-aware, repeated source ingestion is deduplicated, malformed identity/page fields fail early, and mathematical Unicode survives chunking. Student retrieval is course-scoped and always excludes solutions, including non-solution document kinds explicitly flagged as private answers. Its public result contains only document kind, title, page, and text; course IDs, storage paths, embeddings, solution flags, and internal chunk records cannot cross that boundary. Solution retrieval has a separate server-runtime-only entry point. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
 
+Recap first slice merged through PR #8. `lib/session/*` validates and canonically serializes the existing `Recap` contract, rejects incomplete review references and explicit answer-key disclosures in displayed fields, and proposes an authenticated, course-scoped, idempotent repository boundary. `components/recap/*` renders an accessible cream-desk card with the sticking point, what changed, and a real review location when available; it states honestly when no course reference exists. Student calculations and spoken transcript text are deliberately not rendered. This slice does not add persistence, API routes, auth, or voice-loop wiring.
+
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
 Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David authorized merging PR #3. Try pause/resume and Leave while a recording is processing as the remaining hardware check. This earlier slice established delayed-input isolation; the current stress-test branch adds prototype acoustic interruption, still requiring hardware validation.
@@ -133,7 +135,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 ## What to do next
 
 1. David's fresh diagram task continues the integrated voice/whiteboard baseline with the documented pedagogy and no scripted runtime scenes.
-2. Review Hussein's remaining PRs #8 and #9. PR #8 is now based on main after PR #6 merged. No merge permission has been given for #8 or #9.
+2. Review Hussein's remaining shell PR #9. PRs #6 and #8 are merged; no merge permission has been given for #9.
 3. Retest live drawing cadence and real-device voice when convenient. Planning latency, diagram quality, and physical correctness still need observation; do not weaken pedagogy or microphone interruption to make a fixture pass.
 4. Canvas/Grok Bot operation and live cross-lane wiring still require a separate assignment.
 5. Before submission, replace the README placeholders with the deployed URL, demo video, Cursor screenshot, judge instructions, and verified Grok Bot link/GIF.
@@ -148,6 +150,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. The current branch also fixes the earlier voice-hook ref lint failures; the harness passes lint.
 - Shell: `node scripts/check-auth.mjs`, focused ESLint, `npx tsc --noEmit`, production build, voice lifecycle, workspace, and animation unit checks pass. Browser verified the honest missing-config `/sign-in` state, real Yale Google OAuth callback, authenticated session endpoint, signed-in shell, and unchanged tutor home. `npm ci --dry-run` validates the synchronized lockfile; a later local clean install hit Windows `EPERM` locks on native binaries in the OneDrive checkout and is recorded in NOTES.
 - Context refresh: `node scripts/check-context.mjs`, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass after merging current main.
+- Recap refresh: `node scripts/check-recap.mjs`, context checks, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass after merging the updated context base.
 
 - `npm run build` and `npx tsc --noEmit` pass.
 - `node scripts/check-workspace.mjs` passes intent routing, separate board restoration, notes context, and notes event checks.
@@ -185,7 +188,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 | workspace | David | next workspace branch from main | adaptive PDF desk included in main |
 | whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
 | context | Hussein | `lane/context` from main | PR #6 merged; persistence and API integration pending |
-| recap | Hussein | `lane/recap` from main | PR #8 open and clean after context merge |
+| recap | Hussein | `lane/recap` from main | PR #8 merged; persistence and spoken close integration pending |
 | shell | Hussein | `lane/shell` from main | PR #9 open; Google/Yale auth verified locally; tutor remains ungated |
 
 ## Run
@@ -203,6 +206,8 @@ Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.
 ## Blockers
 
 Shell integration needs a reviewed authenticated identity contract and a decision on secure judge-password storage before it can gate the tutor. Production deployment also needs its final URL added to the Google OAuth client and deployment environment.
+
+Recap persistence requires authenticated session identity and a reviewed storage adapter. Spoken close flow requires a coordinated change in David's voice lane.
 
 Context persistence is intentionally blocked on review of database ownership/RLS, authenticated identity, endpoint formats, storage ownership, and the embeddings provider/dimensions.
 
