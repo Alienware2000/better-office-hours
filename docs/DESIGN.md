@@ -52,6 +52,9 @@ The empty orb screen animates into a split screen, roughly 65/35. The orb shrink
 - A small course switcher in a corner. Nothing else.
 
 ### The whiteboard: strokes and generated animation
+
+Diagram composition follows declared relationships: an object can touch a support and a vector can remain attached to its object as the tutor revises the figure. The renderer enforces those declared geometric constraints, without inferring forces or motion from words. Restrained object fills, support hatching, smaller titles, filled arrowheads, and clear labels distinguish physical structure from the active quantity. The tutor still decides the teaching content from the conversation. Diagram styling must not reveal a direction, relationship, or answer the learner has been asked to produce.
+
 Visuals are how this feels like a great explainer rather than a chatbot with a voice. Nothing on the board is scripted for the demo. The tutor composes what it draws and animates for whatever the student is learning; projectile motion is only what we test on.
 
 1. Hand-drawn strokes. SVG shapes that animate in one at a time as the tutor names them. The default for anything spatial.
@@ -183,6 +186,11 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 
 ## 12. Decisions log
 
+- Mathematical board notes use real LaTeX typesetting for fractions, roots, scripts, vectors, integrals, and short aligned expressions. Render locally as vector glyphs, preserving progressive writing, readable spacing, symbol colors, and matching tutor snapshots. Plain notation remains supported. Typesetting does not change when the tutor may reveal an equation.
+
+- Teaching choices come from the conversation, not hardcoded phrases. A request for a picture and a learner who needs orientation can both justify a diagram. Board content follows the same hint ladder as speech: do not show a relationship while asking the learner to retrieve it. Let them attempt first, offer the smallest needed hint after struggle or a request, and record their checked ideas without confusing tutor notes with student work. A formula is appropriate support when needed, not a mandatory part of setup.
+- Diagram annotations have a distinct smaller scale and nearby collision-aware placement. Physical geometry is not altered to make room for labels. Notes retain their readable hierarchy, writing effect, author distinction, scrollback, and fixed controls.
+
 - Product is office hours broadly, not psets only. Pset mode and concept mode share one shell.
 - The app opens on the orb alone with "What do you want to work on?" The student states the request; the layout transforms to match. Three optional chips mirror the choices for tapping.
 - Voice is the primary and only input to the agent.
@@ -202,6 +210,10 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 - Captions are live, not a chat log. Only the latest few lines stay on screen, they are not selectable like messages, and putting the paper away clears them. The full session is still in memory for the tutor until then.
 - Student ink on the PDF is a compact two-cluster bar (tools, then colors), in the spirit of GoodNotes / Notability / Canvas, kept to cream, black, rust, and gold. Pen, highlighter, and eraser. Marks are workspace-local and burned into the page image the tutor sees. The `StudentAnnotation` contract in `lib/types.ts` is unchanged. This is also the drawing feel the whiteboard should later match. The SVG board and declarative ANIM runtime are now implemented.
 - The PDF fits the desk at 100% on every screen. Zoom (− / percent / + in the ink bar, plus pinch or Ctrl-scroll) scales the page around the cursor or the center of the desk; the hand tool drags to pan. Click the percent to fit the page again. Pages live in that same bar. The title bar only has Leave, the filename, and Remove. Ink coordinates stay normalized to the page, so zoom does not break drawing or the laser.
+
+- Authorship is visible on the shared board: Tutor notes and Your ink, with student ink blue by default and the existing ink/rust/gold choices retained. Students can select, move, recolor, delete, and undo their marks without altering tutor notes. Drawing controls sit outside the writing area. Expansion uses the existing Whiteboard view and retains the work. PDF annotations also have undo/redo. Pressure-sensitive Pencil input remains future work.
+
+- Board notes write in progressively, with stable equation layout. A compact scrolling viewport keeps the toolbar fixed. New topics and full writing pages continue below earlier notes, preserving them and student ink for reference. Earlier pages are read-only in this pass; the current working page is editable. When the student cannot picture the setup, start with a brief description and a small situation diagram before asking a concrete prediction, without solving graded work. Invalid animations stay rejected and can recover with a static sketch; physical animation correctness remains a review requirement.
 
 ## 13. Roadmap (README only)
 

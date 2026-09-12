@@ -1,6 +1,7 @@
+import { BoardText } from "./BoardText";
 import type { AnimationSpec } from "@/lib/types";
 import { animationFrame } from "@/lib/whiteboard/animation";
-import { boardStyle } from "@/lib/whiteboard/style";
+import { BoardShape } from './BoardShape';
 
 export function AnimLayer({
   spec,
@@ -25,27 +26,9 @@ export function AnimLayer({
         >
           {group.drawables.map((mark) =>
             mark.kind === "text" ? (
-              <text
-                key={mark.key}
-                className="board-label"
-                x={mark.at.x}
-                y={mark.at.y}
-                fill={mark.color}
-                fontSize={boardStyle.label[mark.size]}
-                textAnchor="middle"
-              >
-                {mark.text}
-              </text>
+              <BoardText key={mark.key} mark={mark} />
             ) : (
-              <path
-                key={mark.key}
-                className="board-path"
-                d={mark.d}
-                stroke={mark.color}
-                style={{
-                  strokeWidth: focus === group.id ? 3 : boardStyle.stroke,
-                }}
-              />
+              <BoardShape key={mark.key} mark={mark} focused={focus === group.id} />
             ),
           )}
         </g>

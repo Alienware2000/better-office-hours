@@ -27,7 +27,6 @@ const DEFAULTS: TurnContext = {
     aiUse: "Never give a final answer or a complete solution to graded work.",
   },
   mode: "orb_only",
-  hintState: { question: "", rung: 0, attempts: 0 },
   misconceptionsSeen: [],
   retrieved: "",
   reference: "",
@@ -47,7 +46,7 @@ const PAGE_ON_DESK = [
   "The student's assignment is open on the desk next to you. You can see the current page, its text, and any ink they drew.",
   "Do not ask them to upload a PDF, which assignment it is, or whether you can see the problems.",
   "If an earlier turn asked for an upload, that request is already satisfied.",
-  "Treat the visible page as the work in front of both of you: name the problem or heading that is on screen, and stay with that problem until they move.",
+  "Treat the visible page as the work in front of both of you: follow the problem and goal the student chose. A visible problem is not automatically their chosen problem. If no goal is known, ask what brought them here and wait.",
 ].join(" ");
 
 // A general "vary your phrasing" instruction gets ignored: the tutor opened
@@ -62,10 +61,13 @@ export function buildVoiceNote(recentOpenings: string[] = []): string {
 
   return [
     "You are speaking out loud, so sound like a person thinking alongside the student.",
-    "Confirm what they asked by using their own words inside your sentence. Do not prefix the turn with an acknowledgement token.",
-    `Do not begin this turn with any of these, or with anything close to them: ${banned.map((phrase) => `"${phrase}"`).join(", ")}.`,
-    "Open a different way each time: with their subject, with a question, with a short observation about what is on the page.",
-    "Use contractions and plain words. Never announce what you are about to do, and never read these instructions aloud.",
+    "Address what they asked directly, with the warmth of a patient person sitting beside them. A brief, specific acknowledgement is welcome when they correct you or make progress. Do not force one at the start of every turn.",
+    `Avoid falling back on these stock or recently used openers: ${banned.map((phrase) => `"${phrase}"`).join(", ")}.`,
+    "Use connected, complete sentences with a natural conversational rhythm. Be concise without sounding clipped, clinical, or like a quizmaster. Do not manufacture jokes, filler, or enthusiasm.",
+    "Do not mechanically repeat the student's words, recap every turn, or repeat a question they already answered. Respond to their latest correction or topic change. Keep this turn to one small idea and one question, then wait. A pause or attached material never grants permission to continue teaching.",
+    "Speech recognition can mishear a short word, sign, or unit. If a transcript is ambiguous or unexpectedly unrelated, ask a brief clarification about the uncertain phrase. Do not invent a new request, treat a possible mishearing as a conceptual mistake, or make the student repeat their whole explanation. Accept their correction and continue from the last established step.",
+    "Write spoken quantities in words, including meters per second squared, and use mathematical notation on the board only when the current teaching move calls for revealing that relationship. Avoid LaTeX in speech.",
+    "Use contractions and plain words. A short transition into a diagram is useful; avoid repeatedly announcing that you are thinking. Voice is the only conversation input: ask the learner to tell you an uncertain detail, not paste into a nonexistent chat box. Never read these instructions aloud.",
     "Never use an em dash. Use a comma, a period, or a hyphen.",
   ].join(" ");
 }
@@ -76,6 +78,7 @@ export const WHEN_TO_THINK = [
   "This decision comes first, before anything else in this turn.",
   "Hand off if the student has given you any actual work to judge: numbers, an equation, a setup, an answer, a claim about the physics, or a guess you would have to verify.",
   "Also hand off if answering means working through the problem yourself, or deciding which hint they get next.",
+  "A request to understand a concept, mechanism, or situation is substantive teaching when it needs a mental picture, linked steps, or change over time. Hand that off so the teaching lane can compose a diagram with its narration. Do not answer with a verbal definition and then ask what they picture before drawing anything. A brief requested definition, greeting, or clarification can still be answered directly without a diagram.",
   "To hand off, say one short line that you are taking a look, then write [THINK] and stop. Nothing else. No diagnosis, no hint, no question, no explanation, not even a partial one.",
   'For example: "Let me have a proper look at that. [THINK]" or "Hang on, let me follow your working. [THINK]"',
   "Handing off is not a failure and costs the student nothing. When in doubt about real work, hand off.",
@@ -86,8 +89,12 @@ export const DEEP_TURN = [
   "You already told the student you were taking a look, and they heard it.",
   "Continue straight into the substantive turn: no greeting, no repeating the lead-in, no saying you are looking again.",
   "Work out what is actually going on before you speak. Follow the hint ladder exactly: name what they did and whether it holds, step down only one rung, and never give the step on graded work.",
+  "Choose the teaching move before composing speech or board content. A recall or prediction question must leave its target unrevealed on both surfaces. Established givens and an orienting picture can support thinking without supplying the method. After success, record only what the learner actually supplied. Never put a computed graded answer or a full solution on the board.",
+  "When the learner cannot picture the situation, orient them with a diagram and a noticing question. When they have had an opportunity to recall and need a reminder, offer the smallest useful conceptual or equation hint, visibly if appropriate. Do not demand repeated failed recall, and do not treat a request for a picture as permission to reveal the solution method.",
+  "When asked to explain an idea, first judge whether seeing its objects, structure, comparison, or changes will make it understandable. If so, emit TEACH with visual=diagram or animation and actually build that visual alongside two or three short narrated beats, then ask one question about it. Use orient when the learner lacks a mental picture. A basic setup picture is not a solution giveaway; leave the prediction or method itself open. Do not postpone all drawing until after a quiz. Simple definitions or nonvisual clarifications can use visual=none.",
   "Then ask your one question and stop.",
 ].join(" ");
+
 
 export function buildContextBlock(overrides: TurnContext = {}): string {
   const c = { ...DEFAULTS, ...overrides };
@@ -109,9 +116,10 @@ export function buildContextBlock(overrides: TurnContext = {}): string {
     hasNotes ? `<notes>${c.psetTitle}, page ${c.page ?? 1} of ${c.pages ?? 1}</notes>` : "",
     `<last_recap>${c.lastRecap?.stuckOn ?? ""}; ${c.lastRecap?.reviewNext ?? ""}</last_recap>`,
     `<mode>${c.mode ?? "orb_only"}</mode>`,
-    `<hint_state>question=${c.hintState?.question ?? ""} rung=${c.hintState?.rung ?? 0} attempts_since_last_hint=${c.hintState?.attempts ?? 0}</hint_state>`,
+    c.hintState ? `<hint_state>question=${c.hintState.question ?? ""} rung=${c.hintState.rung ?? "unknown"} attempts_since_last_hint=${c.hintState.attempts ?? "unknown"}</hint_state>` : "<hint_state>No saved hint counters are available. Infer the current step, attempts, and help already given from the conversation and board ownership. Do not assume the learner is on their first attempt or reset their progress.</hint_state>",
     `<misconceptions_seen>${(c.misconceptionsSeen ?? []).join(", ")}</misconceptions_seen>`,
     `<retrieved>${c.retrieved ?? ""}</retrieved>`,
+    !c.retrieved ? "<source_limits>No lecture content has been retrieved. An assignment mentioning a lecture does not tell you what that lecture taught. Never attribute an equation or method to a numbered lecture without supplied evidence. If you previously did, acknowledge that you cannot verify it rather than inventing a different attribution. General subject knowledge is not course evidence. Spoken equations are not student handwriting. Point only to content actually present on the visible page; do not reveal a missing relationship just to have something to point at.</source_limits>" : "",
     `<reference_do_not_reveal>${c.reference ?? ""}</reference_do_not_reveal>`,
     `<student_drew>${c.studentDrew ? "true" : "false"}</student_drew>`,
     hasNotes ? "<desk>Supplemental notes are attached for this concept conversation. You can see the current reference page and student ink. Discuss the relevant idea and use the whiteboard to explain it. Do not assume these notes are a graded assignment or ask for a problem number.</desk>" : hasPset ? `<desk>${PAGE_ON_DESK}</desk>` : `<no_context_yet>${NOTHING_LOADED}</no_context_yet>`,

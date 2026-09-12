@@ -1,9 +1,12 @@
+import { isMathText, LABEL_FONT, MATH_FONT, textRuns } from "./text";
 import { animationFrame } from "./animation";
-import { boardStyle } from "./style";
+import { boardTextSize } from "./style";
 import type { AnimationSpec, BoardSnapshot } from "@/lib/types";
 import { BOARD_CREAM, STUDENT_HEX } from "./colors";
 import type { BoardStroke } from "./store";
 import type { ShapeGroup } from "./geometry";
+import { inkPath } from "./ink-path";
+import { typesetMath } from './math-layout';
 
 const MAX_WIDTH = 768;
 
@@ -52,19 +55,49 @@ export function snapshotBoard(
           : 1);
       ctx.globalAlpha = opacity;
       for (const mark of group.drawables) {
+        ctx.globalAlpha = opacity;
         if (mark.kind === "text") {
           ctx.save();
-          ctx.scale(1 / w, 1 / h);
+          const formula = mark.mathDrawing ?? ((mark.math ?? (!mark.heading && isMathText(mark.text))) ? typesetMath(mark.text, mark.color) : null);
+          if (formula) {
+            const size = mark.fontSize ?? .068;
+            ctx.translate(mark.at.x - (mark.textAnchor === 'start' ? 0 : formula.width * size / 2), mark.at.y);
+            ctx.scale(size / 1000, size / 1000);
+            for (const path of formula.paths) {
+              ctx.save();
+              ctx.transform(...path.matrix);
+              ctx.fillStyle = path.color;
+              ctx.fill(new Path2D(path.d));
+              ctx.restore();
+            }
+            ctx.restore();
+            continue;
+          }
+          // Match SVG's preserveAspectRatio=none: horizontal glyph metrics use
+          // board width, vertical metrics use height even on a compact board.
+          ctx.scale(1 / h, 1 / h);
           ctx.fillStyle = mark.color;
-          ctx.font = `${boardStyle.label[mark.size] * h}px "Source Sans 3", system-ui, sans-serif`;
-          ctx.textAlign = "center";
-          ctx.fillText(mark.text, mark.at.x * w, mark.at.y * h);
+          ctx.font = `500 ${(mark.fontSize ?? boardTextSize(mark.text, mark.size, mark.at.x)) * h}px ${(mark.math ?? (!mark.heading && isMathText(mark.text))) ? MATH_FONT : LABEL_FONT}`;
+          ctx.textAlign = "left";
+          let x = mark.at.x * h - (mark.textAnchor === "start" ? 0 : ctx.measureText(mark.text).width / 2);
+          for (const run of textRuns(mark.text, mark.color)) {
+            ctx.fillStyle = run.color;
+            ctx.fillText(run.text, x, mark.at.y * h);
+            x += ctx.measureText(run.text).width;
+          }
           ctx.restore();
           continue;
         }
         const path = new Path2D(mark.d);
+        if (mark.kind === 'fill' || mark.kind === 'head') {
+          ctx.fillStyle = mark.color;
+          ctx.globalAlpha = opacity * (mark.kind === 'fill' ? mark.opacity ?? 1 : 1);
+          ctx.fill(path);
+          continue;
+        }
         ctx.strokeStyle = mark.color;
-        ctx.globalAlpha = opacity;
+        ctx.globalAlpha = opacity * (mark.opacity ?? 1);
+        ctx.lineWidth = (mark.width ?? 2.1) / width;
         if (mark.kind === "path" && mark.dashed) {
           ctx.setLineDash([8 / w, 6 / w]);
         } else {
@@ -80,19 +113,17 @@ export function snapshotBoard(
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   for (const stroke of student) {
-    if (stroke.points.length < 2) continue;
-    ctx.beginPath();
+    if (!stroke.points.length) continue;
+    ctx.save();
+    ctx.scale(w, h);
     ctx.strokeStyle = STUDENT_HEX[stroke.color];
     ctx.globalAlpha = stroke.tool === "highlighter" ? 0.42 : 0.92;
     ctx.lineWidth =
       stroke.tool === "highlighter"
-        ? Math.max(10, w * 0.045)
-        : Math.max(2, w * 0.007);
-    ctx.moveTo(stroke.points[0].x * w, stroke.points[0].y * h);
-    for (let i = 1; i < stroke.points.length; i++) {
-      ctx.lineTo(stroke.points[i].x * w, stroke.points[i].y * h);
-    }
-    ctx.stroke();
+            ? 18 / width
+            : 2.5 / width;
+    ctx.stroke(new Path2D(inkPath(stroke.points)));
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
 

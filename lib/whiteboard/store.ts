@@ -1,3 +1,6 @@
+import { layoutWriting } from "./writing";
+import { layoutDiagram } from './diagram-layout';
+import { composeDiagram } from './diagram-compose';
 import { validateAnimation } from "./animation";
 import type { AnimationSpec, DrawCommand } from "@/lib/types";
 import type { StudentInk } from "./colors";
@@ -12,12 +15,27 @@ export type BoardStroke = {
 
 export type BoardGroup = ShapeGroup & {
   appear: "pending" | "done";
+  version?: number;
+};
+
+export type BoardPage = {
+  id: number;
+  groups: BoardGroup[];
+  student: BoardStroke[];
+  animation: AnimationSpec | null;
+  time: number;
+  focus: string | null;
 };
 
 export type BoardState = {
+  revision: number;
+  pageId: number;
+  earlierPages: BoardPage[];
   open: boolean;
   groups: BoardGroup[];
   student: BoardStroke[];
+  studentPast: BoardStroke[][];
+  studentFuture: BoardStroke[][];
   studentSince: string;
   pulseId: string | null;
   seq: number;
@@ -28,9 +46,12 @@ export type BoardState = {
 };
 
 const empty = (): BoardState => ({
+  revision: 0,
+  pageId: 1, earlierPages: [],
   open: false,
   groups: [],
   student: [],
+  studentPast: [], studentFuture: [],
   studentSince: "",
   pulseId: null,
   seq: 0,
@@ -38,9 +59,11 @@ const empty = (): BoardState => ({
 });
 
 let state: BoardState = empty();
+let revision = 0;
 const listeners = new Set<() => void>();
 
 function emit() {
+  state = { ...state, revision: ++revision };
   listeners.forEach((fn) => fn());
 }
 
@@ -66,6 +89,19 @@ export function resetBoard() {
   emit();
 }
 
+function nextPage(current: BoardState): BoardState {
+  if (!current.groups.length && !current.student.length && !current.animation) return current;
+  const page: BoardPage = { id: current.pageId, groups: current.groups, student: current.student, animation: current.animation, time: current.time, focus: current.focus };
+  return { ...current, pageId: current.pageId + 1, earlierPages: [...current.earlierPages, page], groups: [], student: [], studentPast: [], studentFuture: [], studentSince: '', animation: null, playing: false, time: 0, focus: null, pulseId: null };
+}
+
+export function continueBoardPage() {
+  const next = nextPage(state);
+  if (next === state) return;
+  state = next;
+  emit();
+}
+
 export function applyDrawCommands(commands: DrawCommand[]) {
   if (!commands.length) return;
   let next: BoardState = { ...state, open: true, groups: [...state.groups] };
@@ -74,7 +110,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
     if (!op) continue;
     next = { ...next, seq: next.seq + 1 };
     if (op.kind === "clear") {
-      next = { ...next, groups: [], animation: null, playing: false, time: 0, focus: null, pulseId: null, student: [], studentSince: "" };
+      next = { ...next, groups: [], animation: null, playing: false, time: 0, focus: null, pulseId: null };
       continue;
     }
     if (op.kind === "remove") {
@@ -89,8 +125,24 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, pulseId: op.id };
       continue;
     }
+    const previous = next.groups.find(group => group.id === op.group.id);
+    if (op.group.source && previous?.source && JSON.stringify(op.group.source) === JSON.stringify(previous.source)) continue;
+    // A new topic continues below the old work, with its student ink intact.
+    const previousTopic = next.groups.find(group => group.id === "topic");
+    const words = (group: ShapeGroup) => group.drawables.flatMap(mark => mark.kind === "text" ? [mark.text] : []).join(" ").replace(/\s+/g, " ").trim().toLowerCase();
+    if (op.group.id === "topic" && previousTopic && words(previousTopic) !== words(op.group)) {
+      next = nextPage(next);
+    }
+    let laidOut = layoutWriting(op.group, next.groups, next.student);
+    if (!laidOut) {
+      next = nextPage(next);
+      laidOut = layoutWriting(op.group, [], []);
+    }
+    if (!laidOut) continue;
     const existing = next.groups.findIndex((group) => group.id === op.group.id);
-    const group: BoardGroup = { ...op.group, appear: "pending" };
+    if (existing >= 0 && JSON.stringify(next.groups[existing].drawables) === JSON.stringify(laidOut.drawables)) continue;
+    const geometryEdit = previous?.source && op.group.source?.op === previous.source.op && previous.appear === 'done' && !previous.unresolved;
+    const group: BoardGroup = { ...laidOut, appear: geometryEdit ? 'done' : 'pending', version: geometryEdit ? previous.version : next.seq };
     if (existing >= 0) {
       const groups = next.groups.slice();
       groups[existing] = group;
@@ -99,7 +151,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, groups: [...next.groups, group] };
     }
   }
-  state = next;
+  state = { ...next, groups: layoutDiagram(composeDiagram(next.groups), next.student) };
   emit();
 }
 
@@ -116,38 +168,65 @@ export function markGroupShown(id: string) {
 }
 
 export function setStudentStrokes(student: BoardStroke[]) {
+  if (student === state.student) return;
   state = {
     ...state,
     student,
-    studentSince: student.length ? state.studentSince || new Date().toISOString() : "",
+    studentPast: [...state.studentPast, state.student].slice(-30), studentFuture: [],
+    studentSince: student.length ? new Date().toISOString() : "",
   };
   emit();
 }
 
 export function addStudentStroke(stroke: BoardStroke) {
-  state = {
-    ...state,
-    student: [...state.student, stroke],
-    studentSince: new Date().toISOString(),
-  };
-  emit();
+  setStudentStrokes([...state.student, stroke]);
 }
 
 export function eraseStudentStrokes(ids: string[]) {
   if (!ids.length) return;
   const skip = new Set(ids);
   const student = state.student.filter((stroke) => !skip.has(stroke.id));
-  state = {
-    ...state,
-    student,
-    studentSince: student.length ? state.studentSince : "",
-  };
+  if (student.length !== state.student.length) setStudentStrokes(student);
+}
+
+export function undoStudentInk() {
+  const student = state.studentPast.at(-1);
+  if (!student) return;
+  state = { ...state, student, studentPast: state.studentPast.slice(0, -1), studentFuture: [state.student, ...state.studentFuture].slice(0, 30), studentSince: student.length ? new Date().toISOString() : "" };
+  emit();
+}
+
+export function redoStudentInk() {
+  const student = state.studentFuture[0];
+  if (!student) return;
+  state = { ...state, student, studentPast: [...state.studentPast, state.student].slice(-30), studentFuture: state.studentFuture.slice(1), studentSince: student.length ? new Date().toISOString() : "" };
   emit();
 }
 
 export function loadAnimation(input: unknown) {
-  const animation = validateAnimation(input);
-  if (!animation) return false;
+  const validated = validateAnimation(input);
+  if (!validated) return false;
+  const animation: AnimationSpec = { ...validated, shapes: validated.shapes.map(shape => {
+    if (shape.kind === 'axes' || shape.kind === 'text' || shape.label !== undefined) return shape;
+    const source = state.groups.find(group => group.id === shape.id)?.source;
+    const previous = state.animation?.id === validated.id ? state.animation.shapes.find(item => item.id === shape.id) : undefined;
+    const label = source && 'label' in source ? source.label : previous && 'label' in previous ? previous.label : undefined;
+    // Changing an object's representation should retain its established name.
+    // An explicit empty label still lets the tutor remove it deliberately.
+    return label === undefined ? shape : { ...shape, label };
+  }) };
+  // Reusing scene/object IDs explicitly continues this figure. Unrelated
+  // animations still get a fresh page, preserving earlier work and ink.
+  const shapeIds = new Set(animation.shapes.map(shape => shape.id));
+  const continuing = state.animation?.id === animation.id ||
+    (!state.animation && state.groups.some(group => group.source && shapeIds.has(group.id)));
+  if (!continuing && (state.animation || state.student.length || state.groups.some(group => group.id !== 'topic'))) state = nextPage(state);
+  if (continuing) {
+    // The animated object replaces its static counterpart, not the backdrop.
+    // Drop source references to replaced shapes rather than leave dependents
+    // attached to their old position. Composition marks these unresolved.
+    state = { ...state, groups: layoutDiagram(composeDiagram(state.groups.filter(group => !shapeIds.has(group.id))), state.student) };
+  }
   state = { ...state, open: true, animation, time: 0, playing: true, focus: null };
   emit();
   return true;
@@ -181,6 +260,6 @@ export function focusAnimation(id: string) {
 
 // Park each desk independently, always restoring a still frame.
 export function restoreBoard(snapshot: BoardState) {
-  state = { ...structuredClone(snapshot), playing: false };
+  state = { ...structuredClone(snapshot), pageId: snapshot.pageId ?? 1, earlierPages: structuredClone(snapshot.earlierPages ?? []), studentPast: structuredClone(snapshot.studentPast ?? []), studentFuture: structuredClone(snapshot.studentFuture ?? []), playing: false };
   emit();
 }
