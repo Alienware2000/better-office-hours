@@ -1,0 +1,27 @@
+import type { NextAuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import type { GoogleProfile } from "next-auth/providers/google";
+import { isAllowedEmail, normalizeEmail } from "./policy";
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
+  ],
+  pages: {
+    signIn: "/sign-in",
+  },
+  session: {
+    strategy: "jwt",
+  },
+  callbacks: {
+    signIn({ user, account, profile }) {
+      const google = profile as GoogleProfile | undefined;
+      return account?.provider === 'google' && google?.email_verified === true &&
+        typeof google.email === 'string' && isAllowedEmail(user.email) &&
+        normalizeEmail(google.email) === normalizeEmail(user.email ?? '');
+    },
+  },
+};

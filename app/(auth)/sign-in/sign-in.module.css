@@ -1,0 +1,116 @@
+.page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.72), transparent 32rem),
+    #f4efe4;
+  color: #1c1917;
+}
+
+.card {
+  display: flex;
+  width: min(100%, 28rem);
+  flex-direction: column;
+  align-items: stretch;
+  padding: 2rem;
+  border: 1px solid rgba(87, 74, 58, 0.14);
+  border-radius: 1.5rem;
+  background: rgba(255, 252, 246, 0.82);
+  box-shadow: 0 1.5rem 4rem rgba(77, 65, 48, 0.1);
+}
+
+.eyebrow {
+  margin: 0 0 0.55rem;
+  color: #8a5b45;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 7vw, 2.35rem);
+  font-weight: 530;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.copy {
+  margin: 1rem 0 1.5rem;
+  color: #625a52;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  min-height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.86rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary {
+  background: #211f1c;
+  color: #fffdf8;
+}
+
+.primary:disabled {
+  background: #aaa298;
+  cursor: not-allowed;
+}
+
+.secondary {
+  border-color: rgba(87, 74, 58, 0.18);
+  background: transparent;
+  color: #403a34;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 3px solid rgba(168, 91, 58, 0.32);
+  outline-offset: 3px;
+}
+
+.notice {
+  display: flex;
+  margin-top: 1rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.8rem;
+  background: #f0dfd3;
+  color: #6d3f2f;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.notice span {
+  overflow-wrap: anywhere;
+  opacity: 0.78;
+}
+
+.note {
+  margin: 1.15rem 0 0;
+  color: #8a8177;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}

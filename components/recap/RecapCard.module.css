@@ -1,0 +1,86 @@
+.card {
+  width: min(100%, 31rem);
+  overflow: hidden;
+  border: 1px solid rgba(87, 74, 58, 0.14);
+  border-radius: 1.35rem;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.5), transparent 58%),
+    #eee5d5;
+  color: #1c1917;
+  box-shadow:
+    0 1.25rem 3rem rgba(77, 65, 48, 0.09),
+    inset 0 1px rgba(255, 255, 255, 0.66);
+}
+
+.header {
+  padding: 1.4rem 1.5rem 1.2rem;
+  border-bottom: 1px solid rgba(87, 74, 58, 0.1);
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: #8a5b45;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.22rem;
+  font-weight: 560;
+  letter-spacing: -0.025em;
+}
+
+.details {
+  margin: 0;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 0.42fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+
+.item + .item {
+  border-top: 1px solid rgba(87, 74, 58, 0.08);
+}
+
+.item dt {
+  color: #8a8177;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+}
+
+.item dd {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: #37312c;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.document {
+  color: #7a4937;
+  font-weight: 620;
+}
+
+@media (max-width: 36rem) {
+  .item {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    scroll-behavior: auto;
+  }
+}

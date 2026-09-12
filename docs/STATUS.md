@@ -2,22 +2,23 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 21:53 EDT
-By: Codex for David
+Updated: 2026-09-11 22:11 EDT
+By: Codex for David, consolidating reviewed lanes
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/drawing-continuity`, continuation of 5a229d9 with merged origin/main
-Review: David explicitly approved merging his PRs #5 and #7. Hussein owns PRs #6 (context), #8 (recap, based on lane/context), and #9 (shell); keep all three open until David reviews them and gives separate merge approval.
+Branch: `lane/drawing-continuity`, integrating current main
+Review: David explicitly authorized consolidation. Hussein's PRs #6, #8, and #9 are merged. David also assigned live Canvas/Grok Bot integration and deployment preparation.
 
-## Hussein PRs remain open (read this first)
+## Consolidation authorized
 
-Hussein has opened the context, recap, and shell slices as PRs #6, #8, and #9. David will review them later. This merge approval covers only David's PRs #5 and #7. Do not merge, close, or recreate Hussein's existing PRs.
-
-- Existing branches are `lane/context`, `lane/recap`, and `lane/shell`. PR #8 targets lane/context; preserve that dependency during review.
-- Follow `docs/LANES.md` for ownership and integration boundaries. First slices are already open, not tasks to recreate.
-- David reviews these PRs separately. Do not merge your own PRs or start their next checkpoint ahead of review.
-- Recap's first slice is the isolated card + validation/serialization + persistence interface proposal. Do not wire the spoken close flow into `useVoiceLoop` until David coordinates that later.
+David explicitly authorized merging Hussein's slices and live integration. Context #6, recap #8, and shell #9 are merged, preserving their dependency. Earlier wait-for-review instructions below are historical and superseded. Keep frozen lib/types.ts and human PROMPT/PEDAGOGY unchanged. Grok Bot must collect real Canvas materials for the live demo.
 
 ## Now
+
+Consolidation (2026-09-11): reviewed context retrieval and solution exclusion, recap validation/card, and Google auth. Repaired verified Google email enforcement and a broken clean-install lockfile before merging. npm ci, focused checks/lint, and combined production build passed in isolation. Preserved Hussein's concurrent README/main refreshes. The merged modules still need live context, student-first recap, and identity wiring. Root remains ungated, sessions remain browser-local, and deployment has not been verified.
+
+Created Course Pack Collector in Grok Bot with read-only Canvas instructions. Its cloud computer reached Yale Canvas and requires the student's NetID/Duo login. No course data has been collected or uploaded yet. Ingest endpoint and public connection details are next. Student identity must come from the signed-in account, with unnamed guests; remove the David default.
+
+### Earlier baseline and validation
 
 Hackathon deadline follow-up (2026-09-11): the orb now reports actual transcription, routing/thinking, substantive reasoning, and voice preparation. A quiet animated dot cue acknowledges waiting; after eight seconds of continuous visible waiting it says Taking a little longer. It clears on playback, pause, interruption, and settled errors. Status space stays reserved, reduced motion stays static, and the phone status sits below the orb so Pause cannot cover it. No extra model call, spoken filler, fake percentage, microphone retuning, or provider change.
 
@@ -211,6 +212,14 @@ David and Hussein stress-tested the desk and reported premature problem selectio
 
 Uploads and ink no longer start autonomous speech. The orb starts or submits only. A separate Pause button and Escape stop voice without leaving the desk, avoiding the automatic-endpoint/tap-to-cancel race. Local Silero v5 speech detection replaces RMS triggering; the endpoint is about 1.1s of non-speech. Startup and request stalls have deadlines and visible recovery. All response chunks are spoken, with captions/history following sentence playback and upcoming audio prepared ahead. Unit/symbol normalization is applied only to TTS. Board equations and queued visual narration are supported; writing on the board stops speech. PDF scrolling targets the requested region using measured zoomed geometry.
 
+Shell first slice is ready for review on PR #9. Stable NextAuth v4 provides a Google OAuth route and `/sign-in` shell without replacing or gating the working `VoiceSession`. The policy accepts Yale addresses and reserves the documented judge address, normalizes authenticated identity, and disables sign-in with an explicit missing-configuration message unless all three auth environment variables are present. A dedicated Google Cloud project and internal Yale OAuth web client now exist for local development. Its localhost origin and callback are configured, credentials are stored only in the ignored `.env.local`, and a real Yale sign-in successfully reached the signed-in shell. The judge password provider, root-route gate, course identity, and persistence wiring remain intentionally absent pending review.
+
+Submission README follow-up: the README now follows the required demo-first structure, includes the verified PNAS learning-safeguards citation, accurately documents local Yale OAuth setup and current prototype limits, and leaves explicit placeholders for the live URL, video, Cursor screenshot, judge instructions, and Grok Bot link/GIF. No unmerged course retrieval, recap, persistence, or deployment feature is claimed as live.
+
+Context first slice merged through PR #6. `lib/context/*` chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Chunk IDs are deterministic and page-aware, repeated source ingestion is deduplicated, malformed identity/page fields fail early, and mathematical Unicode survives chunking. Student retrieval is course-scoped and always excludes solutions, including non-solution document kinds explicitly flagged as private answers. Its public result contains only document kind, title, page, and text; course IDs, storage paths, embeddings, solution flags, and internal chunk records cannot cross that boundary. Solution retrieval has a separate server-runtime-only entry point. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
+
+Recap first slice merged through PR #8. `lib/session/*` validates and canonically serializes the existing `Recap` contract, rejects incomplete review references and explicit answer-key disclosures in displayed fields, and proposes an authenticated, course-scoped, idempotent repository boundary. `components/recap/*` renders an accessible cream-desk card with the sticking point, what changed, and a real review location when available; it states honestly when no course reference exists. Student calculations and spoken transcript text are deliberately not rendered. This slice does not add persistence, API routes, auth, or voice-loop wiring.
+
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
 Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David authorized merging PR #3. Try pause/resume and Leave while a recording is processing as the remaining hardware check. This earlier slice established delayed-input isolation; the current stress-test branch adds prototype acoustic interruption, still requiring hardware validation.
@@ -223,10 +232,10 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 ## What to do next
 
-1. Read HANDOFF.md. Preserve the successful voice/whiteboard baseline while David tests; exact transcript/board review needs a new captured session because the latest run was lost on refresh.
-2. Leave Hussein's PRs #6, #8, and #9 open for David's later review. PR #8 is based on lane/context, so review its dependency deliberately. No merge permission has been given for these PRs.
-3. Local session recovery is implemented. Coordinate cloud identity/storage and the missing student-summary/spoken-recap/card flow after reviewing the existing proposals. Then connect actual course context, session isolation, and verified deployment. These cross-lane slices need coordination, not duplicate implementations.
-4. Keep OpenRouter as a deferred option. Planning latency, diagram semantics, and pacing still need observation; do not weaken pedagogy or microphone interruption to make a fixture pass. Canvas/Grok Bot operation still requires a separate assignment.
+1. Preserve the frozen :3102 preview. Finish account-aware identity, the actual Canvas collector ingest/retrieval flow, and student-first recap using the merged modules.
+2. Grok Bot needs the student's sign-in in its own computer. Provide an authenticated public ingestion connection after verifying storage/ownership. Never fabricate course context.
+3. Verify the consolidated build and PR #10, then deploy and rehearse microphone/PDF/session recovery on the deployed origin. No further broad visual or microphone work without evidence.
+4. Update README with verified deployment, collector link/GIF, judge instructions, and the human-recorded demo before 23:59. OpenRouter remains deferred.
 
 ## Validation
 
@@ -236,6 +245,9 @@ Whiteboard state parks separately with homework and concept sessions and restore
 - The live upload-only model probe still chose problem one despite revised wording. Automatic readiness turns are now disabled in the client. The live general-equation probe produced a DRAW text equation and one question (about 5.8s to first token in the reasoning lane). These are isolated probes, not broad model-quality validation.
 
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. The current branch also fixes the earlier voice-hook ref lint failures; the harness passes lint.
+- Shell: `node scripts/check-auth.mjs`, focused ESLint, `npx tsc --noEmit`, production build, voice lifecycle, workspace, and animation unit checks pass. Browser verified the honest missing-config `/sign-in` state, real Yale Google OAuth callback, authenticated session endpoint, signed-in shell, and unchanged tutor home. `npm ci --dry-run` validates the synchronized lockfile; a later local clean install hit Windows `EPERM` locks on native binaries in the OneDrive checkout and is recorded in NOTES.
+- Context refresh: `node scripts/check-context.mjs`, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass after merging current main.
+- Recap refresh: `node scripts/check-recap.mjs`, context checks, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass after merging the updated context base.
 
 - `npm run build` and `npx tsc --noEmit` pass.
 - `node scripts/check-workspace.mjs` passes intent routing, separate board restoration, notes context, and notes event checks.
@@ -269,12 +281,12 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 | Lane | Owner | Branch | State |
 |---|---|---|---|
-| voice | David | `lane/drawing-continuity` | integrated baseline plus open PR #10; leave stable during testing |
-| workspace | David | `lane/drawing-continuity` | adaptive PDF desk included; preserve current session |
-| whiteboard | David | `lane/drawing-continuity` | drawing/math/motion/page-follow improvements in PR #10 |
-| context | Hussein | `lane/context` | isolated slice in open PR #6; separate review pending |
-| recap | Hussein | `lane/recap` | isolated card in open PR #8, targeting lane/context |
-| shell | Hussein | `lane/shell` | isolated auth shell in open PR #9; separate review pending |
+| voice | David | `lane/drawing-continuity` | stable visual/session baseline; integration in progress |
+| workspace | David | `lane/drawing-continuity` | adaptive PDF desk preserved |
+| whiteboard | David | `lane/drawing-continuity` | generated visuals and student ink preserved |
+| context | Hussein, David integration | `lane/context` | PR #6 merged; ingestion/live wiring next |
+| recap | Hussein, David integration | `lane/recap` | PR #8 merged; student-first close flow next |
+| shell | Hussein, David integration | `lane/shell` | PR #9 merged with verified email/lock repairs; root ungated |
 
 ## Run
 
@@ -290,6 +302,12 @@ Open http://localhost:3102. Allow the mic. Tap the orb. Upload a pset or start a
 Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.mjs`, `node scripts/check-lanes.mjs`.
 
 ## Blockers
+
+Shell integration needs a reviewed authenticated identity contract and a decision on secure judge-password storage before it can gate the tutor. Production deployment also needs its final URL added to the Google OAuth client and deployment environment.
+
+Recap persistence requires authenticated session identity and a reviewed storage adapter. Spoken close flow requires a coordinated change in David's voice lane.
+
+Context persistence is intentionally blocked on review of database ownership/RLS, authenticated identity, endpoint formats, storage ownership, and the embeddings provider/dimensions.
 
 Pointer quality depends on Grok seeing the page image.
 
