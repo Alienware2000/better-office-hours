@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 22:56 EDT
+Updated: 2026-09-11 23:13 EDT
 By: Codex for David, consolidating reviewed lanes
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, integrating current main
@@ -14,21 +14,19 @@ David explicitly authorized merging Hussein's slices and live integration. Conte
 
 ## Now
 
-Deadline scope change (22:56): David explicitly parked Google and Supabase for this submission. Stop setup work on them. Record the full PDF/voice/whiteboard/session flow on the existing local release, which already persists files locally. The public URL supports guest voice/concept sessions; hosted PDF/course writes are unavailable without the deliberately deferred storage service. Do not present hosted storage as working. Grok Bot can still collect real materials after the student signs in, but its cloud computer cannot POST to localhost. A downloaded collector artifact can be imported locally with the existing scoped ingest API; that handoff has not been exercised. No tunnel service is installed, and no new tunnel dependency was added.
+Deadline integration (23:09): David clarified that Grok Bot integration must work on Vercel. Google remains optional and Supabase setup is parked. Created and connected a private Vercel Blob store, boh-private (store_JUhOE7x3GnBLnamY), to this app's production/preview. The existing storage adapter now uses it when configured; Supabase remains an optional alternative and local disk remains the unconfigured local fallback. No login redesign, frozen contract, human prompt, or microphone threshold change.
 
-Consolidation is merged through PR #10, main eedb3ad. Hussein's #6 context, #8 recap, and #9 auth shell are included. Request-local identity/page/board context, scoped Canvas ingestion/retrieval, semantic course selection, general greetings, identity-separated local histories, student-first spoken/saved recap, and private course/PDF storage are connected. Google is optional. Frozen lib/types.ts and human PROMPT/PEDAGOGY are unchanged.
+Live app: https://better-office-hours.vercel.app, deployment dpl_4pjLaz26juco8JFjzeKPFBeXMroe. The initial generic Vercel preset returned 404; explicit framework: nextjs fixed it. Remote npm ci/build/typecheck and focused storage lint pass. New scripts/check-deployed-storage.mjs passed real private profile/source writes, successive uncached pack updates, solution exclusion, owner isolation, >4.5 MB direct PDF upload/download, raw private URL protection, and overwrite denial. Data in this regression is explicitly synthetic and isolated. Fresh Chrome additionally verified actual direct browser upload, PDF.js rendering, a student pen mark, and PDF/ink recovery after refresh. Artifact /tmp/boh-hosted-pdf-recovery.png inspected.
 
-Live app: https://better-office-hours.vercel.app. The first deployment built under Vercel's generic Other preset and returned 404; explicit framework: nextjs in vercel.json fixed routing. The corrected deployment is dpl_71XRNf6s32Qrcz1GyTrnVSr6tsrp. Remote npm ci, Next.js build, and TypeScript pass. Public root and service configuration return 200. Real hosted Grok, ElevenLabs TTS and STT calls pass; the short topic clarification took 1.45s, speech generation 1.02s in isolated probes. These are not substantive-lesson latency claims.
+Hosted voice verification already passed real Grok, ElevenLabs TTS and STT requests, real Silero startup, actual greeting/clarification playback, concept entry, desktop/phone layout and paused saved-session reload. Microphone input was muted synthetic, not human acoustics. A short topic clarification took 1.45s and TTS 1.02s; do not present these as substantive teaching latency. Reasoning remains slower.
 
-Fresh hosted Chrome verification passed real Silero initialization, real greeting/clarification playback, concept desk entry, phone width, and saved-session paused reload. Actual desktop/phone screenshots were inspected. The microphone was a muted synthetic device; human acoustics, uploaded PDFs, and live Canvas collection remain unverified on the hosted origin. Local release checks already cover contextual retrieval, source exclusion, cross-browser isolation, recap audio ordering/cancellation/recovery, and IndexedDB/PDF/board restoration. A real Grok fixture recap took 6.23s, not a live student study.
+Grok Bot access is confirmed, correcting the earlier stale sign-in status. It signed into Canvas at 22:53, found actual archived PHYS 180 course 99254 (Fall 2024), and is collecting syllabus, kinematics notes, and Homework 1. At 23:07 the app-generated two-hour scoped production connection was delivered to Course Pack Collector. No long-lived storage/signing secret was sent. Actual first uploads are verified in the deployed app: profile with ten courses, syllabus (6 pages), Class 1 notes (8 pages), and Homework 1 (3 pages). PHYS 180 is selected in the intended public browser. Image-only HW1-HW5 solutions were retained separately by the collector, not uploaded as lecture content. The intended demo browser is the newly opened https://better-office-hours.vercel.app tab; its connection belongs to that browser. Do not ask David to redo completed NetID/Duo.
 
-External setup: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY remain missing locally at 22:50. David offered to configure them. Production course/PDF writes deliberately fail without durable storage; they do not silently use Vercel disk. See DEPLOYMENT.md. Google is optional. Grok Bot's earlier login tab expired; Course Pack Collector now explicitly asks the student to take over, complete NetID/Duo, then choose I'm done. Do not complete the human authentication/approval step for the student. No actual course data has been collected.
+Consolidation PR #10 is merged, baseline main eedb3ad. #6/#8/#9 are included. Release follow-up PR #12 is open and now includes the storage addition. New Hussein PR #11, head c1a69d8, remains open: its Google root gate and shared-bearer/body-email ingestion need reconciliation with the working optional-login/scoped connection. No SQL migration applied. Sessions/transcripts/boards/recaps remain browser-local, not cross-device cloud history or learner memory.
 
-New PR #11, Connect authenticated context and recap persistence, head c1a69d8, remains OPEN. Reviewed overlap: it forces Google at root and replaces scoped collector ownership with a shared bearer plus body-selected email and a different ingest payload. Its database recap/course adapters are useful follow-up work, but cannot be merged unchanged over the working guest collector. No SQL migration applied and no cross-device session memory claimed.
+Recap stays a small optional takeaway grounded in the conversation and actual retrieved review sources. Do not equate assent/tutor notes with understanding; leaving does not require a recap. One synthetic real-model sample suggested an earlier sketch without clear grounding, recorded as a quality follow-up. Stop broad visual/model polish before recording.
 
-Recap analysis: retain the existing small optional takeaway, tied to the real conversation and a supplied review source. It records the sticking point and what changed or remains unresolved; do not equate assent or tutor notes with mastery. Leaving does not require a recap. One synthetic real-model sample suggested an earlier two-time sketch without clear conversation grounding; keep this as a quality follow-up, not evidence of a resolved student outcome. Do not spend the remaining recording window redesigning the card.
-
-Local http://localhost:3102 now serves the verified frozen release at /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-release-l18y09_9, with its .data symlink added after build. The idle user tab was refreshed once and the new Sessions/Connect Canvas entry is verified. Existing local origin/data preserved. :3103 is stopped. Keep the release frozen. Earlier frozen copy boh-response-check-yj_pqfax is retained for rollback.
+Local :3102 is still the frozen release /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-release-l18y09_9 with preserved local data; do not rebuild it. :3103 is stopped. Localhost and production have separate browser sessions. Use the public tab for the actual collector integration, retain localhost for rehearsal rollback.
 
 ### Earlier baseline and validation
 
@@ -244,10 +242,10 @@ Whiteboard state parks separately with homework and concept sessions and restore
 
 ## What to do next
 
-1. Freeze the local :3102 release and record the working core flow now: student request, PDF/ink, generated diagram/animation, interruption, optional recap, saved-session recovery. No Google/Supabase setup before recording.
-2. David finishes NetID/Duo in Grok Bot's Course Pack Collector computer if including collection. Verify one real course export and import it locally through the existing scoped ingest API. The cloud bot cannot reach localhost directly; artifact handoff is unverified. Do not hold the core recording for it or claim it has passed.
-3. Add the real demo video, Cursor screenshot, and verified bot link/GIF if available to README. Submit before 23:59. The hosted guest concept tutor is live; explain the local-only PDF/course storage limitation accurately.
-4. After the hackathon, configure durable storage, reconcile PR #11 with scoped ownership and optional sign-in, and compare model latency. OpenRouter remains deferred.
+1. The actual collector profile and first three documents are visible in the public app, with PHYS 180 selected. Rehearse one human teacher exchange against this real course and its sources. Do not restart completed login or request Supabase setup.
+2. Rehearse and record the public PDF/voice/diagram flow now that durable storage checks pass. Include interruption, student ink, and optional recap. Real human microphone behavior still needs that rehearsal.
+3. Finish/merge release PR #12. Add the real demo video, Cursor screenshot, and verified reusable bot link/GIF to README and submit before 23:59.
+4. After submission: reconcile PR #11, add cloud session memory if desired, and compare model latency. OpenRouter remains deferred.
 
 ## Validation
 
@@ -315,7 +313,7 @@ Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.
 
 ## Blockers
 
-Google/Supabase setup is deliberately deferred by David. Hosted concept voice works; production PDF/course storage is not available. Local persistence supports the recording. Actual Canvas student authentication and the bot-to-local artifact handoff are still pending.
+Real Grok Bot profile and the first three source uploads are verified. A human acoustic rehearsal against that real course remains unverified. Google/Supabase setup is not needed for the current private Vercel storage path. Recording/submission assets still require the humans.
 
 PR #11 needs reconciliation with current ownership and optional sign-in before database recap persistence. Full session history remains browser-local. No cross-session learner memory exists yet.
 

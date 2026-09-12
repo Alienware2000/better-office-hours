@@ -39,7 +39,7 @@ The team built and coordinated this project in Cursor across separate voice, wor
 
 ## Grok Bot course context
 
-Course Pack Collector uses Grok Bot to gather a student's Canvas course profile, syllabus, lecture material, assignments, and posted solutions after the student approves Yale Duo. Student-visible retrieval must exclude solution text. The app supplies a scoped two-hour connection task, and accepts profile and extracted page-text uploads. See [grokbot/TASK.md](grokbot/TASK.md). The bot has reached Yale sign-in; live collection, the public connection, and its share link still need verification.
+Course Pack Collector uses Grok Bot to gather a student's Canvas course profile, syllabus, lecture material, assignments, and posted solutions after the student approves Yale Duo. Student-visible retrieval must exclude solution text. The app supplies a scoped two-hour connection task, and accepts profile and extracted page-text uploads. See [grokbot/TASK.md](grokbot/TASK.md). The bot is signed into Canvas and collecting the selected archived PHYS 180 course. The actual course profile and first syllabus, Class 1 lecture notes and Homework 1 uploads were verified in the deployed app. The reusable bot share link is still pending.
 
 <!-- Add the Grok Bot share link and collection GIF here after the collector is verified. -->
 
@@ -51,14 +51,14 @@ Course Pack Collector uses Grok Bot to gather a student's Canvas course profile,
 - ElevenLabs STT and TTS with local Silero voice activity detection
 - Grok through the OpenAI-compatible xAI API
 - NextAuth with Google OAuth for Yale sign-in
-- Private Supabase Storage for collected source text and PDFs when configured
+- Private Vercel Blob storage for collected source text and PDFs; optional Supabase adapter
 - Lexical retrieval with source/page attribution; embeddings remain future work
 
 ## Try it
 
 Open [the hosted app](https://better-office-hours.vercel.app), allow the microphone, and tap the orb. No Google account is required for the guest concept tutor. Choose Explain a concept, then speak the topic. Pause stops voice; Sessions restores locally saved conversations.
 
-For this submission, PDF and collected-course storage work in the local app. Hosted storage and Google setup are deferred; the public deployment currently supports guest concept tutoring. The local rehearsal uses archived PHYS 180 material; the same desk is designed to work with other courses once their context is loaded. Deployment setup and checks are in [DEPLOYMENT.md](docs/DEPLOYMENT.md).
+The public deployment supports guest tutoring, private PDF uploads, and scoped course storage without Google sign-in. PDF rendering and annotation recovery were verified in a fresh browser. The first real Canvas collection was verified; course materials are not preloaded for unrelated visitors. The local rehearsal uses archived PHYS 180 material; the same desk is designed to work with other courses once their context is loaded. Deployment setup and checks are in [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 To run locally, install Node.js and configure xAI and ElevenLabs API keys:
 
@@ -75,7 +75,7 @@ XAI_API_KEY=your_key_here
 ELEVENLABS_API_KEY=your_key_here
 ```
 
-Course/PDF storage on Vercel requires `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; the server creates a private `boh-private` bucket. Set a random `INGEST_TOKEN` server secret to sign scoped collector connections. It is never handed to the bot directly. Local development can use `.data/private`.
+Course/PDF storage on Vercel uses a private Blob store linked to the project, which supplies `BLOB_READ_WRITE_TOKEN` (or `BLOB_STORE_ID` with OIDC). The deployed `boh-private` store is private. An optional Supabase alternative uses `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Set a random `INGEST_TOKEN` server secret to sign scoped collector connections. It is never handed to the bot directly. Local development can use `.data/private`.
 
 Optional Google sign-in additionally requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`. Without all three values, `/sign-in` reports that authentication is unavailable. Never commit `.env.local`.
 
@@ -87,7 +87,7 @@ Open [localhost:3100](http://localhost:3100), allow microphone access, and activ
 
 ## Current prototype limits
 
-The tutor permits guests. Google identity is optional; a guest Canvas connection belongs to one browser and is not an authenticated app account. Transcript/board/recap saves remain browser-local, separated by authenticated identity when present. Course/PDF storage requires Supabase for deployment. Cross-device session sync and cross-session learning memory are not implemented. Actual Canvas collection and deployed acoustic behavior still need rehearsal. Generated diagrams can be imperfect and model reasoning latency remains noticeable.
+The tutor permits guests. Google identity is optional; a guest Canvas connection belongs to one browser and is not an authenticated app account. Transcript/board/recap saves remain browser-local, separated by authenticated identity when present. Course/PDF bytes persist in private Vercel storage. Cross-device session sync and cross-session learning memory are not implemented. The first actual Canvas collection is verified; human acoustic behavior still needs rehearsal. Generated diagrams can be imperfect and model reasoning latency remains noticeable.
 
 ## Development checks
 

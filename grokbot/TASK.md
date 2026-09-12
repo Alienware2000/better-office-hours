@@ -3,13 +3,13 @@
 Bot name: Course Pack Collector
 Purpose: read the student's Canvas and bring real course context into Better Office Hours.
 
-David authorized this integration on September 11. The bot has been created and reached Yale NetID sign-in. The student completes credentials/Duo in the bot's computer. The app now offers a scoped connection task in Connect Canvas. The actual Canvas collection and public ingestion still need rehearsal; do not claim they succeeded yet.
+David authorized this integration on September 11. The bot is signed into Canvas after the student completed NetID/Duo, and found archived PHYS 180 course 99254. The app now offers a scoped connection task in Connect Canvas. The first real profile, syllabus, Class 1 lecture notes and Homework 1 uploads were verified in the deployed app. A human teacher exchange using them still needs rehearsal.
 
 ## Connection
 
 Open Connect Canvas in the app, create a connection, and copy its task into Course Pack Collector. The task contains the actual ingestion URL and a two-hour token scoped to the app account or guest browser. Do not publish the token, reuse a different student's connection, or put a server service key in the bot. Renew expired connections in the app.
 
-The bot's computer is remote. A localhost URL cannot reach this laptop. Use the verified deployed origin for collection.
+The bot's computer is remote. A localhost URL cannot reach this laptop. Use the verified deployed origin for collection. Private Vercel Blob now backs the deployed ingest API without Google or Supabase setup. The scoped production connection was delivered to the bot at 23:07; the first actual profile and three source uploads are verified.
 
 ## Collector instructions
 
@@ -24,7 +24,7 @@ Canvas access is read-only. Do not edit courses, submit work, collect grades/sub
 
 ## Storage and limits
 
-Private Supabase storage holds the profile and source text under owner-scoped paths. Local development falls back to .data/private; Vercel refuses writes without configured storage. The tutor's retrieved excerpts and visible source list exclude solution documents/chunks. PDF desk uploads are separate from collector text ingestion. No global INGEST_TOKEN bearer endpoint is accepted; the server secret signs scoped connections only.
+Private Vercel Blob storage holds the profile and source text under owner-scoped paths; an optional Supabase adapter is retained. Local development falls back to .data/private; Vercel refuses writes without configured storage. The tutor's retrieved excerpts and visible source list exclude solution documents/chunks. PDF desk uploads are separate from collector text ingestion. No global INGEST_TOKEN bearer endpoint is accepted; the server secret signs scoped connections only.
 
 ## Recording
 
