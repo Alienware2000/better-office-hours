@@ -2,10 +2,10 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 15:45 ET
-By: Codex for David
+Updated: 2026-09-11 21:06 ET
+By: Hussein (context lane)
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/voice-stress-fixes`, from main
+Branch: `lane/context`, merged with current `origin/main`
 Review: David explicitly approved merging his PRs #5 and #7. Hussein owns PRs #6 (context), #8 (recap, based on lane/context), and #9 (shell); keep all three open until David reviews them and gives separate merge approval.
 
 ## Hussein PRs remain open (read this first)
@@ -114,6 +114,8 @@ David and Hussein stress-tested the desk and reported premature problem selectio
 
 Uploads and ink no longer start autonomous speech. The orb starts or submits only. A separate Pause button and Escape stop voice without leaving the desk, avoiding the automatic-endpoint/tap-to-cancel race. Local Silero v5 speech detection replaces RMS triggering; the endpoint is about 1.1s of non-speech. Startup and request stalls have deadlines and visible recovery. All response chunks are spoken, with captions/history following sentence playback and upcoming audio prepared ahead. Unit/symbol normalization is applied only to TTS. Board equations and queued visual narration are supported; writing on the board stops speech. PDF scrolling targets the requested region using measured zoomed geometry.
 
+Context first slice is ready for David's review on PR #6. `lib/context/*` chunks explicit course source records while preserving course, document, title, page, storage, and solution provenance. Chunk IDs are deterministic and page-aware, repeated source ingestion is deduplicated, malformed identity/page fields fail early, and mathematical Unicode survives chunking. Student retrieval is course-scoped and always excludes solutions, including non-solution document kinds explicitly flagged as private answers. Its public result contains only document kind, title, page, and text; course IDs, storage paths, embeddings, solution flags, and internal chunk records cannot cross that boundary. Solution retrieval has a separate server-runtime-only entry point. This slice intentionally does not add a database, API route, embeddings provider, Canvas access, or live voice integration.
+
 Empty-state fix: removed automatic projectile loading from the `boardFixture` URL parameter. A fresh board stays blank until the tutor or student draws. The explicit development fixture helper remains available for tests. Reload an old fixture tab to discard its already loaded in-memory diagram. Focused whiteboard lint and animation unit checks pass. David approved merging this slice as PR #4.
 
 Voice reliability follow-up: delayed transcriptions are cancelled and ignored after pause, resume, desk changes, tab suspension, or unmount. The orb shows thinking during transcription, preventing a competing recording while STT is pending. Noise and STT failure return to listening. Desk transitions discard unfinished recordings and restore the input state. Automated lifecycle checks exercise the real hook with deferred STT and a simulated microphone. David authorized merging PR #3. Try pause/resume and Leave while a recording is processing as the remaining hardware check. This earlier slice established delayed-input isolation; the current stress-test branch adds prototype acoustic interruption, still requiring hardware validation.
@@ -139,6 +141,7 @@ Whiteboard state parks separately with homework and concept sessions and restore
 - The live upload-only model probe still chose problem one despite revised wording. Automatic readiness turns are now disabled in the client. The live general-equation probe produced a DRAW text equation and one question (about 5.8s to first token in the reasoning lane). These are isolated probes, not broad model-quality validation.
 
 - Voice follow-up: production build, lifecycle harness, workspace checks, and animation unit checks pass. `node scripts/check-voice-lifecycle.mjs` requires no credentials. The current branch also fixes the earlier voice-hook ref lint failures; the harness passes lint.
+- Context refresh: `node scripts/check-context.mjs`, `npx tsc --noEmit`, production build, workspace checks, and animation unit checks pass after merging current main.
 
 - `npm run build` and `npx tsc --noEmit` pass.
 - `node scripts/check-workspace.mjs` passes intent routing, separate board restoration, notes context, and notes event checks.
@@ -175,9 +178,9 @@ Whiteboard state parks separately with homework and concept sessions and restore
 | voice | David | next voice branch from main | custom voice loop and delayed-input isolation included in main |
 | workspace | David | next workspace branch from main | adaptive PDF desk included in main |
 | whiteboard | David | next whiteboard branch from main | SVG runtime included; hardware follow-ups remain |
-| context | Hussein | `lane/context` from main | authorized now; first isolated slice in LANES.md; schema missing |
-| recap | Hussein | `lane/recap` from main | **start now**; isolated card slice while PR #5 awaits review |
-| shell | Hussein | `lane/shell` from main | authorized now; first auth/shell slice; preserve VoiceSession |
+| context | Hussein | `lane/context` from main | chunking and solution-safe retrieval ready for review; persistence and API contracts pending |
+| recap | Hussein | `lane/recap` from `lane/context` | PR #8 open and stacked on PR #6 |
+| shell | Hussein | `lane/shell` from main | PR #9 open; Google/Yale auth verified locally; tutor remains ungated |
 
 ## Run
 
@@ -192,6 +195,8 @@ Open http://localhost:3100. Allow the mic. Tap the orb. Upload a pset, ask to dr
 Checks without a mic: `node scripts/check-board.mjs`, `node scripts/check-turns.mjs`, `node scripts/check-lanes.mjs`.
 
 ## Blockers
+
+Context persistence is intentionally blocked on review of database ownership/RLS, authenticated identity, endpoint formats, storage ownership, and the embeddings provider/dimensions.
 
 Pointer quality depends on Grok seeing the page image.
 
