@@ -718,3 +718,25 @@ for(const [mode,expected] of [['','concept'],['[MODE pset]','pset']]) {
   test.cleanup();
 }
 console.log('PASS: Fast Refresh microphone reacquisition, immediate concept desk during permissions, and generated-board workspace visibility.');
+
+{
+  const test = await mount({ llmText: '[SUMMARY_REQUEST]What is one idea you are taking away?' });
+  await test.hook.sendUtterance('Let us finish for today.');
+  assert.equal(test.hook.captureSession().current.history.at(-1).content, '[SUMMARY_REQUEST]What is one idea you are taking away?', 'Summary state is recorded only with audible tutor speech');
+  assert.equal(test.hook.captureSession().current.turns.at(-1).text, 'What is one idea you are taking away?', 'Control metadata is never spoken or shown');
+  test.cleanup();
+}
+for (const cancel of [false, true]) {
+  const recap = { stuckOn: 'Distinguishing two directions.', unlockedBy: 'The learner compared them in their own words.', studentSummary: 'The directions share time.', reviewNext: { documentTitle: '', where: '' }, spokenText: 'You connected the two directions through time.' };
+  const test = await mount({ llmText: `[RECAP ${JSON.stringify(recap)}]${recap.spokenText}`, deferPlaying: true, manualAudio: true });
+  const response = test.hook.sendUtterance('The directions share time.');
+  await settle();
+  assert.equal(test.hook.captureSession().recap, null, 'Recap card waits for audio playback');
+  if (cancel) test.hook.pauseVoice();
+  test.audio[0].onplaying?.(); test.audio[0].onended?.();
+  await response;
+  assert.deepEqual(test.hook.captureSession().recap, cancel ? null : recap, 'Only uncancelled audible recap is saved');
+  if (!cancel) { const archive = test.hook.captureSession(); test.hook.restoreSession(archive); assert.deepEqual(test.hook.captureSession().recap, recap, 'Recap survives paused recovery'); }
+  test.cleanup();
+}
+console.log('PASS: student-first summary metadata, recap/audio synchronization, interruption, and recap recovery.');

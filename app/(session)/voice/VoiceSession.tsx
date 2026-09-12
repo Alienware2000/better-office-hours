@@ -8,6 +8,7 @@ import {
 } from "@/components/workspace/WorkspacePane";
 import { LeaveButton } from "@/components/workspace/LeaveButton";
 import { Whiteboard } from "@/components/whiteboard/Whiteboard";
+import { CourseConnection } from "./CourseConnection";
 import { Captions } from "./Captions";
 import { Orb } from "./Orb";
 import { ResponseStatus } from './ResponseStatus';
@@ -19,11 +20,12 @@ import type { PdfViewState } from '@/lib/pdf/view-state';
 import { resetBoard, subscribeBoard } from '@/lib/whiteboard/store';
 import "./session.css";
 
-export function VoiceSession() {
-  return <SessionLibrary Desk={SessionDesk} />;
+export function VoiceSession(props: { ownerKey?: string; studentName?: string; accountName?: string; signInAvailable?: boolean }) {
+  return <SessionLibrary {...props} Desk={SessionDesk} />;
 }
 
-function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport }: SessionPersistence) {
+function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport, studentName }: SessionPersistence) {
+  const [courseId, setCourseId] = useState(saved.courseId);
   const {
     state,
     level,
@@ -42,6 +44,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
     putAwayPset,
     bindDiscardPset,
     bindNewSession,
+    recap,
     captureSession,
     restoreSession,
     turns,
@@ -49,7 +52,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
     layout,
     pointer,
     highlight,
-  } = useVoiceLoop();
+  } = useVoiceLoop(courseId, setCourseId, studentName);
   const [pset, setPset] = useState<LoadedPset | null>(saved.pset);
   const [notes, setNotes] = useState<LoadedPset | null>(saved.notes);
   const [documentViews, setDocumentViews] = useState(saved.documentViews);
@@ -57,8 +60,8 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
   const diagnostics = useRef<SessionDiagnostic[]>(saved.diagnostics);
   useEffect(() => { bindSuspend(pauseVoice); }, [pauseVoice, bindSuspend]);
   const hydrated = useRef(false);
-  const capture = useCallback((): SavedSession => ({ ...saved, voice: captureSession(), pset, notes, documentViews, pdf, diagnostics: [...diagnostics.current] }),
-    [saved, captureSession, pset, notes, documentViews, pdf]);
+  const capture = useCallback((): SavedSession => ({ ...saved, courseId, voice: captureSession(), pset, notes, documentViews, pdf, diagnostics: [...diagnostics.current] }),
+    [saved, courseId, captureSession, pset, notes, documentViews, pdf]);
   const captureRef = useRef(capture);
   useEffect(() => { captureRef.current = capture; bindCapture(capture); }, [capture, bindCapture]);
   useEffect(() => {
@@ -72,7 +75,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
   }, [bindNewSession, onNew]);
   useEffect(() => {
     if (hydrated.current) onSave(capture());
-  }, [capture, layout, turns, onSave]);
+  }, [capture, layout, turns, recap, onSave]);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const flush = () => {
@@ -184,6 +187,8 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
     : { type: "spring" as const, stiffness: 210, damping: 27, mass: 0.85 };
 
   return (
+    <>
+    <CourseConnection recap={recap} selected={courseId} onSelect={id => { pauseVoice(); setCourseId(id); }} onOpen={pauseVoice} />
     <main className="session-shell">
       <LayoutGroup id="session-layout">
         {!split ? (
@@ -365,7 +370,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
                   />
                 </motion.div>
                 <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase)} busy={inputReady && !paused && !recording && state === 'thinking'} />
-                <Captions turns={turns} onExport={onExport} />
+                <Captions turns={turns} recap={recap} onExport={onExport} />
                 {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
                 {error ? (
                   <p className="session-note workspace-note">{error}</p>
@@ -376,6 +381,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport 
         ) : null}
       </LayoutGroup>
     </main>
+    </>
   );
 }
 

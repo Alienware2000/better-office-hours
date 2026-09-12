@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
-import { allTranscript, deleteSession, downloadSession, hasSessionContent, newSession, readSession, readSessions, selectSession, sessionForResume, sessionTitle, writeSession, type SavedSession } from './saved-sessions';
+import { useCallback, useMemo, useEffect, useRef, useState, type ComponentType } from 'react';
+import { allTranscript, deleteSession as deleteOwnedSession, downloadSession, hasSessionContent, newSession, readSession as readOwnedSession, readSessions as readOwnedSessions, selectSession as selectOwnedSession, sessionForResume, sessionTitle, writeSession as writeOwnedSession, type SavedSession } from './saved-sessions';
 
 export type SessionPersistence = {
+  studentName?: string;
   saved: SavedSession;
   onSave: (session: SavedSession) => void;
   bindCapture: (capture: () => SavedSession) => void;
@@ -20,7 +21,14 @@ function dateGroup(at: string) {
   return date === yesterday.toDateString() ? 'Yesterday' : 'Earlier';
 }
 
-export function SessionLibrary({ Desk }: { Desk: ComponentType<SessionPersistence> }) {
+export function SessionLibrary({ Desk, ownerKey = 'guest', accountName, signInAvailable, studentName }: { Desk: ComponentType<SessionPersistence>; ownerKey?: string; studentName?: string; accountName?: string; signInAvailable?: boolean }) {
+  const { readSession, readSessions, writeSession, selectSession, deleteSession } = useMemo(() => ({
+    readSession: (id: string) => readOwnedSession(id, ownerKey),
+    readSessions: () => readOwnedSessions(ownerKey),
+    writeSession: (session: SavedSession, version: string | null) => writeOwnedSession(session, version, ownerKey),
+    selectSession: (id: string) => selectOwnedSession(id, ownerKey),
+    deleteSession: (id: string) => deleteOwnedSession(id, ownerKey),
+  }), [ownerKey]);
   const [initial, setInitial] = useState<SavedSession | null>(null);
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [open, setOpen] = useState(false);
@@ -63,7 +71,7 @@ export function SessionLibrary({ Desk }: { Desk: ComponentType<SessionPersistenc
       const fresh = newSession(); current.current = fresh; setInitial(fresh); setStatus('Not saved');
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [readSessions]);
 
   const onSave = useCallback((session: SavedSession) => {
     if (session.id !== current.current?.id) return;
@@ -92,7 +100,7 @@ export function SessionLibrary({ Desk }: { Desk: ComponentType<SessionPersistenc
       if (queued.current.get(session.id) === key) queued.current.delete(session.id);
       failed(error); setStatus('Not saved');
     });
-  }, []);
+  }, [selectSession, writeSession]);
 
   const bindCapture = useCallback((fn: () => SavedSession) => { capture.current = fn; }, []);
   const bindSuspend = useCallback((fn: () => void) => { suspend.current = fn; }, []);
@@ -150,7 +158,7 @@ export function SessionLibrary({ Desk }: { Desk: ComponentType<SessionPersistenc
       <button className="session-new-button" type="button" disabled={switching} onClick={onNew}>+ New session</button>
     </header>
     {failure && <p className="session-save-error" role="alert">{failure} Your current work remains open. <button type="button" onClick={() => onExport('json')}>Export a copy</button></p>}
-    <div className="session-desk">{initial ? <Desk key={initial.id} saved={initial} onSave={onSave} bindCapture={bindCapture} bindSuspend={bindSuspend} onNew={onNew} onExport={onExport} /> : <main className="session-shell" />}</div>
+    <div className="session-desk">{initial ? <Desk studentName={studentName} key={initial.id} saved={initial} onSave={onSave} bindCapture={bindCapture} bindSuspend={bindSuspend} onNew={onNew} onExport={onExport} /> : <main className="session-shell" />}</div>
     {open && <div className="session-library-scrim" onClick={closeLibrary}>
       <section ref={dialog} className="session-library" role="dialog" aria-modal="true" aria-label="Saved sessions" onClick={event => event.stopPropagation()} onKeyDown={event => {
         if (event.key === 'Escape') { event.stopPropagation(); closeLibrary(); }
@@ -162,6 +170,7 @@ export function SessionLibrary({ Desk }: { Desk: ComponentType<SessionPersistenc
       }}>
         <header><h2>Your sessions</h2><button type="button" onClick={closeLibrary} aria-label="Close saved sessions">×</button></header>
         <p>Pick up where you left off, or start a new conversation.</p>
+        {signInAvailable && <p><a href="/sign-in">{accountName ? `Signed in as ${accountName}` : "Sign in with Yale"}</a></p>}
         <button className="session-new" type="button" disabled={switching} onClick={onNew}>+ New session</button>
         {sessions.length > 0 && <input className="session-search" aria-label="Find a session" placeholder="Find a session" value={search} onChange={event => setSearch(event.target.value)} />}
         {visible.length === 0 && <p className="session-empty">{search ? 'No matching sessions.' : 'Your conversations will appear here automatically when you begin.'}</p>}

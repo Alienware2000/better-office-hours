@@ -5,6 +5,7 @@ import type { Turn } from '@/lib/types';
 
 export type SessionDiagnostic = { at: string; kind: string; request?: string | null; deep?: boolean; elapsedMs?: number; page?: number; groups?: number; animation?: boolean; message?: string };
 export type SavedSession = {
+  courseId?: string;
   version: 1;
   id: string;
   title: string;
@@ -95,21 +96,26 @@ export function downloadSession(session: SavedSession, format: 'txt' | 'json') {
 }
 
 const DB = 'better-office-hours-sessions';
-let database: Promise<IDBDatabase> | undefined;
-function openDatabase(): Promise<IDBDatabase> {
-  return database ??= new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB, 1);
+const databases = new Map<string, Promise<IDBDatabase>>();
+function openDatabase(owner = "guest"): Promise<IDBDatabase> {
+  const dbName = owner === "guest" ? DB : `${DB}-${owner}`;
+  const existing = databases.get(dbName);
+  if (existing) return existing;
+  const database = new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(dbName, 1);
     request.onupgradeneeded = () => {
       request.result.createObjectStore('sessions', { keyPath: 'id' });
       request.result.createObjectStore('meta');
     };
     request.onsuccess = () => {
-      request.result.onversionchange = () => { request.result.close(); database = undefined; };
+      request.result.onversionchange = () => { request.result.close(); databases.delete(dbName); };
       resolve(request.result);
     };
-    request.onerror = () => { database = undefined; reject(request.error); };
-    request.onblocked = () => { database = undefined; reject(new Error('Session storage is busy in another tab.')); };
+    request.onerror = () => { databases.delete(dbName); reject(request.error); };
+    request.onblocked = () => { databases.delete(dbName); reject(new Error('Session storage is busy in another tab.')); };
   });
+  databases.set(dbName, database);
+  return database;
 }
 
 function transactionDone(tx: IDBTransaction): Promise<void> {
@@ -120,8 +126,8 @@ function transactionDone(tx: IDBTransaction): Promise<void> {
   });
 }
 
-export async function readSessions(): Promise<{ sessions: SavedSession[]; active: string | null }> {
-  const db = await openDatabase();
+export async function readSessions(owner = "guest"): Promise<{ sessions: SavedSession[]; active: string | null }> {
+  const db = await openDatabase(owner);
   const tx = db.transaction(['sessions', 'meta'], 'readonly');
   const rows = tx.objectStore('sessions').getAll();
   const active = tx.objectStore('meta').get('active');
@@ -136,16 +142,16 @@ export async function readSessions(): Promise<{ sessions: SavedSession[]; active
 // Writes update one session, never replace the library with a stale full list.
 // Switching uses a separate active-ID write so a late autosave cannot reopen
 // the previous conversation after refresh.
-export async function readSession(id: string): Promise<SavedSession | null> {
-  const db = await openDatabase();
+export async function readSession(id: string, owner = "guest"): Promise<SavedSession | null> {
+  const db = await openDatabase(owner);
   const tx = db.transaction('sessions', 'readonly');
   const row = tx.objectStore('sessions').get(id);
   await transactionDone(tx);
   return row.result ?? null;
 }
 
-export async function writeSession(session: SavedSession, expectedUpdatedAt: string | null) {
-  const db = await openDatabase();
+export async function writeSession(session: SavedSession, expectedUpdatedAt: string | null, owner = "guest") {
+  const db = await openDatabase(owner);
   const tx = db.transaction('sessions', 'readwrite');
   const rows = tx.objectStore('sessions');
   const previous = rows.get(session.id);
@@ -165,15 +171,15 @@ export async function writeSession(session: SavedSession, expectedUpdatedAt: str
   }
 }
 
-export async function selectSession(id: string) {
-  const db = await openDatabase();
+export async function selectSession(id: string, owner = "guest") {
+  const db = await openDatabase(owner);
   const tx = db.transaction('meta', 'readwrite');
   tx.objectStore('meta').put(id, 'active');
   await transactionDone(tx);
 }
 
-export async function deleteSession(id: string) {
-  const db = await openDatabase();
+export async function deleteSession(id: string, owner = "guest") {
+  const db = await openDatabase(owner);
   const tx = db.transaction('sessions', 'readwrite');
   tx.objectStore('sessions').delete(id);
   await transactionDone(tx);

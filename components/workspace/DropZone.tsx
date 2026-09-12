@@ -20,6 +20,18 @@ export function DropZone({
       setBusy(true);
       setError(null);
       try {
+        if (file.size > 20 * 1024 * 1024) throw new Error('Choose a PDF under 20 MB.');
+        const header = new TextDecoder().decode(await file.slice(0, 1024).arrayBuffer());
+        if (!header.includes('%PDF-')) throw new Error('Choose a valid PDF.');
+        const ticket = await fetch('/api/pset/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: file.name, size: file.size }) });
+        const prepared = await ticket.json();
+        if (!ticket.ok) throw new Error(prepared.error || 'Could not prepare PDF upload.');
+        if (prepared.direct) {
+          const uploaded = await fetch(prepared.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'application/pdf' }, body: file });
+          if (!uploaded.ok) throw new Error('PDF upload failed. Please try again.');
+          onUploaded({ id: prepared.id, title: prepared.title, fileUrl: prepared.fileUrl });
+          return;
+        }
         const form = new FormData();
         form.set("file", file);
         const response = await fetch("/api/pset/upload", {

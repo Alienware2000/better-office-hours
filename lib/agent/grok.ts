@@ -1,3 +1,5 @@
+import { awaitingSummary, RECAP_FORMAT, RECAP_GUIDANCE } from './closing';
+import { validateRecap } from '@/lib/session/recap';
 import OpenAI from "openai";
 import { TEACHING_GUIDANCE, teachingTag } from "./teaching-intent";
 import { DIAGRAM_GUIDANCE } from './diagram-guidance';
@@ -9,12 +11,16 @@ import {
   buildVoiceNote,
   DEEP_TURN,
   WHEN_TO_THINK,
+  type TurnContext,
 } from "@/lib/agent/context";
 import { describeEvent, type SessionEvent } from "@/lib/agent/events";
 import { loadTutorPrompt } from "@/lib/agent/prompt";
-import { getLivePage } from "@/lib/pdf/live-page";
-import { describeBoard, getLiveBoard } from "@/lib/whiteboard/live-board";
+import { type LivePage, getLivePage } from "@/lib/pdf/live-page";
+import { type LiveBoard, describeBoard, getLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
+
+export type GrokRequestContext = { page: LivePage | null; board: LiveBoard | null; student?: TurnContext };
+const snapshot = (): GrokRequestContext => ({ page: getLivePage(), board: getLiveBoard() });
 
 // Fast lane. grok-4.6 reasons before it answers, which put the first spoken
 // word 26s out. This non-reasoning model answers in about half a second and
@@ -28,9 +34,8 @@ export const GROK_DEEP_MODEL = "grok-4.6";
 
 // Teaching desks use narrated lessons for concepts and homework setups alike.
 // Topic names never select fixtures; the model decides what needs a picture.
-export function usesConceptLesson(deep = false, visualRepair = false): boolean {
-  const live = getLivePage();
-  return deep && !visualRepair && Boolean(live || getLiveBoard()?.open);
+export function usesConceptLesson(deep = false, visualRepair = false, request = snapshot()): boolean {
+  return deep && !visualRepair && Boolean(request.page || request.board?.open);
 }
 
 export function usesConceptRouter(deep = false, visualRepair = false): boolean {
@@ -56,9 +61,9 @@ export function buildGrokMessages(
   history: ChatMessage[],
   event?: SessionEvent | null,
   deep = false,
+  request = snapshot(),
 ): ChatMessage[] {
-  const live = getLivePage();
-  const board = getLiveBoard();
+  const { page: live, board } = request;
   const extra = live
     ? `\n${[
         `<pset_page>${live.page + 1}</pset_page>`,
@@ -74,7 +79,7 @@ export function buildGrokMessages(
       ].join("\n")}`
     : "";
   const boardNote = `\n<board>The whiteboard is ${board?.open ? "open" : "available"}. Choose the visual from the learner's question. Coordinates are normalized 0 to 1, origin at top left. Emit [BOARD open] with DRAW commands in narrated order. A DRAW has op and id, with at for text, center and r for circle, from and to for line/arrow, points for curve, or origin for axes. Use the schemas below. No example scene or required equation is supplied.</board>`;
-  const context = buildContextBlock(
+  const context = buildContextBlock({ ...request.student, ...(
     live
       ? {
           documentKind: live.documentKind,
@@ -87,8 +92,8 @@ export function buildGrokMessages(
       : {
           mode: board?.open ? "concept" : "orb_only",
           studentDrew: Boolean(board?.studentShapesSince),
-        },
-  );
+        }),
+  });
   const materialNote = live?.documentKind === "notes" ? "\n<reference_notes>The attached PDF is supplemental notes in a concept session. Keep the concept workspace. Do not treat these notes as an assignment, ask which problem to solve, or emit MODE pset unless the student explicitly asks for homework. Point at relevant material and draw to explain it.</reference_notes>" : "";
   const eventBlock = event ? `\n<event>${describeEvent(event)}</event>` : "";
   const rest = history.filter((message) => message.role !== "system");
@@ -116,8 +121,9 @@ function toApiMessages(
   history: ChatMessage[],
   event?: SessionEvent | null,
   deep = false,
+  request = snapshot(),
 ): OpenAI.Chat.ChatCompletionMessageParam[] {
-  const built = buildGrokMessages(history, event, deep);
+  const built = buildGrokMessages(history, event, deep, request);
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = built.map((message) => ({
     role: message.role,
     content: message.content,
@@ -125,7 +131,7 @@ function toApiMessages(
 
   // The page rides at the end rather than on the last student turn, because an
   // event turn has no student turn to attach it to.
-  const live = getLivePage();
+  const live = request.page;
   if (live?.imageUrl) {
     messages.push({
       role: "user",
@@ -148,7 +154,7 @@ function toApiMessages(
     });
   }
 
-  const board = getLiveBoard();
+  const board = request.board;
   if (board?.imageUrl) {
     messages.push({
       role: "user",
@@ -182,16 +188,18 @@ export async function* streamGrok(
   deep = false,
   signal?: AbortSignal,
   visualRepair = false,
+  request = snapshot(),
 ): AsyncGenerator<string> {
   const grok = client();
-  const conceptTeaching = usesConceptLesson(deep, visualRepair);
+  const conceptTeaching = usesConceptLesson(deep, visualRepair, request);
   const conceptRouting = usesConceptRouter(deep, visualRepair);
-  const live = getLivePage(), board = getLiveBoard();
+  const { page: live, board } = request;
   const messages = conceptRouting ? conceptRoutingMessages(history, {
+    student: request.student,
     document: live ? { kind: live.documentKind ?? 'pset', title: live.title, page: live.page + 1, text: live.text.slice(0, 3000) } : null,
     board: { open: board?.open ?? false, studentStrokeCount: board?.studentStrokeCount ?? null,
       tutorItems: board?.tutorItems?.map(item => ({ id: item.id, text: item.text, status: item.status })).slice(-12) ?? [] },
-  }) : toApiMessages(history, event, deep);
+  }) : toApiMessages(history, event, deep, request);
   if (conceptTeaching) messages.push({ role: 'system', content: CONCEPT_FORMAT_GUIDANCE });
   if (visualRepair) {
     const last = history.filter(message => message.role === 'assistant').at(-1)?.content ?? '';
@@ -233,7 +241,24 @@ export async function* streamGrok(
       const route = parseConceptRoute(lesson);
       console.info('Tutor teaching route ' + JSON.stringify({ kind: route.kind, handoff: route.handoff }));
     }
-    yield conceptRoute(lesson, !live && !board?.open);
+    const route = parseConceptRoute(lesson);
+    if (route.courseId && request.student?.courseCatalog?.some(c => c.courseId === route.courseId)) yield `[COURSE ${JSON.stringify({ id: route.courseId })}]`;
+    if (route.kind === 'recap') {
+      if (!awaitingSummary(history)) {
+        yield '[SUMMARY_REQUEST]Before we wrap up, what is one idea you are taking away?';
+      } else {
+        const completion = await grok.chat.completions.create({ model: GROK_DEEP_MODEL, reasoning_effort: 'low', temperature: 0.3, max_tokens: 900,
+          messages: [{ role: 'system', content: loadTutorPrompt('your course') + '\n' + buildContextBlock(request.student) + '\n' + RECAP_GUIDANCE }, ...history.filter(m => m.role !== 'system').slice(-24)], response_format: RECAP_FORMAT,
+        }, { signal });
+        const data = JSON.parse(completion.choices[0]?.message.content ?? '');
+        data.studentSummary = history.filter(m => m.role === 'user').at(-1)?.content.slice(0, 1000) ?? '';
+        const reviewSource = request.student?.retrievedSources?.find(source => source.title === data.reviewNext?.documentTitle);
+        data.reviewNext = reviewSource && reviewSource.page !== undefined ? { documentTitle: reviewSource.title, where: `page ${reviewSource.page + 1}` } : { documentTitle: '', where: '' };
+        const recap = validateRecap(data);
+        if (!recap.ok) throw new Error('The recap was interrupted. Your conversation is saved; please try again.');
+        yield `[RECAP ${JSON.stringify(recap.value)}]${recap.value.spokenText}\n`;
+      }
+    } else yield conceptRoute(lesson, !live && !board?.open);
   }
   if (conceptTeaching) {
     const complete = conceptResponse(lesson);

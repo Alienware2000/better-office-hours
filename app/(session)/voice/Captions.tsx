@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import type { Turn } from "@/lib/types";
+import { RecapCard } from "@/components/recap";
+import type { Recap, Turn } from "@/lib/types";
 import { isJunkSpeech } from "./speech";
 
-export function Captions({ turns, onExport }: { turns: Turn[]; onExport?: (format: 'txt' | 'json') => void }) {
+export function Captions({ turns, recap, onExport }: { turns: Turn[]; recap?: Recap | null; onExport?: (format: 'txt' | 'json') => void }) {
   const reduced = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const following = useRef(true);
@@ -47,7 +48,7 @@ export function Captions({ turns, onExport }: { turns: Turn[]; onExport?: (forma
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  if (!spoken.length) return null;
+  if (!spoken.length && !recap) return null;
   return (
     <motion.div layout transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 180, damping: 28 }} className={`captions${readingHistory ? " is-reading" : ""}`}>
       <div className="caption-tools">
@@ -67,6 +68,7 @@ export function Captions({ turns, onExport }: { turns: Turn[]; onExport?: (forma
             {turn.text}
           </p>
         ))}
+        {recap && <div className="recap-container"><RecapCard recap={recap} /></div>}
       </div>
     </motion.div>
   );

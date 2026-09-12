@@ -17,7 +17,7 @@ export function RecapCard({ recap, className }: RecapCardProps) {
     >
       <header className={styles.header}>
         <p className={styles.eyebrow}>Session recap</p>
-        <h2 className={styles.title}>What you figured out</h2>
+        <h2 className={styles.title}>Your session takeaway</h2>
       </header>
 
       <dl className={styles.details}>

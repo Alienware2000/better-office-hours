@@ -2,7 +2,7 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 22:11 EDT
+Updated: 2026-09-11 22:43 EDT
 By: Codex for David, consolidating reviewed lanes
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/drawing-continuity`, integrating current main
@@ -13,6 +13,12 @@ Review: David explicitly authorized consolidation. Hussein's PRs #6, #8, and #9 
 David explicitly authorized merging Hussein's slices and live integration. Context #6, recap #8, and shell #9 are merged, preserving their dependency. Earlier wait-for-review instructions below are historical and superseded. Keep frozen lib/types.ts and human PROMPT/PEDAGOGY unchanged. Grok Bot must collect real Canvas materials for the live demo.
 
 ## Now
+
+Integration in progress (22:42): merged all Hussein slices into lane/drawing-continuity. Connected request-local identity/page/board context, scoped Canvas profile/source-text ingestion, lexical retrieval, semantic course selection, and the student-first spoken recap/card. Removed David from both immediate greetings and model defaults. Google is optional; guest Canvas connection uses an opaque HttpOnly browser cookie. Signed-in local session histories are separated by identity. Private Supabase storage is implemented with local development fallback; production configuration remains missing. PDF direct upload/signed download supports serverless file limits. No frozen contracts or human prompt/pedagogy changes.
+
+Checks so far: clean combined build, focused lint/typecheck, context/auth/recap checks, voice lifecycle including summary metadata and audio-synced recap/cancellation/recovery, source ingestion/solution exclusion/cross-browser isolation, and real IndexedDB/whiteboard/PDF recovery pass. Inspected desktop/phone output; fixed a top-left dialog and clipped phone recap with a compact takeaway dialog. A real Grok test selected an actual supplied fixture course in 1.38s, asked a self-explanation question in 1.34s, and returned a cited recap in 6.23s. This used synthetic course/history fixtures and real inference, not live Canvas or acoustic testing. A first test assertion incorrectly expected RECAP before COURSE metadata; corrected the harness, not the model output. Final release build and corrected desktop/phone rendering pass.
+
+Deployment: created Vercel project better-office-hours under alienware2000s-projects and privately configured voice/ingest secrets. No deployment has been published yet. David offered to configure Supabase; NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are still missing at 22:37. Google setup is deferred. Grok Bot has reached NetID login but its sign-in click is paused for human approval. No actual course collection/upload is claimed. Do not click through its human approval gate. Release checks are complete; swap :3102 intentionally and retain its existing data/origin.
 
 Consolidation (2026-09-11): reviewed context retrieval and solution exclusion, recap validation/card, and Google auth. Repaired verified Google email enforcement and a broken clean-install lockfile before merging. npm ci, focused checks/lint, and combined production build passed in isolation. Preserved Hussein's concurrent README/main refreshes. The merged modules still need live context, student-first recap, and identity wiring. Root remains ungated, sessions remain browser-local, and deployment has not been verified.
 

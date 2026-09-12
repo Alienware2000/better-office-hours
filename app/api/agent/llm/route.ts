@@ -1,10 +1,14 @@
+import { courseOwner } from "@/lib/context/ownership";
+import { studentCourseContext } from "@/lib/context/catalog";
+import { currentIdentity } from "@/lib/auth/server";
 import { asSessionEvent } from "@/lib/agent/events";
 import { GROK_DEEP_MODEL, GROK_MODEL, streamGrok, usesConceptLesson } from "@/lib/agent/grok";
-import { setLivePage, type LivePage } from "@/lib/pdf/live-page";
-import { asLiveBoard, setLiveBoard } from "@/lib/whiteboard/live-board";
+import { type LivePage } from "@/lib/pdf/live-page";
+import { asLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
 import { parseAgentTurn } from "@/lib/agent/tags";
 
+export const maxDuration = 180;
 export const dynamic = "force-dynamic";
 
 function asMessages(body: unknown): ChatMessage[] {
@@ -63,14 +67,16 @@ export async function POST(req: Request) {
   const deep: boolean =
     !!body && typeof body === "object" && (body as { deep?: unknown }).deep === true;
   const visualRepair = !!body && typeof body === "object" && (body as { visualRepair?: unknown }).visualRepair === true;
-  setLivePage(asLivePage(body));
-  setLiveBoard(
-    body && typeof body === "object"
-      ? asLiveBoard((body as { liveBoard?: unknown }).liveBoard)
-      : null,
-  );
+  const identity = await currentIdentity();
+  const courseId = body && typeof body === "object" && "courseId" in body && typeof body.courseId === "string" ? body.courseId : null;
+  const course = await studentCourseContext(await courseOwner(), courseId, history.filter(m => m.role === "user").slice(-3).map(m => m.content).join(" "));
+  const context = {
+    page: asLivePage(body),
+    board: body && typeof body === 'object' ? asLiveBoard((body as { liveBoard?: unknown }).liveBoard) : null,
+    student: { ...course, studentName: identity?.name ?? course.studentName ?? 'unknown' },
+  };
   const model = deep ? GROK_DEEP_MODEL : GROK_MODEL;
-  const structuredLesson = usesConceptLesson(deep, visualRepair);
+  const structuredLesson = usesConceptLesson(deep, visualRepair, context);
   const id = `tutor-${crypto.randomUUID()}`;
   const started = Date.now();
   const created = Math.floor(Date.now() / 1000);
@@ -90,7 +96,7 @@ export async function POST(req: Request) {
       let firstVisualMs: number | null = null;
       let firstSpeechMs: number | null = null;
       try {
-        for await (const content of streamGrok(history, event, deep, upstream.signal, visualRepair)) {
+        for await (const content of streamGrok(history, event, deep, upstream.signal, visualRepair, context)) {
           raw += content;
           if (firstVisualMs === null && /\[(?:DRAW|ANIM) /.test(raw)) firstVisualMs = Date.now() - started;
           if (firstSpeechMs === null && parseAgentTurn(raw).speech) firstSpeechMs = Date.now() - started;

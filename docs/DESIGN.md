@@ -8,9 +8,9 @@ The product vision below includes future features. The current approved baseline
 
 David's concept-teaching clarification: ungraded explanations should supply requested definitions, equations, and illustrative answers. Give a novice an understandable example before asking them to apply it; do not make every prerequisite a quiz. Fade scaffolding for demonstrated knowledge and answer narrow clarifications directly. Graded-task final-answer protection still applies across workspace modes, and tutor-created content never counts as a student attempt. This adapts the documented pedagogy rather than replacing it. The expertise-reversal literature supports varying guidance with prior knowledge and integrating essential annotations with diagrams; these principles do not establish this demo's effectiveness ([Kalyuga et al., 2003](https://www.davidlewisphd.com/courses/EDD8121/readings/2003-Kalyuga_et_al.pdf)).
 
-Implemented: the desk, custom SVG drawing/animation, PDF ink and pointer, custom STT/Grok/TTS voice loop, live snapshots, and browser-local saved sessions with transcript/JSON export. Not yet implemented: authenticated identity, cloud course/session storage, retrieval, spoken/saved recap, Canvas/Grok Bot ingestion, and verified Apple Pencil support. Descriptions of those capabilities below are targets, not claims that they exist. Hussein's first reviewable slices and integration boundaries are in LANES.md.
+Implemented: the desk, custom SVG drawing/animation, PDF ink and pointer, custom STT/Grok/TTS voice loop, live snapshots, browser-local saved sessions/export, account-aware identity, scoped course ingestion/retrieval, and student-first spoken/saved recap. Supabase private course/PDF storage and Google identity are configuration-dependent and still need live deployment verification. Cross-device session sync and verified Apple Pencil support remain unimplemented. Descriptions of those capabilities below are targets, not claims that they exist. Hussein's first reviewable slices and integration boundaries are in LANES.md.
 
-Canvas/Grok Bot is the future course-context layer so the tutor already knows the student's classes. It comes after the current desk work and does not block manual attachments or independent context modules. Do not start automated Canvas access until David assigns it. Broader hackathon scope below is a target backlog, not authorization to run every lane ahead of review.
+Canvas/Grok Bot is the course-context layer under live integration so the tutor already knows the student's classes. It comes after the current desk work and does not block manual attachments or independent context modules. David assigned automated Canvas access and consolidation on September 11; the collector is at student authentication. Broader hackathon scope below is a target backlog, not authorization to run every lane ahead of review.
 
 ## 1. What we are building
 
@@ -230,3 +230,10 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 Professor console to edit the tutor prompt and upload materials. Lecture recording transcription. Live screen share for coding courses. iPad handwriting. Spaced review reminders across sessions. Cross-course memory.
 
 Transcript and session JSON export are now implemented at David's request. A future professor console may use explicitly shared exports to study where students got stuck; no automatic collection or professor access is implemented.
+
+
+### Deadline integration decisions, September 11
+
+David approved all three Hussein merges and assigned actual Canvas collection for the live recording. Google sign-in remains optional for this demo: the student signs into Canvas with NetID/Duo in Grok Bot, and the collector connects to the current guest browser or authenticated app account. This guest connection is not verified web-app authentication or cross-device identity. No technical Google setup is required to use the tutor.
+
+The recap is a concise saved takeaway for the end of a substantive session, not a mandatory ceremony after every clarification. The tutor offers a student-first summary opportunity, respects a request to stop, and does not infer mastery from its own diagrams. The desktop card and compact takeaway action reuse Hussein's existing card. The complete transcript remains separately exportable. The immediate greeting and model context no longer default to David.

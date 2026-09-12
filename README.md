@@ -20,11 +20,14 @@ Office hours are crowded, time-conflicting, and intimidating. Generic AI tutors 
 - Draws and animates generated explanations on a shared SVG whiteboard.
 - Guides graded work with short hints and questions instead of final answers.
 - Supports homework, concept explanations, and other office-hours conversations in one desk.
-- Provides Yale Google sign-in through the isolated `/sign-in` shell when OAuth is configured.
+- Saves separate conversations, board work, and transcript/JSON exports in the browser.
+- Uses connected Canvas course excerpts through solution-safe retrieval.
+- Closes substantive conversations with a student-first spoken recap and saved takeaway.
+- Supports optional Yale Google identity when OAuth is configured.
 
-## It has the answer key and will not give it to you
+## Helps students work toward their own answers
 
-The tutor elicits the student's thinking first, advances one hint at a time, asks for predictions before explanations, and never bottoms out to the final answer on graded work. Solution retrieval and spoken recap integration are still under review, so this is the enforced teaching design rather than a claim that every planned context source is live. See [PEDAGOGY.md](docs/PEDAGOGY.md) for the learning basis and [PROMPT.md](docs/PROMPT.md) for the human-maintained tutor policy.
+The tutor elicits the student's thinking first, advances one hint at a time, asks for predictions before explanations, and never bottoms out to the final answer on graded work. Posted solutions are excluded from student-facing retrieval. The tutor uses elicitation and contingent hints on graded work while explaining ungraded concepts directly. These safeguards are tested behaviors, not a guarantee that every generated response is correct. See [PEDAGOGY.md](docs/PEDAGOGY.md) for the learning basis and [PROMPT.md](docs/PROMPT.md) for the human-maintained tutor policy.
 
 ## Built in Cursor
 
@@ -34,7 +37,7 @@ The team built and coordinated this project in Cursor across separate voice, wor
 
 ## Grok Bot course context
 
-The planned Course Pack Collector uses Grok Bot to gather a student's Canvas course profile, syllabus, lecture material, assignments, and posted solutions after the student approves Yale Duo. Student-visible retrieval must exclude solution text. The collector specification exists in [grokbot/TASK.md](grokbot/TASK.md), but the bot share link and live ingestion are not connected yet.
+Course Pack Collector uses Grok Bot to gather a student's Canvas course profile, syllabus, lecture material, assignments, and posted solutions after the student approves Yale Duo. Student-visible retrieval must exclude solution text. The app supplies a scoped two-hour connection task, and accepts profile and extracted page-text uploads. See [grokbot/TASK.md](grokbot/TASK.md). The bot has reached Yale sign-in; live collection, the public connection, and its share link still need verification.
 
 <!-- Add the Grok Bot share link and collection GIF here after the collector is verified. -->
 
@@ -46,7 +49,8 @@ The planned Course Pack Collector uses Grok Bot to gather a student's Canvas cou
 - ElevenLabs STT and TTS with local Silero voice activity detection
 - Grok through the OpenAI-compatible xAI API
 - NextAuth with Google OAuth for Yale sign-in
-- Supabase with Postgres and pgvector planned for durable context and recaps
+- Private Supabase Storage for collected source text and PDFs when configured
+- Lexical retrieval with source/page attribution; embeddings remain future work
 
 ## Try it
 
@@ -67,7 +71,9 @@ XAI_API_KEY=your_key_here
 ELEVENLABS_API_KEY=your_key_here
 ```
 
-Google sign-in additionally requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`. Without all three values, `/sign-in` reports that authentication is unavailable. Never commit `.env.local`.
+Course/PDF storage on Vercel requires `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; the server creates a private `boh-private` bucket. Set a random `INGEST_TOKEN` server secret to sign scoped collector connections. It is never handed to the bot directly. Local development can use `.data/private`.
+
+Optional Google sign-in additionally requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`. Without all three values, `/sign-in` reports that authentication is unavailable. Never commit `.env.local`.
 
 ```bash
 npm run dev -- -p 3100
@@ -77,7 +83,7 @@ Open [localhost:3100](http://localhost:3100), allow microphone access, and activ
 
 ## Current prototype limits
 
-Authentication is not yet enforced at the tutor route or connected to course and recap persistence. Local PDF storage is not durable or user-isolated for serverless deployment. The context retrieval core and recap card are awaiting review, and their live integrations are not complete. Generated visual quality and microphone interruption still require real-device testing.
+The tutor permits guests. Google identity is optional; a guest Canvas connection belongs to one browser and is not an authenticated app account. Transcript/board/recap saves remain browser-local, separated by authenticated identity when present. Course/PDF storage requires Supabase for deployment. Cross-device session sync and cross-session learning memory are not implemented. Actual Canvas collection and deployed acoustic behavior still need rehearsal. Generated diagrams can be imperfect and model reasoning latency remains noticeable.
 
 ## Development checks
 
@@ -93,7 +99,7 @@ Live model checks require a running development server and API credentials and c
 
 ## Roadmap
 
-Professor-configurable course guidance, lecture transcription, live screen sharing for coding courses, iPad handwriting, spaced review reminders, cross-course learning memory, and transcript export.
+Professor-configurable course guidance, lecture transcription, live screen sharing for coding courses, iPad handwriting, spaced review reminders, cross-course learning memory, and cross-device session sync.
 
 ## Team
 

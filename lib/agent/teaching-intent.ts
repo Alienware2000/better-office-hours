@@ -8,7 +8,7 @@ export type TeachingIntent = {
   move: 'elicit' | 'orient' | 'hint' | 'consolidate' | 'explain';
   visual: 'none' | 'notes' | 'diagram' | 'animation';
 };
-export type TeachingTurn = AgentTurn & { teaching?: TeachingIntent };
+export type TeachingTurn = AgentTurn & { teaching?: TeachingIntent; courseId?: string; recapData?: import("@/lib/types").Recap };
 
 export function teachingIntent(attrs: Record<string, string>): TeachingIntent | undefined {
   if (!['elicit', 'orient', 'hint', 'consolidate', 'explain'].includes(attrs.move) ||

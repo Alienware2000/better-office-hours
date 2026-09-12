@@ -1,5 +1,8 @@
 "use client";
 
+import type { Recap } from "@/lib/types";
+import type { TeachingTurn } from "@/lib/agent/teaching-intent";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionEvent } from "@/lib/agent/events";
 import { detectMode } from "@/lib/agent/intent";
@@ -22,7 +25,7 @@ import { recordSessionDiagnostic } from './session-diagnostics';
 type Health = { grok: boolean; elevenlabs: boolean };
 export type WorkKind = "lobby" | "pset" | "concept";
 export type WorkSnapshot = { history: ChatMessage[]; turns: Turn[]; board: BoardState };
-export type VoiceArchive = { kind: WorkKind; current: WorkSnapshot; parked: { pset: WorkSnapshot | null; concept: WorkSnapshot | null } };
+export type VoiceArchive = { recap?: Recap | null; kind: WorkKind; current: WorkSnapshot; parked: { pset: WorkSnapshot | null; concept: WorkSnapshot | null } };
 
 async function readSseText(
   response: Response,
@@ -61,7 +64,11 @@ async function readSseText(
   return full;
 }
 
-export function useVoiceLoop() {
+export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void, studentName?: string) {
+  const courseRef = useRef(courseId);
+  const onCourseRef = useRef(onCourse);
+  useEffect(() => { onCourseRef.current = onCourse; }, [onCourse]);
+  useEffect(() => { courseRef.current = courseId; }, [courseId]);
   const [state, setState] = useState<OrbState>("idle");
   const [level, setLevel] = useState(0);
   const [health, setHealth] = useState<Health | null>(null);
@@ -80,7 +87,7 @@ export function useVoiceLoop() {
   const [inputStarting, setInputStarting] = useState(false);
   const startInputRef = useRef<() => void>(() => {});
   const pendingStartTextRef = useRef<string | null>(null);
-  const [greeting] = useState(pickGreeting);
+  const [greeting] = useState(() => pickGreeting(studentName));
   const greetingRef = useRef(greeting);
   const historyRef = useRef<ChatMessage[]>([
     { role: "assistant", content: greeting },
@@ -166,6 +173,8 @@ export function useVoiceLoop() {
   const finishRecordingRef = useRef<() => void>(() => {});
   const [recording, setRecording] = useState(false);
   const [responsePhase, setResponsePhase] = useState<'transcribing' | 'thinking' | 'explaining' | 'voice' | null>(null);
+  const [recap, setRecap] = useState<Recap | null>(null);
+  const recapRef = useRef<Recap | null>(null);
   const hasStartedRef = useRef(false);
   const discardRecordingRef = useRef<() => void>(() => {});
   const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
@@ -289,7 +298,8 @@ export function useVoiceLoop() {
     return next;
   }, []);
 
-  const applyTurn = useCallback((turn: AgentTurn) => {
+  const applyTurn = useCallback((turn: TeachingTurn) => {
+    if (turn.recapData) { recapRef.current = turn.recapData; setRecap(turn.recapData); }
     // A generated board must be visible even if the model omitted MODE.
     // This is driven by the actual visual action, never by its topic.
     if (!turn.mode && kindRef.current === 'lobby' && (turn.board?.open || turn.board?.commands?.length || turn.board?.animation)) {
@@ -442,6 +452,7 @@ export function useVoiceLoop() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          courseId: courseRef.current,
           messages: historyRef.current,
           stream: true,
           livePage: visualSource,
@@ -462,6 +473,7 @@ export function useVoiceLoop() {
       let captionStarted = false;
       let heard = "";
       let historyMessage: ChatMessage | null = null;
+      let summaryRequested = false;
       let spoken: Promise<void> = Promise.resolve();
       let preparationQueue: Promise<unknown> = Promise.resolve();
       let pendingVisuals: AgentTurn[] = [];
@@ -511,9 +523,9 @@ export function useVoiceLoop() {
             if (!captionStarted) { addTurn("tutor", heard); captionStarted = true; }
             else reviseLastTutorTurn(heard);
             if (!historyMessage) {
-              historyMessage = { role: "assistant", content: heard };
+              historyMessage = { role: "assistant", content: (summaryRequested ? "[SUMMARY_REQUEST]" : "") + heard };
               historyRef.current = [...historyRef.current, historyMessage];
-            } else historyMessage.content = heard;
+            } else historyMessage.content = (summaryRequested ? "[SUMMARY_REQUEST]" : "") + heard;
           }); } catch (error) { speechFailure = error; throw error; }
         });
       };
@@ -521,6 +533,7 @@ export function useVoiceLoop() {
       const full = await readSseText(response, (raw, speechBoundary) => {
         if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
         onProgress?.();
+        summaryRequested = raw.includes("[SUMMARY_REQUEST]");
         const partial = parseAgentTurn(raw);
         // Both static marks and animation share the speech queue. A tag waits
         // for its preceding words rather than drawing the whole reply upfront.
@@ -531,6 +544,7 @@ export function useVoiceLoop() {
           pendingVisuals.push(beat.turn);
         }
         beatsApplied = beats.length;
+        if (partial.courseId && partial.courseId !== courseRef.current) { courseRef.current = partial.courseId; onCourseRef.current?.(partial.courseId); }
         if (partial.mode) applyTurn({ speech: "", mode: partial.mode });
         // A lead-in turn is not worth speaking in pieces, and speaking it
         // before [THINK] arrives would strand the student mid-thought.
@@ -569,7 +583,7 @@ export function useVoiceLoop() {
         visualRepair = withRequestTimeout(signal, 6000, 'Board preparation timed out', async repairSignal => {
           const response = await fetch('/api/agent/llm', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: repairSignal,
-            body: JSON.stringify({ visualRepair: true, messages: [...historyRef.current, { role: 'assistant', content: teachingTag(turn.teaching) + turn.speech }], livePage: visualSource, liveBoard: getLiveBoard() }),
+            body: JSON.stringify({ courseId: courseRef.current, visualRepair: true, messages: [...historyRef.current, { role: 'assistant', content: teachingTag(turn.teaching) + turn.speech }], livePage: visualSource, liveBoard: getLiveBoard() }),
           });
           if (!response.ok) return;
           const raw = await readSseText(response, () => {});
@@ -753,12 +767,14 @@ export function useVoiceLoop() {
   }, [pauseVoice]);
 
   const captureSession = useCallback((): VoiceArchive => structuredClone({
+    recap: recapRef.current,
     kind: kindRef.current,
     current: { history: historyRef.current, turns: turnsRef.current, board: { ...getBoardState(), playing: false } },
     parked: parkedRef.current,
   }), []);
 
   const restoreSession = useCallback((archive: VoiceArchive) => {
+    recapRef.current = archive.recap ?? null; setRecap(recapRef.current);
     pauseVoice();
     pendingAttachmentRef.current = null;
     noticedAttachmentsRef.current.clear();
@@ -1291,6 +1307,7 @@ export function useVoiceLoop() {
     putAwayPset,
     bindDiscardPset,
     bindNewSession,
+    recap,
     captureSession,
     restoreSession,
     turns,

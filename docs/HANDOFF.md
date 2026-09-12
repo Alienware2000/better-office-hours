@@ -1,3 +1,21 @@
+# Active consolidation handoff, September 11, 22:43 EDT
+
+Read STATUS first. David authorized all Hussein merges and live Canvas integration. #6, #8, #9 are merged. Current branch is lane/drawing-continuity; do not revive earlier instructions to leave those PRs open. PR #10 consolidation is next after final checks.
+
+Current implementation: request-local identity/board/PDF snapshots; general greeting and tutor identity; separated authenticated browser histories; scoped collector profile/page-text ingestion and solution-safe lexical retrieval; semantic voice course selection; student-first recap/card saved with the voice archive; private Supabase course/PDF storage with direct signed PDF transfer. Frozen lib/types.ts and human PROMPT/PEDAGOGY unchanged. No cloud transcript sync or cross-session learning memory yet. Google is optional for tonight. Guests can connect their own Canvas collector through an opaque HttpOnly cookie.
+
+Verified: combined builds and focused lint/typechecks, context/auth/recap/voice lifecycle/lesson/workspace checks, scoped HTTP ingestion/isolation tests, real IndexedDB/PDF/board recovery. Actual desktop/mobile rendering inspected. Fixed course dialog centering and phone recap clipping. Real Grok with synthetic course/history selected an ID, asked student-first closing, and returned a source-cited recap in 6.23s; this is not live Canvas or real acoustic validation. New integration check: scripts/check-integration.mjs. Voice lifecycle now tests summary control state and actual-audio recap timing/cancellation/restore.
+
+External setup still needed: Supabase URL/service key have not been added as of 22:37. David said he would configure them. Grok Bot's Course Pack Collector is at NetID sign-in, with an explicit human approval pause before the sign-in click. The bot's computer is open in Grok Bot.app. Do not bypass its approval; the student completes NetID/Duo. No actual course collection is claimed. The concrete JSON upload contract and safe collector task are in grokbot/TASK.md.
+
+Deployment: Vercel project better-office-hours exists under alienware2000s-projects. XAI_API_KEY, ELEVENLABS_API_KEY and scoped-connection signing secret INGEST_TOKEN were added privately to production/preview. No app deployment has been published yet. Add private Supabase configuration before testing course/PDF writes on Vercel. .vercelignore excludes .env*, .data, node_modules and local build outputs. Never send service keys or long-lived server secret to the bot; only the app-generated two-hour connection.
+
+Live :3102 still uses the earlier frozen preview until the release swap is explicitly recorded below. Latest tested release copy: /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-release-l18y09_9. :3103 currently serves it for isolated checks. Build before adding the primary .data symlink. Preserve browser origin and existing PDF data when swapping :3102. User tab is an idle blank new conversation at 22:41, not a recording.
+
+Next: finalize release checks/commit/push and merge PR #10, publish Vercel, get Supabase config and Canvas authentication, run one actual collection and teacher exchange, then record and finish README/submission by 23:59. Do not start another visual or microphone polish pass. A short local core recording is the fallback if external setup runs late.
+
+---
+
 # Better Office Hours handoff
 
 Updated: 2026-09-11 21:53 EDT, Codex for David.
