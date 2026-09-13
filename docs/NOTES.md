@@ -4,6 +4,8 @@ Each lane keeps a few lines here: what works, what is stubbed, what other lanes 
 
 ## voice
 
+September 13 Groundtrack setup: installed global hooks 0.1.7 and added only Codex project MCP/hook configuration plus the managed AGENTS.md policy. Codex parses the config; Doctor's local enrichment simulation passes. Live tools are not loaded, so sign-in, user hook approval, and the single prescribed verification event remain pending after project reload. No verification event sent, no runtime edits, no pushes or production changes.
+
 September 13: submission is complete and results are pending. David authorized local development in a fresh task on `lane/post-hackathon-local`, based on submitted `b74e11a`. No GitHub pushes/PR changes, deployments, or production changes until explicitly reauthorized. Local commits are fine. See POST_HACKATHON_HANDOFF; older publish/recording directives below are historical. No runtime changes or new provider calls in this handoff.
 
 Submission evidence: README embeds all four newly supplied screenshots (three Cursor, one Grok Bot) from docs/images. Original files copied without editing. Video link still pending. David is recording regular Chrome without Canvas; the connected in-app browser is a different guest context. Do not operate the recording browser.

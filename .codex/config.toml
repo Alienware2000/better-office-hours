@@ -1,0 +1,13 @@
+[mcp_servers.groundtrack]
+url = "https://app.groundtrack.dev/api/mcp"
+
+# groundtrack:start version=1
+[[hooks.PreToolUse]]
+matcher = "^mcp__groundtrack__(store_event|search_experiences)$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "groundtrack-hook"
+timeout = 5
+statusMessage = "Adding Groundtrack session metadata"
+# groundtrack:end

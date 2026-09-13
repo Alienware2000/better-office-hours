@@ -2,8 +2,8 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-13 14:12 EDT
-By: David's local continuation handoff
+Updated: 2026-09-13 14:50 EDT
+By: Codex, David's local Groundtrack setup
 Repo: https://github.com/Alienware2000/better-office-hours
 Branch: `lane/post-hackathon-local`, local only, based on `b74e11a85dab17a5951fdee6cd574b83b91e3c15`
 
@@ -14,6 +14,12 @@ The hackathon submission is complete. David reports that the intended demo recor
 Read [the post-hackathon handoff](POST_HACKATHON_HANDOFF.md). It records the actual implementation, evidence limits, pending integration work, and suggested local next steps. The old submission-night checklist is historical. Start the new task with a local baseline audit and a prioritized recommendation; do not restart a broad model or microphone rewrite automatically.
 
 Git anchor: `b74e11a` includes merged PRs #6/#8/#9/#10/#12/#13/#14 and the four README screenshots. Last verified public runtime: `fc80ffa`, deployment `dpl_AWysH7j86epXocxZfSayGeafDdQx`, https://better-office-hours.vercel.app. Do not assume the saved project's local `main` is current: it still points to older `f4853db`. This continuation branch preserves the later submitted baseline explicitly. No remote state was changed or re-queried for this handoff.
+
+## Groundtrack setup, September 13
+
+David requested Groundtrack using https://app.groundtrack.dev/get-started. Installed global `@groundtrack/hooks` 0.1.7 with Node 24.19.0; `groundtrack-hook` resolves on PATH. Added this worktree's `.codex/config.toml` with the project-scoped Streamable HTTP MCP server and targeted PreToolUse hook. Groundtrack Doctor added its versioned shared-memory policy to AGENTS.md while preserving the existing instructions. No other client configuration or app runtime was changed.
+
+Validation: `codex mcp get groundtrack` parses the configuration and recognizes the server; `groundtrack doctor --client codex` reports current configuration and successful local session/model/invocation enrichment simulation; `git diff --check` passes. Groundtrack tools are absent from this active task, so authentication and live hook enrichment are not verified. No verification event has been sent. Next: reload this Codex project, complete Groundtrack sign-in, and approve the project hook in the desktop prompt or `/hooks` in the CLI from this worktree. Then follow the setup instructions again and send exactly one prescribed verification event, checking returned metadata without supplying it manually. Local setup commits only; the publication freeze remains in force.
 
 ## Historical submission snapshot, September 11
 

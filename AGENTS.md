@@ -61,3 +61,20 @@ Before you stop a session, even if the slice is unfinished:
 3. Commit those files with the slice and push the lane branch (or `main` if you are on the shared scaffold).
 
 Hussein or another harness should be able to clone, read STATUS, and continue without the previous chat.
+
+<!-- groundtrack:start version=3 -->
+
+## Groundtrack
+
+Use Groundtrack as the shared engineering memory for this repository.
+
+- Before non-trivial investigation or implementation where prior decisions, failures, or constraints could matter, call `search_experiences`. Start with a focused description of the work, then inspect the results and search one or two materially different adjacent concepts when related components, constraints, failure modes, or prior decisions could change the approach. Do not stop merely because the first search has no exact match; try a meaningfully broader or neighboring query. Keep this expansion bounded, and also search before repeating an approach that may already have been tried.
+- When a relevant experience needs more context or verification, call `get_experience_events` with its id to inspect the underlying raw evidence and provenance.
+- Apply relevant current experiences and heed any caveats that an experience was contradicted, superseded, or expired.
+- Once the effect of a search is known, call `report_experience_use` with its retrieval id. Report when a result changed the approach or avoided a failure, and report `not_helpful` when none applied.
+- After a task reaches a concrete result, call `record_outcome` with a short title, a concise summary, and the retrieval ids for searches that contributed. Include measurements only for sourced, quantified impact on time, cost, reliability, quality, performance, or throughput; tests, typechecks, lint, and builds are validation rather than impact. Include avoided work only when it was explicitly estimated, and never infer unknown values.
+- After a non-obvious discovery, decision, workaround, correction, or failed approach that would help a future agent, call `store_event` promptly with a concise title and an explanation of what happened and why it matters.
+- Do not store routine implementation details, obvious facts, unrestricted transcripts, or secrets.
+- Keep the raw-event ids returned by `store_event`. When the related work lands in a commit or pull request, call `link_outcomes` with those ids and the explicit commit SHA and/or pull-request number. Never infer an outcome from worktree HEAD.
+
+<!-- groundtrack:end -->
