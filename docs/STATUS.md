@@ -2,11 +2,22 @@
 
 This file is the live snapshot. Chat is not the source of truth. If you are a human or an agent picking this up, start here, then `AGENTS.md`.
 
-Updated: 2026-09-11 23:40 EDT
-By: Codex for David, consolidating reviewed lanes
+Updated: 2026-09-13 14:12 EDT
+By: David's local continuation handoff
 Repo: https://github.com/Alienware2000/better-office-hours
-Branch: `lane/drawing-continuity`, integrating current main
-Review: David explicitly authorized consolidation. Hussein's PRs #6, #8, and #9 are merged. David also assigned live Canvas/Grok Bot integration and deployment preparation.
+Branch: `lane/post-hackathon-local`, local only, based on `b74e11a85dab17a5951fdee6cd574b83b91e3c15`
+
+## Current direction: local development, publication frozen
+
+The hackathon submission is complete. David reports that the intended demo recording was not finished, and results are pending. He wants a fresh task to continue product development without changing GitHub or the hosted submission. Local commits are permitted; no pushes (including new branches/tags), PR updates/merges, deployments, production data writes, or production configuration changes until David explicitly lifts this freeze. This supersedes all earlier consolidation and publish instructions below. We have not established what the competition permits after submission; this is David's requested operational boundary, not a claim about contest eligibility.
+
+Read [the post-hackathon handoff](POST_HACKATHON_HANDOFF.md). It records the actual implementation, evidence limits, pending integration work, and suggested local next steps. The old submission-night checklist is historical. Start the new task with a local baseline audit and a prioritized recommendation; do not restart a broad model or microphone rewrite automatically.
+
+Git anchor: `b74e11a` includes merged PRs #6/#8/#9/#10/#12/#13/#14 and the four README screenshots. Last verified public runtime: `fc80ffa`, deployment `dpl_AWysH7j86epXocxZfSayGeafDdQx`, https://better-office-hours.vercel.app. Do not assume the saved project's local `main` is current: it still points to older `f4853db`. This continuation branch preserves the later submitted baseline explicitly. No remote state was changed or re-queried for this handoff.
+
+## Historical submission snapshot, September 11
+
+The sections below retain the build history and validation, including superseded priorities. Read the current direction above first.
 
 ## Consolidation authorized
 

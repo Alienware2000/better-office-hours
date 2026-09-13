@@ -4,6 +4,8 @@ Each lane keeps a few lines here: what works, what is stubbed, what other lanes 
 
 ## voice
 
+September 13: submission is complete and results are pending. David authorized local development in a fresh task on `lane/post-hackathon-local`, based on submitted `b74e11a`. No GitHub pushes/PR changes, deployments, or production changes until explicitly reauthorized. Local commits are fine. See POST_HACKATHON_HANDOFF; older publish/recording directives below are historical. No runtime changes or new provider calls in this handoff.
+
 Submission evidence: README embeds all four newly supplied screenshots (three Cursor, one Grok Bot) from docs/images. Original files copied without editing. Video link still pending. David is recording regular Chrome without Canvas; the connected in-app browser is a different guest context. Do not operate the recording browser.
 
 23:27 public deployment dpl_AWysH7j86epXocxZfSayGeafDdQx verified; course sources continue arriving (24 visible in the header). Runtime fc80ffa. Local :3102 is still the prior fallback.

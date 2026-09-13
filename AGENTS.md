@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Post-hackathon local-only work, September 13, 2026
+
+David has submitted the project and is waiting for results. All new work stays local on `lane/post-hackathon-local` or another explicitly local development branch. Local edits, tests, and commits are authorized. Do not push any branch or tag, open or update PRs, merge on GitHub, deploy to Vercel, or modify production configuration/data unless David explicitly lifts this freeze. This overrides the older push/PR/deployment checklist below and any historical merge authorization in the docs. Keep the submitted baseline and hosted app unchanged. Read `docs/POST_HACKATHON_HANDOFF.md` after the prescribed docs for the current continuation brief.
+
 You are a coding agent working on Better Office Hours, a voice-first tutor for Yale students being built in about 36 hours for a hackathon. Two humans (David and Hussein) run agents on two machines against this repo. Other agents and harnesses will pick up the same repo. The repo is the source of truth, not any chat.
 
 ## Read in this order
