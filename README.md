@@ -4,6 +4,8 @@ A voice tutor that knows your course and talks you to the answer instead of hand
 
 Built by David Antwi and Hussein Zindonda for the Yale AI Association x SpaceXAI hackathon.
 
+Working on this project with a coding agent? Start with [the project memory walkthrough](docs/MEMORY_GUIDE.md). To reproduce the workflow elsewhere, use [the setup recipe](docs/MEMORY_RECIPE.md).
+
 ## Demo
 
 [Open Better Office Hours](https://better-office-hours.vercel.app).

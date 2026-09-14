@@ -4,6 +4,8 @@ Updated: 2026-09-14. Keep this short and current. Search [archived notes](archiv
 
 ## Workflow and environment
 
+- Human reference: [MEMORY_GUIDE](MEMORY_GUIDE.md). Reusable setup: [MEMORY_RECIPE](MEMORY_RECIPE.md). The helper validates/assembles agent-authored notes; it does not summarize chats. Reuse requires adapting BOH policies, names, installer signatures, and storage paths. Keep these long references out of startup packets.
+
 - Shared instructions: root AGENTS.md. Claude imports them through a tracked, instruction-only CLAUDE.md; private overrides belong in ignored CLAUDE.local.md. Cursor's existing always-on rule points to AGENTS. Other tools can consume `npm run context` or the generated continuation brief without a plugin.
 - TASK is the active task checkpoint; archive each completed task under docs/archive/tasks before replacing it. Default context includes authority, task, and checkout orientation only (12,000-character cap); --full includes reference docs (28,000 cap). TASK is capped at 6,000. Strict --check/--write refuse a mismatched branch/base; read-only orientation reports the problem and still helps find the source checkout.
 - `npm run handoff` writes `.data/handoff/CONTINUE.md` and one latest small JSON checkpoint per checkout under `~/.local/share/boh-context/repos/`. Worktrees are automatic; separate clones must be checkpointed to enter the index. It reads curated task notes and Git metadata, not secrets, student files, shell history, or provider logs. It copies no code. Dirty/moved/missing sources remain explicitly marked; snapshots are not proof of current state.

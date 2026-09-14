@@ -1,5 +1,7 @@
 # Working across agents and chats
 
+For the plain-language walkthrough and everyday prompts, start with [Your guide to project memory](MEMORY_GUIDE.md). To recreate the setup in another project, use [the reproduction recipe](MEMORY_RECIPE.md), including starter templates and an agent setup request.
+
 The same repository files carry the project forward regardless of the coding model or chat client. No chat export, background model, extra subscription, or automatic transcript upload is required. This workflow reduces repeated context loading; it cannot expand a model's context window or recover details that nobody recorded.
 
 ## Start here

@@ -11,6 +11,8 @@ All development stays local. No GitHub pushes, PR changes, deployments, or produ
 
 David requested frictionless reorientation across coding agents, fresh chats, and different checkouts. See [TASK](TASK.md) for the active slice and [WORKFLOW](WORKFLOW.md) for commands. Current instructions are in [AGENTS](../AGENTS.md). Historical build notes and completed tasks are [archived](archive/README.md), not current work orders.
 
+David's plain-language [memory walkthrough](MEMORY_GUIDE.md) explains everyday use; the [reproduction recipe](MEMORY_RECIPE.md) provides starter templates and setup instructions for other projects. These are on-demand references.
+
 ## Local runtime
 
 - This runtime checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`, branch above. It is an operational record, not a requirement to use that path everywhere. Run orientation in each checkout. Do not automatically switch to stale main, alter other checkouts, or assume cached code/data is present.
