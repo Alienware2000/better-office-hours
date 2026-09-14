@@ -17,8 +17,10 @@ export const textWidth = (text: string, size: number, math = isMathText(text)) =
     measure.font = `500 100px ${math ? MATH_FONT : LABEL_FONT}`;
     return measure.measureText(text).width / 100 * size;
   }
-  // Server/test fallback. Spaces and superscripts are not full-width letters.
-  return [...text].reduce((sum, char) => sum + (/\s/.test(char) ? .27 : /[il.,:;!|₀-₉²³]/.test(char) ? .32 : /[MW@]/.test(char) ? .95 : /[=+−×]/.test(char) ? .75 : .57), 0) * size;
+  // Server/test fallback. Reserve 12% extra width for system-font variation.
+  // Browser inspection found the old estimate narrower than the rendered labels.
+  // Spaces and superscripts are not full-width letters.
+  return [...text].reduce((sum, char) => sum + (/\s/.test(char) ? .27 : /[il.,:;!|₀-₉²³]/.test(char) ? .32 : /[MW@]/.test(char) ? .95 : /[=+−×]/.test(char) ? .75 : .57), 0) * size * 1.12;
 };
 const width = textWidth;
 const intersects = (a: Box, b: Box) => a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;

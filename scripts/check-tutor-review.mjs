@@ -71,6 +71,8 @@ try {
   playback.seek(Infinity);assert.equal(later.style.opacity,'1');
   playback.seek(0);assert.equal(glyph.style.opacity,'0');assert.equal(stroke.style.strokeDashoffset,'1','Seeking back restores the reveal');
   playback.reset();assert.equal(playback.tracks.length,0);
+  const lineLabel={...lesson,beats:[{...lesson.beats[0],draw:[JSON.stringify({op:'line',id:'spectrum',from:{x:.2,y:.4},to:{x:.8,y:.4},label:'blue to red'})]}]};
+  assert.ok(renderReview({...result,rawContent:JSON.stringify(lineLabel)}).warnings.some(w=>w.includes('line "spectrum"')&&w.includes('does not display')),'Dropped line labels must be visible to the reviewer');
   const clipped={...lesson,beats:[{...lesson.beats[0],draw:Array.from({length:7},(_,i)=>JSON.stringify({op:'circle',id:`object${i}`,center:{x:.4,y:.4},r:.01}))},{...lesson.beats[0],draw:[JSON.stringify({op:'highlight',id:'object6'})]}]};
   const view=renderReview({...result,rawContent:JSON.stringify(clipped)});
   assert.ok(view.warnings.some(w=>w.includes('only the first six')));

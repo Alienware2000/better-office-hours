@@ -36,3 +36,10 @@ for(const text of ['v_x','v_y','x^2','θ',String.raw`\theta`]) {
 }
 for(const text of ['ball','launch speed','current_page','ice cream'])assert.equal(isMathNotation(text),false,'Ordinary labels stay prose');
 console.log('PASS: compact TeX/Unicode labels render as math without changing prose or equation sizing.');
+for (const text of ['line pattern = element fingerprint', 'mass = density × volume', 'concentration ≥ outside concentration', 'speed = 5 metres per second']) {
+ assert.equal(isMathNotation(text),false,'A relation between phrases is prose: '+text);
+ const group=layoutWriting(interpretCommand({op:'text',id:'note-prose',text,at:{x:.5,y:.3}},0).group,[],[]);
+ assert.ok(group.drawables.every(mark=>!mark.math&&!mark.mathDrawing),'Prose keeps its spaces and ordinary lettering');
+}
+for(const text of ['F = ma','v² = v₀² + 2aΔy','x ≈ 3','sin(x) = 0',String.raw`E_{\text{photon}} = E_{\text{upper}} - E_{\text{lower}}`]) assert.ok(isMathNotation(text),'Symbolic equations still typeset: '+text);
+console.log('PASS: relation signs inside prose preserve ordinary text; symbolic equations and explicit LaTeX remain math.');

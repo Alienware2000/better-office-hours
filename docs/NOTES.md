@@ -14,7 +14,7 @@ Updated: 2026-09-14. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
-- David prioritizes first useful audible response over total duration. Astra/Fable astronomy labels collide; prose containing = is misclassified as math. Replay now schedules real glyph/stroke markup from media time. No layout/runtime fix or new provider call. See TUTOR_REVIEW for evidence and next slice.
+- First useful audible response is the latency target. Local label/prose fixes pass both reported boards; no model choice or new paid calls. Scientific colors and line labels remain contract limitations; simpler teaching is untested. See evaluations/2026-09-14-visual-teaching-review.md for evidence, proposed interface work, and acceptance criteria.
 - Quality-first correction: David rejected starting with Flash/Haiku for speed. The active comparison uses flagship reasoning candidates, with explicit effort/budget settings. OpenRouter is now configured privately for benchmark children only; never put its key in notes. Current-stack controls and 8,000-token capability pilots are different experiments.
 - Pilot failure evidence is in TUTOR_EVALUATION and evaluations/2026-09-14-model-pilot.md: Fable's seventh draw was clipped before a highlight referenced it; Opus returned fenced JSON; Gemini returned an empty object twice. No runtime fix. Do not repeat unchanged Gemini requests or treat compatibility failures as intelligence rankings.
 

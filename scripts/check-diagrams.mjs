@@ -64,3 +64,27 @@ const curved = interpretCommand({ op: 'curve', id: 'sampled-path', points: sampl
 for (const point of samples) assert.ok(curved.geometry[0].some(p => Math.hypot(p.x - point.x, p.y - point.y) < 1e-9), 'A marker at a declared sample sits on the curve');
 assert.ok(curved.geometry[0].every(p => p.y >= .25 && p.y <= .65 && p.x >= .1 && p.x <= .9), 'Curve smoothing stays within the sampled extrema');
 console.log('PASS: smooth static curves pass through their declared points without invented extrema.');
+
+const {writingBounds}=load('lib/whiteboard/writing.ts');
+const {labelsOverlap,layoutDiagram}=load('lib/whiteboard/diagram-layout.ts');
+// Synthetic reproductions of the two concentric-circle collisions David saw.
+for (const [heading,center,inner,outer,labels] of [
+ ['Star spectrum and composition',{x:.18,y:.36},.06,.095,['hot interior','cooler gas atmosphere']],
+ ['Starlight and chemical fingerprints',{x:.26,y:.38},.085,.14,['Hot interior','Cooler outer gas']],
+]) {
+ store.resetBoard();
+ const commands=[{op:'text',id:'topic',text:heading,at:{x:.12,y:.12}},
+  {op:'circle',id:'core',center,r:inner,label:labels[0],diagram:{fill:'tint'}},
+  {op:'circle',id:'shell',center,r:outer,label:labels[1]},
+  {op:'arrow',id:'beam',from:{x:center.x+outer+.01,y:center.y},to:{x:.55,y:center.y},label:'Outgoing light'}];
+ store.applyDrawCommands(commands);
+ const state=store.getBoardState(),text=state.groups.flatMap(g=>g.drawables.filter(m=>m.kind==='text'));
+ for(const [i,mark] of text.entries())for(const other of text.slice(i+1))assert.ok(!labelsOverlap(writingBounds(mark),writingBounds(other)),`Labels must not overlap: ${mark.text} / ${other.text}`);
+ for(const group of state.groups.filter(g=>g.source))assert.deepEqual(group.geometry,interpretCommand(group.source,0).group.geometry,'Only annotations move');
+ assert.ok(state.groups.some(g=>g.drawables.some(m=>m.annotation)),'Displaced attached labels retain a leader');
+ assert.deepEqual(layoutDiagram(state.groups),state.groups,'Resolved annotation layout is stable');
+ store.applyDrawCommands([{op:'text',id:'note-1',text:'line pattern = element fingerprint',at:{x:.7,y:.6}}]);
+ assert.equal(store.getBoardState().pageId,state.pageId,'The phrase fits the existing page');
+ assert.ok(store.getBoardState().groups.find(g=>g.id==='note-1').drawables.every(m=>m.kind!=='text'||!m.math),'Phrase does not turn into colored equation glyphs');
+}
+console.log('PASS: concentric-object labels avoid each other and multiline headings, with unchanged geometry and ordinary prose.');

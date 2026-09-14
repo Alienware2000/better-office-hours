@@ -3,7 +3,14 @@ export const hasLatex = (text: string) => /\\[a-zA-Z]+|\\[([]|\$|[_^]\{/.test(te
 // Standalone symbols are labels, not prose or full-size equation rows. Accept
 // ordinary TeX scripts too: v_x must render just like v_{x}.
 export const isCompactMath = (text: string) => /^(?:[a-zA-Zα-ωΑ-Ω]|\\(?:theta|alpha|beta|gamma|phi|omega|Delta|pi))(?:[_^](?:\{[^{}]+\}|[a-zA-Z0-9+-]+)|[²³₀-₉])*$/u.test(text.trim());
-export const isMathNotation = (text: string) => isCompactMath(text) || hasLatex(text) || /[=≈∝≤≥∫∑√]|[²³₀-₉]/.test(text);
+export function isMathNotation(text: string): boolean {
+  if (isCompactMath(text) || hasLatex(text)) return true;
+  if (!/[=≈∝≤≥∫∑√]|[²³₀-₉]/.test(text)) return false;
+  // A relation sign can join ordinary phrases. Only infer math for symbolic
+  // notation; explicit LaTeX remains available for named variables and units.
+  const words = text.match(/[\p{L}]{4,}/gu) ?? [];
+  return words.every(word => /^(?:sin|cos|tan|log|ln|exp|sqrt|lim|arcsin|arccos|arctan|sinh|cosh|tanh|kg|cm|mm|km|ms|Hz|Pa|mol)$/u.test(word));
+}
 
 export function mathSource(text: string): string {
   const source = hasLatex(text) ? text : text.replace(/\b([a-zA-Z])_?(\d+)\b/g, (_, symbol: string, digits: string) => `${symbol}_{${digits}}`);

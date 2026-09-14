@@ -46,8 +46,10 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
   const segments = traces.flatMap(points => points.length === 1 ? [[points[0], points[0]]] : points.slice(1).map((point, i) => [points[i], point]));
   const isLabel = (group: T, mark: TextMark) => mark.diagramLabel || Boolean(group.geometry?.length) ||
     (!mark.heading && !/^(?:topic(?:-|$)|(?:given|note|definition)-)/.test(group.id) && (!isMathText(mark.text) || isCompactMath(mark.text)));
-  const occupied: Box[] = groups.flatMap(group => group.drawables.flatMap(mark => mark.kind === 'text' && !isLabel(group, mark) ? [writingBounds(mark)] : []));
-  return groups.map(group => ({ ...group, drawables: group.drawables.flatMap((mark): Drawable | Drawable[] => {
+  const normalized = groups.map(group => ({ ...group, drawables: group.drawables.map(mark =>
+    mark.kind === 'text' && mark.heading ? { ...mark, fontSize: .048 } : mark) }));
+  const occupied: Box[] = normalized.flatMap(group => group.drawables.flatMap(mark => mark.kind === 'text' && !isLabel(group, mark) ? [writingBounds(mark)] : []));
+  return normalized.map(group => ({ ...group, drawables: group.drawables.flatMap((mark): Drawable | Drawable[] => {
     if (mark.kind === 'path' && mark.annotation) return [];
     if (mark.kind === 'text' && mark.heading) return { ...mark, fontSize: .048 };
     if (mark.kind !== 'text' || !isLabel(group, mark)) return mark;
@@ -63,13 +65,22 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
     for (const distance of [.035, .07, .105, .14, .19]) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, -1], [0, 1], [1, -1], [-1, -1], [1, 1], [-1, 1]]) candidates.push(fit({ x: preferred.x + dx * distance, y: preferred.y + dy * distance }));
     }
-    let best = candidates[0], score = Infinity;
+    // Nearby placement is preferred, but a crowded local region must not force
+    // labels to overlap when there is clear space elsewhere on the page.
+    if (!candidates.some(at => !occupied.some(other => labelsOverlap(writingBounds({ ...base, at }), other)))) {
+      for (let y = margin + size; y <= 1 - margin - size * .25; y += .04)
+        for (let x = margin + half; x <= 1 - margin - half; x += .06) candidates.push({ x, y });
+    }
+    let best = candidates[0], score = [Infinity, Infinity, Infinity];
     for (const at of candidates) {
       const box = writingBounds({ ...base, at });
       const clashes = segments.filter(([from, to]) => crossesLabel(from, to, box)).length;
       const labels = occupied.filter(other => labelsOverlap(box, other)).length;
-      const cost = labels * 100 + clashes * 10 + Math.hypot(at.x - preferred.x, at.y - preferred.y);
-      if (cost < score) { best = at; score = cost; }
+      // Label collisions always outrank geometry costs, regardless of how many
+      // segments represent a circle or a curve. Never trade legibility for ink.
+      const cost = [labels, clashes, Math.hypot(at.x - preferred.x, at.y - preferred.y)];
+      const firstDifference = cost.findIndex((value, index) => value !== score[index]);
+      if (firstDifference !== -1 && cost[firstDifference] < score[firstDifference]) { best = at; score = cost; }
     }
     const placed = { ...base, at: best };
     occupied.push(writingBounds(placed));

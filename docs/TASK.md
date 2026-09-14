@@ -23,11 +23,11 @@ Keep raw output, parser acceptance, rendered layout, and audio timing distinct. 
 
 ## Validation
 
-Offline benchmark and review-server checks cover parsing, isolation, persistence, rendering, request bounds, live progress, and cancellation. Browser verified board stages and a paid two-request biology batch. [Biology results](evaluations/2026-09-14-visible-biology.md) record timings, costs, and animation/page separation. Review/speech checks and lint passed. Browser verified full three-model playback, frozen media time on pause, resumed reveal, and completion. David reports poor Astra/Fable layouts; these remain unresolved. No runtime/frozen file changes.
+Math, diagram/motion, review/speech checks, lint, and TypeScript passed. Browser bounds show no text collisions in both reported final astronomy boards. Model output/audio and frozen files are unchanged; local renderer files changed.
 
 ## Next action
 
-Cached astronomy replay now adds ordered glyph/stroke reveal and Pause / Resume. David prioritizes the first useful audible response, not total duration. Next: fix prose/math classification and label collisions in an isolated renderer slice, then measure fresh end-to-end first audio. See TUTOR_REVIEW for observed defects and replay limits. No runtime switch or new provider calls in this correction.
+Local fixes prioritize label separation, reserve server font slack, and keep prose out of math. Review warns on unsupported line labels. David also rejects complex language and narration about colors absent on screen. [Evidence and next proposal](evaluations/2026-09-14-visual-teaching-review.md): coordinate literal colors/line labels in the frozen drawing contract, then evaluate simpler teaching with matching visuals and fresh first-audio timing. No new provider calls or model switch.
 
 ## Blockers
 
