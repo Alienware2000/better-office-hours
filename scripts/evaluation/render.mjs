@@ -106,3 +106,17 @@ export function renderReview(result, stage = 'final', animationTime = 0) {
   return { pages, stages, warnings, speech: turn?.speech ?? '', error: null,
     notice: 'Reconstruction with the current BOH layout and drawing components. Original rendering, reveal timing, and audio were not recorded.' };
 }
+
+// Keep speech normalization and provider configuration aligned with the tutor.
+export function repositoryModule(relative) { return load(path.join(root, relative)); }
+export function spokenStages(result) {
+  const view = renderReview(result);
+  if (view.error || result.failure) throw new Error('Cannot voice an unusable lesson');
+  let previous = '';
+  return view.stages.map(stage => {
+    const current = renderReview(result, stage.value).speech;
+    if (!current.startsWith(previous)) throw new Error('Speech stages are not cumulative');
+    const text = current.slice(previous.length).trim(); previous = current;
+    return { stage: stage.value, text };
+  });
+}

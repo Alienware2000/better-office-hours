@@ -15,7 +15,7 @@ Local only. Preserve the tutor at 3105, Chrome sessions, private exports, and su
 
 ## Progress
 
-Local review server at 3106 shows thirteen synthetic reports, raw/accepted output, reconstructed boards, timings, live tests, and saved human ratings. Start with npm run review:tutor; see [walkthrough](TUTOR_REVIEW.md). Eleven earlier pilot requests plus two visible biology requests completed. Opus/Astra remain candidates; no model selected. The board policy is recorded, not implemented.
+Local review server at 3106 shows thirteen synthetic reports, raw/accepted output, reconstructed boards, timings, live tests, and saved human ratings. Start with npm run review:tutor; see [walkthrough](TUTOR_REVIEW.md). Eleven earlier pilot requests plus two visible biology requests completed. Opus/Astra/Fable remain candidates; no model selected. The board policy is recorded, not implemented.
 
 ## Decisions
 
@@ -23,11 +23,11 @@ Keep raw output, parser acceptance, rendered layout, and audio timing distinct. 
 
 ## Validation
 
-Offline benchmark and review-server checks cover parsing, isolation, persistence, rendering, request bounds, live progress, and cancellation. Browser verified board stages and a paid two-request biology batch. [Biology results](evaluations/2026-09-14-visible-biology.md) record timings, costs, and animation/page separation. User ratings are still pending. No runtime/frozen file changes.
+Offline benchmark and review-server checks cover parsing, isolation, persistence, rendering, request bounds, live progress, and cancellation. Browser verified board stages and a paid two-request biology batch. [Biology results](evaluations/2026-09-14-visible-biology.md) record timings, costs, and animation/page separation. Speech cache checks and browser playback passed; listening feedback remains pending. No runtime/frozen file changes.
 
 ## Next action
 
-David's feedback favors Astra low for biology; cost and delay remain concerns. Recommend one voiced Astra trial with synchronized board and per-turn cost, rather than asking him to rank more models. No runtime switch is authorized yet. Diagram style standardization is queued for later in DESIGN. Cross-subject/graded checks and saved-session review remain necessary before adoption.
+David authorized testing Opus/Astra/Fable aloud. The review page now plays their saved astronomy answers using 12 cached same-voice clips, with board stages tied to clip playback. Next: David judges listening quality, then test fresh end-to-end latency. Replay does not simulate model waiting. No runtime switch; diagram styling remains deferred.
 
 ## Blockers
 

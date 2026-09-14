@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID, createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import OpenAI from 'openai';
+import { createSpeechReview } from './evaluation/speech.mjs';
 import { cases, createHarness, candidateRequest, measure } from './bench-tutor-models.mjs';
 import { renderReview, renderAcceptedBoard } from './evaluation/render.mjs';
 
@@ -70,7 +71,7 @@ function summary(record, ratings) {
     rating: ratings[record.id] ?? null, eventCount: r.events?.length ?? 0 };
 }
 
-export function createReviewServer({ dataRoot = path.join(root, '.data/evaluation'), port = 3106, generate } = {}) {
+export function createReviewServer({ dataRoot = path.join(root, '.data/evaluation'), port = 3106, generate, synthesize } = {}) {
   noSymlinks(dataRoot);
   const ratingsFile = path.join(dataRoot, 'review/ratings.json');
   let ratings = {};
@@ -86,6 +87,7 @@ export function createReviewServer({ dataRoot = path.join(root, '.data/evaluatio
     return pending;
   }
   const records = () => readReports(dataRoot);
+  const speech = createSpeechReview({ root, dataRoot, records, synthesize });
   async function inputFor(record) {
     if (!requestCache.has(record.result.case)) requestCache.set(record.result.case, await capture(cases.find(c => c.id === record.result.case)));
     const input = requestCache.get(record.result.case).messages;
@@ -145,17 +147,19 @@ export function createReviewServer({ dataRoot = path.join(root, '.data/evaluatio
     const hosts = [`localhost:${actualPort}`, `127.0.0.1:${actualPort}`];
     const send = (status, value, type = 'application/json') => {
       res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
-        'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" });
+        'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; media-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" });
       res.end(type === 'application/json' ? JSON.stringify(value) : value);
     };
     if (!hosts.includes(req.headers.host)) return send(403, { error: 'Local host only' });
     if (req.headers.origin && !hosts.some(host => req.headers.origin === `http://${host}`)) return send(403, { error: 'Same-origin access only' });
     const url = new URL(req.url, `http://${req.headers.host}`);
     try {
-      if (req.method === 'GET' && ['/', '/review.js', '/review.css', '/board.css'].includes(url.pathname)) {
+      if (req.method === 'GET' && ['/', '/review.js', '/speech.js', '/review.css', '/board.css'].includes(url.pathname)) {
         const file = url.pathname === '/' ? path.join(assets, 'review.html') : url.pathname === '/board.css' ? path.join(root, 'components/whiteboard/whiteboard.css') : path.join(assets, url.pathname.slice(1));
         return send(200, fs.readFileSync(file), url.pathname === '/' ? 'text/html; charset=utf-8' : url.pathname.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/css; charset=utf-8');
       }
+      if (req.method === 'GET' && url.pathname === '/api/speech') return send(200, speech.state());
+      if (req.method === 'GET' && url.pathname === '/api/audio') return send(200, speech.audio(url.searchParams.get('key') ?? ''), 'audio/mpeg');
       if (req.method === 'GET' && url.pathname === '/api/state') return send(200, { csrf, reports: records().map(r => summary(r, ratings)), job,
         models, cases: cases.map(({ id, prompt, review }) => ({ id, prompt, review })) });
       if (req.method === 'GET' && url.pathname === '/api/reviews') return send(200, ratings);
@@ -175,6 +179,7 @@ export function createReviewServer({ dataRoot = path.join(root, '.data/evaluatio
       if (req.method !== 'POST') return send(404, { error: 'Not found' });
       if (!req.headers.origin || req.headers['x-review-token'] !== csrf || !req.headers['content-type']?.startsWith('application/json')) return send(403, { error: 'Same-origin review token required' });
       const value = await body(req);
+      if (url.pathname === '/api/speech/prepare') { void speech.prepare(); return send(202, { started: true }); }
       if (url.pathname === '/api/rating') {
         if (!records().some(r => r.id === value.id)) return send(404, { error: 'Report not found' });
         const rating = { updatedAt: new Date().toISOString() };

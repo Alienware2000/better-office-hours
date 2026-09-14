@@ -2,6 +2,18 @@
 
 The local review page is [http://localhost:3106](http://localhost:3106). Start it from this checkout with `npm run review:tutor`. Keep that terminal running. This is a separate developer workshop; the voice tutor still runs at port 3105.
 
+## Listen to the three candidates
+
+The listening panel at the top now plays **Opus low, Astra low, then Fable low** on the same saved astronomy question. Press **Play comparison**, or replay one model with its listen button. Native audio controls pause/resume the current section; **Stop** cancels the sequence. The board appears when each clip actually starts playing. The page scrolls to the listening area once at the start. These are complete accepted sections, with no manual shortening or diagram repair.
+
+This is newly synthesized, cached audio of the existing model responses, not a fresh model-latency run. Original speech/board readiness and model cost are displayed separately. No artificial model wait is inserted. The current board renderer reconstructs each stage; stroke-reveal animation and the complete student voice loop are not reproduced. Animation previews use the clip's audio time, with board refreshes driven by the audio timeupdate event, not word alignment.
+
+On September 14, twelve clips were prepared through the existing TTS route implementation using Jessica and eleven_v3_conversational. Submitted normalized text totaled 1,386 characters. Audio duration was about 25.44 seconds for Opus, 27.12 for Astra, and 40.40 for Fable, excluding gaps between clips. All clips decoded and contained non-silent audio. Browser playback advanced automatically through the three candidates and updated their boards. That verifies software playback, not David's listening verdict or physical speaker volume.
+
+Audio preparation consumes ElevenLabs credits. The existing route does not return dollar cost, so it remains explicitly unknown. Clips, per-clip synthesis timings, character counts, and comparison metadata are stored privately under `.data/evaluation/speech/`. Each clip is cached by normalized text, voice, TTS model, and route source hash. GET and replay do not make provider calls. Preparing again reuses completed clips. There were no new model calls for this listening comparison. The three source reports share the same input hash, low effort, and 8,000-token budget; returned providers still differ.
+
+The speech service accepts only the fixed synthetic astronomy comparison, never arbitrary browser text or private session exports. It reads only speech configuration from the local environment file. Check it offline with `node scripts/check-tutor-speech.mjs`; this uses disposable fixtures and mocked audio. Restart the review server after changing speech source/configuration. For an actual responsiveness test, the next slice must measure a fresh model request through synthesis and audible playback, with the corresponding board, in an isolated voice runtime.
+
 ## Your first review
 
 1. Open the page. It selects the latest low-effort Opus and Astra results. Choose the same lesson in both result menus for a meaningful comparison. On a wide browser window they sit side by side; a narrow window stacks them.
@@ -24,7 +36,7 @@ The initial controls offer Opus 5 and GPT-6 Astra because the preceding compatib
 
 The page can expose model output, parser rejection, dropped commands, missing highlight targets, layout/page changes, motion at a chosen time, and the delay before usable structured output arrives. Automatic warnings are structural checks, not a complete semantic review.
 
-These are synthetic deep-teaching requests. The page does not run the microphone, speech recognition, routing lane, retrieval, graded-content playback filtering, synthesis, audio scheduling, or the full student interface. Reconstructions bypass stroke-reveal animation and use the current renderer. They do not prove what a student saw during an earlier session. New progress snapshots contain accepted speech/board data and timestamps, not hidden reasoning or audio. Polling can add up to about two seconds to what you see live; the stored readiness clock is taken inside the benchmark, not from the poll.
+These are synthetic deep-teaching requests. The report comparison does not run the microphone, speech recognition, routing lane, retrieval, graded-content playback filtering, or the full student interface. The separate listening panel adds newly synthesized section-by-section playback, not the production scheduler. Reconstructions bypass stroke-reveal animation and use the current renderer. They do not prove what a student saw during an earlier session. Model progress snapshots contain accepted speech/board data and timestamps, not hidden reasoning or audio; listening clips are stored separately. Polling can add up to about two seconds to what you see live; the stored readiness clock is taken inside the benchmark, not from the poll.
 
 The first eleven historical reports contain only readiness milestones, not incremental snapshots. Current input can be inspected only when its hash matches the historical report. Different hashes, effort/budget, providers, and source revisions should not be treated as a controlled model comparison. Source revision plus a dirty flag does not capture every uncommitted file.
 
