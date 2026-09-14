@@ -48,6 +48,10 @@ async function run(text, finish = 'stop', before = []) {
 }
 const result = await run(JSON.stringify(lesson), 'stop', [{ choices: [{ delta: { reasoning: 'Reasoning must not count as speech or appear in the report.' } }] }]);
 assert.equal(result.firstContentMs, 110);
+assert.ok(result.events.length >= 3);
+assert.ok(result.events.some(e => e.speech && e.firstSpeechReadyMs !== null));
+assert.ok(result.events.some(e => e.board && e.firstBoardReadyMs !== null));
+assert.ok(result.events.every((e,i) => i === 0 || e.atMs >= result.events[i-1].atMs));
 assert.ok(result.firstSpeechReadyMs > result.firstContentMs);
 assert.ok(result.firstBoardReadyMs > result.firstSpeechReadyMs, 'JSON arrival and playable visual are different milestones');
 assert.equal(result.appParsed, true);

@@ -55,6 +55,10 @@ The harness requests latency-sorted providers, requires support for the supplied
 
 All candidates receive the same messages and lesson schema. Temperature, output budget, model, effort, and provider options are explicit experimental settings. Match them when attributing a change to the model; distinguish capability pilots from current-stack controls. Request hashes, source revision, dirty state, completion reason, and usage are reported. A length-truncated or interrupted response fails even if some early content was usable. Token/cost usage is preserved when returned; no cost is inferred when unavailable.
 
+## Visible human review
+
+David requested direct observability and his own performance judgment. Run `npm run review:tutor` and open [localhost:3106](http://localhost:3106). The [walkthrough](TUTOR_REVIEW.md) explains comparing reconstructed boards, inspecting raw/accepted output, saving judgments, and watching bounded paid tests. It uses the real board components in a separate local server. The [first visible biology comparison](evaluations/2026-09-14-visible-biology.md) adds two samples and a page-continuity finding; no winner is selected.
+
 ## Commands
 
 Run from this repository root with dependencies installed:

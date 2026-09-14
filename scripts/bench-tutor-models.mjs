@@ -93,13 +93,14 @@ export function candidateRequest(baseline, route, model, effort = 'low', setting
   return request;
 }
 
-export async function measure(createStream, request, harness, testCase, now = () => performance.now()) {
+export async function measure(createStream, request, harness, testCase, now = () => performance.now(), onProgress = () => {}) {
   const started = now();
   const result = { case: testCase.id, modelRequested: request.model, modelReturned: null, providerReturned: null,
     firstContentMs: null, firstSpeechReadyMs: null, firstBoardReadyMs: null, totalMs: null,
     finishReason: null, appParsed: false, boardRepairNeeded: null, boardPresent: false,
-    usage: null, failure: null, humanReview: 'pending', reviewCriteria: testCase.review };
+    usage: null, failure: null, humanReview: 'pending', reviewCriteria: testCase.review, events: [] };
   let raw = '';
+  let previousSpeech = '', previousBoard = '';
   const ids = (testCase.board?.tutorItems ?? []).map(item => item.id);
   const hasBoard = turn => turn.teaching?.visual !== 'none' && Boolean(turn.board) && !harness.needsBoardRepair(turn, null, ids);
   try {
@@ -119,6 +120,14 @@ export async function measure(createStream, request, harness, testCase, now = ()
       const turn = harness.parseAgentTurn(harness.conceptProgress(raw));
       if (turn.speech) result.firstSpeechReadyMs ??= Math.round(now() - started);
       if (hasBoard(turn)) result.firstBoardReadyMs ??= Math.round(now() - started);
+      const boardJSON = JSON.stringify(turn.board ?? null);
+      if (turn.speech !== previousSpeech || boardJSON !== previousBoard) {
+        const event = { atMs: Math.round(now() - started), speech: turn.speech, board: turn.board ?? null,
+          firstContentMs: result.firstContentMs, firstSpeechReadyMs: result.firstSpeechReadyMs, firstBoardReadyMs: result.firstBoardReadyMs };
+        result.events.push(event);
+        onProgress(event);
+        previousSpeech = turn.speech; previousBoard = boardJSON;
+      }
     }
     const turn = harness.parseAgentTurn(harness.conceptResponse(raw));
     result.appParsed = true;
