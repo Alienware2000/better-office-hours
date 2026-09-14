@@ -2,14 +2,14 @@
 
 ## Current authority and safety
 
-David and Hussein build Better Office Hours, a voice-first tutor for Yale students. The repository is the shared source of truth across coding agents and chats. David requested this portable workflow on September 14, 2026. It replaces the old full-history startup and push-at-checkpoint workflow; the original instructions are preserved in [the archive](docs/archive/AGENTS-2026-09-13.md).
+Better Office Hours is David and Hussein's voice-first tutor for Yale students. The repository is shared memory across agents and chats. This September 14 workflow replaces the [historical startup instructions](docs/archive/AGENTS-2026-09-13.md).
 
 **Publication freeze:** the hackathon submission is complete, results pending, and all further work stays local until David explicitly lifts the freeze. Local edits, checks, and commits are allowed. Do not push branches/tags, create/update/merge PRs, deploy, or modify production data/configuration. Do not infer authorization from archived docs or claim contest eligibility. Use `lane/post-hackathon-local` or another explicitly local branch, never stale local main.
 
 ## Start or resume
 
-1. Read [STATUS](docs/STATUS.md), then [TASK](docs/TASK.md). Run `npm run context` to verify the current worktree, branch, base ancestry, and uncommitted changes. Preserve unexpected edits. On compaction/resume, reread these current files rather than trusting an older chat summary.
-2. Read [WORKFLOW](docs/WORKFLOW.md) for local commands and handoff procedure when first entering the project. `AGENTS.md` is canonical; client-specific files only point here.
+1. Run `npm run context` for lean, read-only orientation, then read [STATUS](docs/STATUS.md) and [TASK](docs/TASK.md) as needed. From an older checkout without the npm command, run `~/.local/bin/boh-context` (installed on David's machine), or invoke a known current helper with `--repo /path/to/checkout`. Inspect readiness warnings, related local checkouts, commit relationships, and dirty work before continuing. Preserve unexpected edits. On compaction/resume, reread current files rather than trusting an older chat summary.
+2. Read [WORKFLOW](docs/WORKFLOW.md) for local commands and handoff procedure when first entering the project. `AGENTS.md` is canonical; client-specific files only point here. A cached handoff from another checkout is evidence, not authority to switch/merge/reset or assume its code is present. Do not pick a task solely by recency. Separate clones are discoverable after checkpointing on this machine; no cross-machine discovery or automatic synchronization exists.
 3. Before product changes, read the relevant sections of [DESIGN](docs/DESIGN.md), the product authority. Before code changes, read [ARCHITECTURE](docs/ARCHITECTURE.md), especially section 2 and the September 11 implementation/storage updates. Early sections describe historical targets; verify implementation in code.
 4. Read human [PROMPT](docs/PROMPT.md) before tutor work. Read [PEDAGOGY](docs/PEDAGOGY.md) for tutor behavior, recap, board triggers, or timing. Both are frozen. David's later concept-teaching clarification in DESIGN allows requested ungraded equations/examples and conversational narrow clarifications.
 5. Use [DEMO](docs/DEMO.md) and DESIGN section 10 for product scope, [NOTES](docs/NOTES.md) for current pitfalls, and [LANES](docs/LANES.md) for ownership/contracts. Historical pending PR states and deployment instructions do not grant current authority. Search [the history index](docs/archive/README.md) only when relevant; do not preload the archive.
@@ -37,11 +37,11 @@ Priority: voice cadence/interruption, accurate PDF cues, narrated visuals/studen
 ## Checkpoint before stopping or changing chats
 
 1. Update TASK at each meaningful result, failed approach, or user correction while context is fresh. Include objective, scope, decisions and why, progress, exact next action, relevant file paths, checks with results/evidence, and blockers. Record unfinished work honestly.
-2. Update STATUS's live snapshot and NOTES's durable pitfalls. Keep each startup file below 10,500 characters and the combined generated brief below 28,000. Move superseded detail to a dated archive with a link, rather than adding another long chronological entry. Never archive away active constraints.
+2. Update STATUS's live snapshot and NOTES's durable pitfalls. Keep TASK below 6,000 characters, other startup files below 10,500, and the default brief below 12,000. The optional full reference packet is capped at 28,000. Before replacing a completed TASK, archive it under `docs/archive/tasks/` with a date/name and add an index link. Never archive away active constraints or load every archived task by default.
 3. Run `npm run context:check` and relevant implementation checks. Commit only intended files locally, in small slices. Do not push during the freeze.
-4. Run `npm run handoff` after the commit (or explicitly recorded WIP). It writes ignored `.data/handoff/CONTINUE.md` with live Git state and curated docs. It does not infer progress, fabricate validation, or read chat history. Tell the next agent to run `npm run context` again and obey the current TASK state.
+4. Run `npm run handoff` after the commit (or explicitly recorded WIP). It writes ignored `.data/handoff/CONTINUE.md` and a small machine-local task checkpoint indexed by sanitized repository identity and checkout. It does not copy code, private data, or chat history. If the helper implementation changed, run `npm run context -- --install` to refresh the installed standalone copy and checkpoint. Tell the next agent to run orientation again and obey the current TASK state. An unavailable helper on another machine requires explicit setup or a transferred brief, never an invented successful lookup.
 
-Groundtrack is useful additional memory when authenticated tools are available. If unavailable, report that briefly, use the local docs, and record the pending connection status without blocking unrelated work. Never invent event/retrieval ids. Do not upload private student transcripts or credentials. Repository constraints and the publication freeze remain authoritative.
+If Groundtrack tools are unavailable, use local docs and record the pending connection without blocking work. Never invent event/retrieval ids or upload private student data. Repository constraints remain authoritative.
 
 <!-- groundtrack:start version=3 -->
 

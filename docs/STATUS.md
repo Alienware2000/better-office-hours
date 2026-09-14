@@ -9,11 +9,11 @@ Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
 
 All development stays local. No GitHub pushes, PR changes, deployments, or production data/configuration changes until David explicitly lifts the publication freeze. Submission is complete; results pending; the intended demo recording was not finished. Contest post-submission rules have not been verified.
 
-David requested a local stack restart and a workspace that supports switching coding agents and starting fresh chats. See [TASK](TASK.md) for this slice and [WORKFLOW](WORKFLOW.md) for repeatable commands. Current instructions are in [AGENTS](../AGENTS.md). Historical build notes are [archived](archive/README.md), not current work orders.
+David requested frictionless reorientation across coding agents, fresh chats, and different checkouts. See [TASK](TASK.md) for the active slice and [WORKFLOW](WORKFLOW.md) for commands. Current instructions are in [AGENTS](../AGENTS.md). Historical build notes and completed tasks are [archived](archive/README.md), not current work orders.
 
 ## Local runtime
 
-- Current checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`, branch above. Do not switch to the saved project's stale main or edit the previous worktree.
+- This runtime checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`, branch above. It is an operational record, not a requirement to use that path everywhere. Run orientation in each checkout. Do not automatically switch to stale main, alter other checkouts, or assume cached code/data is present.
 - Start: `npm ci`, then `npm run dev:local`. Default URL: http://localhost:3105, bound to loopback. Runtime data lives in this checkout's ignored `.data`; this is a separate browser origin from the old 3102 preview.
 - September 14: no old BOH listener was running. Ports 3000/3001/3002 belonged to Adventure World and were left alone. Earlier worktrees, PDF storage, and browser sessions were preserved.
 - Only xAI and ElevenLabs API settings were copied privately from the prior worktree. Local signing secrets were newly generated. No production storage, Google OAuth, or production signing credentials were copied. The local launcher disables cloud storage and Google auth even if inherited/configured.
@@ -36,6 +36,8 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Next
 
-The local stack and portable workflow slice is complete. `npm run context:check`, offline workflow integration checks, focused script lint, and whitespace checks pass. The historical archives match their original bytes; frozen contracts/human prompts are unchanged. See TASK for exact evidence and limitations. Use `npm run handoff` before moving to another agent/chat; it creates an ignored continuation brief without sending data anywhere.
+Local stack and initial workflow setup completed at 75412c1. The checkout-aware follow-up makes default orientation lean and read-only even in old/detached checkouts. Git worktrees are discovered automatically; `npm run handoff` also records a small local checkpoint so separately registered clones can find each other. The standalone helper is installed outside this checkout with `npm run context -- --install`. No cloud sync, code copying, or automatic switching occurs; unavailable commits and uncommitted work are explicitly flagged.
+
+Both isolated workflow regression suites, script lint, context budgets, and read-only orientation in the actual older checkout pass. See TASK for validation details. Use `npm run handoff` before moving to another agent/chat. Completed task detail moves to the dated task archive. For another machine, explicitly transfer/share committed code and a checkpoint while respecting the publication freeze; the local index does not span computers.
 
 Gather David's next concrete product issue against the new local desk. Cadence and visual correctness evaluation remain the recommended next product slice; cloud memory and auth/collector reconciliation are separate. No current acoustic quality or full production-build result is implied by the workflow checks.

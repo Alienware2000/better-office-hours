@@ -3,46 +3,38 @@
 Updated: 2026-09-14
 State: complete
 Branch: lane/post-hackathon-local
-Base: 0d345a126050f969f662ea7259f93b2087f538a4
+Base: 75412c16864bbc2988e45e2b1a411c4727ccb13f
 
 ## Objective
 
-David asked to continue building locally, close the old stack, start this checkout, and make it easy to switch coding agents or fresh chats without losing the working context.
+Make reorientation work across different local checkouts and fresh chats while keeping active context lean. David wants the agent to handle this without making him manage files or worktrees.
 
 ## Scope and constraints
 
-This slice covers local developer setup, shared agent instructions, compact checkpoint documents, and a portable continuation command. Preserve app behavior, prior worktrees, old browser saves and data. Publication freeze remains in force. No pushes, PR changes, deployments, production writes, provider migration, paid benchmarks, or edits to lib/types.ts or human PROMPT/PEDAGOGY.
+Local developer workflow only. Preserve other checkouts, uncommitted work, tutor data, running sessions, frozen contracts, and human prompts. No GitHub/production writes, pushes, automatic branch switches, merges, or provider calls. Keep a simple dependency-free CLI and plain Markdown, not a background service.
 
 ## Progress
 
-- Installed current lockfile dependencies. No old BOH listener existed; unrelated Adventure World services were left alone.
-- Started this worktree on localhost:3105 with local data and private provider keys. Production storage and OAuth settings are disabled in the local launcher; signing secrets are newly generated.
-- Root/health HTTP 200 and tutor start screen verified. Health reports provider key presence, not credential validity/credits or acoustic quality.
-- Preserved the previous STATUS, NOTES, and AGENTS verbatim in docs/archive. Replaced the live summaries with compact current state, preserved Groundtrack policy, and added Claude/Cursor bridges to canonical AGENTS.md.
-- Added context/check/handoff commands and a local-only dev entry point. Setup validation passed. The tutor is left running and visible; publication remains frozen.
+- Archived the completed setup task at docs/archive/tasks/2026-09-14-portable-workflow.md.
+- Confirmed the original command stops on branch mismatch and has no shared index for separate clones.
+- Implemented checkout discovery, a standalone installed helper, and a lean default brief with full details on demand.
+- Installed the helper outside the checkout and verified read-only orientation in the actual older b640 checkout. Added workflow instructions and isolated regression checks.
 
 ## Decisions
 
-- Use repository Markdown and a dependency-free Node script as the portable core. A client plugin or paid memory service is not required to resume work.
-- Keep project state, active task, durable pitfalls, and historical evidence in separate documents. Load old history by search only. Summaries must be updated by the working agent; the exporter does not hallucinate missing context.
-- TASK Base records the starting commit, not a constantly rewritten self-referential HEAD. The generator verifies ancestry and includes the actual HEAD/dirty state every run.
-- Track only a thin CLAUDE.md import; keep private Claude overrides ignored. This replaces the old rule that ignored every CLAUDE.md, as part of David's agent-portability request.
-- Start on port 3105 with separate storage. No automatic origin/session migration. Existing xAI/ElevenLabs settings were copied locally by name allowlist; no production credentials were copied.
+- Git worktrees are discovered automatically; separate clones are remembered when explicitly checkpointed/registered. Repository identity comes from the sanitized origin, or common Git directory when no origin exists. No disk-wide search or cloud synchronization.
+- Local index stores curated task checkpoints and source commit/dirty metadata. It is evidence, not new authorization. Read actual checkout status and compare commit ancestry before advising where to continue; never select a task just because its timestamp is newest.
+- Default orientation should work even when TASK or the matching branch is absent. Strict validation still blocks writing a misleading checkpoint.
+- Install a standalone helper outside checkouts so older branches or removed source checkouts do not remove the entry point. Do not change shell profiles or other coding-agent configuration.
 
 ## Validation
 
-- PASS: npm ci; root and health GET; visible initial UI with voice inactive.
-- PASS: context integrity and size checks; offline disposable-repository checks for dirty work, wrong branch/base, missing next action, oversized context, broken links, private data exclusion, and symlink output protection (including dangling links).
-- PASS: actual local launcher against a synthetic dev task using Next's dotenv loader, proving cloud/OAuth overrides beat inherited and file settings; occupied-port owner preservation; external-data-link rejection.
-- PASS: focused ESLint for the three workflow scripts, git diff whitespace check, byte-identical historical archives, ignored credentials, unchanged lib/types.ts and human PROMPT/PEDAGOGY.
-- No human microphone, paid inference, or current full-app production build claimed. Runtime product code is unchanged.
+Passed both offline workflow suites: sibling worktrees, separate clones, repository isolation, absent commits, dirty/moved sources, old-checkout discovery, installed helper survival, strict validation, private-data exclusion, and no-mutation checks. Local launcher guards also pass. ESLint for all three changed scripts and git diff --check pass. Default and full context fit their budgets. Actual old-checkout orientation succeeds without modifying it. No tutor source changes, model calls, or production writes.
 
 ## Next action
 
-This setup slice is complete. David can use the local desk and describe the next concrete product issue. On his next request, replace this task with that bounded slice and set Base to the new starting commit. Recommended product work is cadence and visual-correctness evaluation; no broad provider/auth rewrite has been selected. Do not restart the setup or reload an active voice session unnecessarily.
-
-Key files: scripts/context.mjs, scripts/dev-local.mjs, AGENTS.md, docs/WORKFLOW.md, docs/STATUS.md, docs/NOTES.md, and client bridge files. Local URL: http://localhost:3105.
+Use David's next concrete tutor issue to create the next task. Archive this completed TASK before replacing it. In a fresh chat, run npm run context or the installed ~/.local/bin/boh-context from the current checkout, inspect relevant source checkpoints, and reconcile available code before implementation.
 
 ## Blockers
 
-Groundtrack tools are not loaded in this task. Sign-in, hook approval, and the prescribed single verification event remain pending. This does not block the local workflow. No other setup blocker is known.
+Groundtrack tools remain unavailable. Cross-machine discovery requires transferred commits or an explicitly shared checkpoint; the local registry cannot discover another computer. No other blocker.

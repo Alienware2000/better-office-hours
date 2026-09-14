@@ -1,7 +1,7 @@
 // Offline integration checks in disposable repositories. Never starts the tutor.
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, symlinkSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, symlinkSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,13 +9,13 @@ import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const fixture = mkdtempSync(join(tmpdir(), 'boh-workflow-'));
+const fixture = realpathSync(mkdtempSync(join(tmpdir(), 'boh-workflow-')));
 const git = (...args) => execFileSync('git', args, {cwd: fixture, encoding:'utf8', stdio:['ignore','pipe','pipe']}).trim();
 function put(file, text) { mkdirSync(dirname(join(fixture,file)), {recursive:true}); writeFileSync(join(fixture,file),text); }
 function copy(file) { put(file, readFileSync(join(root,file))); }
 function run(script, args = [], env = {}) {
-  return spawnSync(process.execPath, [join(fixture, 'scripts', script), ...args], {
-    cwd: tmpdir(), encoding:'utf8', timeout:15_000, env:{...process.env, ...env},
+  return spawnSync(process.execPath, [join(fixture, 'scripts', script), ...(script === 'context.mjs' ? ['--repo', fixture] : []), ...args], {
+    cwd: tmpdir(), encoding:'utf8', timeout:15_000, env:{...process.env, BOH_CONTEXT_HOME:join(fixture,'.data/context-index'), ...env},
   });
 }
 function pass(result) { assert.equal(result.status, 0, result.stderr || result.stdout); }
@@ -23,7 +23,7 @@ function fail(result, text) { assert.notEqual(result.status, 0); assert.match(re
 let probe;
 try {
   for (const file of ['AGENTS.md','CLAUDE.md','.gitignore','.cursor/rules/handoff.mdc','scripts/context.mjs','scripts/dev-local.mjs']) copy(file);
-  for (const folder of ['docs', 'docs/archive']) for (const file of readdirSync(join(root,folder))) if (file.endsWith('.md')) copy(`${folder}/${file}`);
+  for (const folder of ['docs', 'docs/archive', 'docs/archive/tasks']) for (const file of readdirSync(join(root,folder))) if (file.endsWith('.md')) copy(`${folder}/${file}`);
   git('init', '-b', 'lane/post-hackathon-local');
   git('add','.');
   git('-c','user.name=Workflow test','-c','user.email=workflow@example.invalid','-c','commit.gpgsign=false','commit','-m','Synthetic workflow fixture');
