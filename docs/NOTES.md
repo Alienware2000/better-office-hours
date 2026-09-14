@@ -14,6 +14,7 @@ Updated: 2026-09-14. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
+- David prefers fewer choices and found Astra low promising for biology. Recommend a single voiced trial with cost visibility; no formal ratings or runtime selection were inferred. Diagram design-language work is deferred in DESIGN.
 - Quality-first correction: David rejected starting with Flash/Haiku for speed. The active comparison uses flagship reasoning candidates, with explicit effort/budget settings. OpenRouter is now configured privately for benchmark children only; never put its key in notes. Current-stack controls and 8,000-token capability pilots are different experiments.
 - Live synthetic discovery: Fable emitted seven DRAW strings in one beat; conceptResponse keeps six, dropping abs-label before a later highlight targets it. This reproduces a missing-target mechanism, not David's uninspected Chrome session. Benchmark detects unresolved highlights; no runtime fix. Opus initially returned fenced JSON; Gemini returned an empty object twice despite strict format requests. Stop identical Gemini retries and investigate schema/provider handling. Treat these as integration failures, not intelligence rankings.
 

@@ -27,7 +27,7 @@ Offline benchmark and review-server checks cover parsing, isolation, persistence
 
 ## Next action
 
-David reviews the latest Opus/Astra boards and records judgments in the page. Then repeat across subjects, control providers, and measure actual audible/visual latency in an isolated voice runtime. Investigate page continuity and schema failures with focused cases. Review every saved Chrome session separately. Archive only when the agreed latency slice is complete.
+David's feedback favors Astra low for biology; cost and delay remain concerns. Recommend one voiced Astra trial with synchronized board and per-turn cost, rather than asking him to rank more models. No runtime switch is authorized yet. Diagram style standardization is queued for later in DESIGN. Cross-subject/graded checks and saved-session review remain necessary before adoption.
 
 ## Blockers
 
