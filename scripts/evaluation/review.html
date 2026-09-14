@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tutor review · Better Office Hours</title><link rel="stylesheet" href="/review.css"><link rel="stylesheet" href="/board.css"><script defer src="/review.js"></script><script defer src="/speech.js"></script></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tutor review · Better Office Hours</title><link rel="stylesheet" href="/review.css"><link rel="stylesheet" href="/board.css"><script defer src="/review.js"></script><script defer src="/board-playback.js"></script><script defer src="/speech.js"></script></head>
 <body><header><div><p class="eyebrow">BETTER OFFICE HOURS / WORKSHOP</p><h1>Put the tutor to the test.</h1><p>Compare the teaching, inspect the board, and make your own call.</p></div><span class="badge">LOCAL REVIEW</span></header>
 <main><div id="message" role="status" aria-live="polite"></div>
 <section id="listening" class="card listening">
 <p class="eyebrow">ONE LISTENING TEST / THREE MODELS</p><h2>Hear the astronomy lesson.</h2>
-<p>Opus low, Astra low, then Fable low. Same question and tutor voice. Boards advance with each spoken section.</p>
-<p class="small">Cached replay, not a live latency test. Original model waiting times are shown separately. Preparing audio uses ElevenLabs credits; replaying it makes no paid requests.</p>
-<div class="listen-actions"><button id="prepare-speech">Prepare comparison audio</button><button id="play-comparison" class="primary" disabled>Play comparison</button><button id="stop-speech" disabled>Stop</button></div>
+<p>Opus low, Astra low, then Fable low. Same question and tutor voice. Writing types in and strokes draw in sequence with each spoken section.</p>
+<p class="small">Cached replay, not a live latency test. Primary latency target: first useful audible response. That end-to-end timing is not measured by this replay. Preparing audio uses ElevenLabs credits; replaying it makes no paid requests.</p>
+<div class="listen-actions"><button id="prepare-speech">Prepare comparison audio</button><button id="play-comparison" class="primary" disabled>Play comparison</button><button id="pause-speech" disabled>Pause</button><button id="stop-speech" disabled>Stop</button></div>
 <p id="speech-status" role="status">Checking saved audio…</p><div id="listen-models"></div>
 <div id="listen-stage" hidden><h2 id="listen-title"></h2><p id="listen-metrics" class="small"></p><audio id="listen-audio" controls preload="auto"></audio><p id="listen-caption" class="speech"></p><div id="listen-board"></div><p id="listen-warning" class="small"></p></div>
 </section><section class="toolbar"><label>Lesson <select id="case-filter"><option value="all">All subjects</option></select></label><span id="report-count"></span><button id="export">Export my reviews</button></section>

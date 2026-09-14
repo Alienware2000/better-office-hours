@@ -28,6 +28,7 @@ function load(file) {
   return mod.exports;
 }
 const store = load(path.join(root, 'lib/whiteboard/store'));
+const { groupReveal } = load(path.join(root, 'lib/whiteboard/reveal'));
 const { BoardDrawing } = load(path.join(root, 'components/whiteboard/BoardDrawing'));
 const { conceptResponse } = load(path.join(root, 'lib/agent/concept-response'));
 const { parseAgentTurn } = load(path.join(root, 'lib/agent/tags'));
@@ -54,7 +55,7 @@ export function renderAcceptedBoard(caseId, board, snapshots = [{ board }]) {
     React.createElement(BoardDrawing, { groups: state.groups, student: [], animation: state.animation, time: 0, focus: state.focus, earlier: true })));
 }
 
-export function renderReview(result, stage = 'final', animationTime = 0) {
+export function renderReview(result, stage = 'final', animationTime = 0, includeReveal = false) {
   const fixture = cases.find(c => c.id === result.case);
   let lesson;
   try { lesson = JSON.parse(result.rawContent); } catch { /* Preserve parser failure, never strip fences here. */ }
@@ -101,7 +102,13 @@ export function renderReview(result, stage = 'final', animationTime = 0) {
     const svg = renderToStaticMarkup(React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 1 1', preserveAspectRatio: 'none', role: 'img', 'aria-label': `Reconstructed tutor board page ${page.id}` },
       React.createElement(BoardDrawing, { groups: page.groups, student: page.student, animation: page.animation, time,
         focus: page.focus, pulseId: state.pulseId, earlier: true })));
-    return { page: page.id, svg, duration, ids: page.groups.map(g => g.id) };
+    const reveals = includeReveal ? page.groups.map(group => ({
+      id: group.id, source: JSON.stringify(group.source ?? group.drawables), duration: groupReveal(group).duration,
+      svg: renderToStaticMarkup(React.createElement('svg', null, React.createElement(BoardDrawing, {
+        groups: [group], student: [], animation: null, time: 0, focus: null, enteringId: group.id, earlier: false,
+      }))),
+    })) : undefined;
+    return { page: page.id, svg, duration, ids: page.groups.map(g => g.id), reveals };
   });
   return { pages, stages, warnings, speech: turn?.speech ?? '', error: null,
     notice: 'Reconstruction with the current BOH layout and drawing components. Original rendering, reveal timing, and audio were not recorded.' };

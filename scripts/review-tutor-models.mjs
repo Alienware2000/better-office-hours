@@ -154,7 +154,7 @@ export function createReviewServer({ dataRoot = path.join(root, '.data/evaluatio
     if (req.headers.origin && !hosts.some(host => req.headers.origin === `http://${host}`)) return send(403, { error: 'Same-origin access only' });
     const url = new URL(req.url, `http://${req.headers.host}`);
     try {
-      if (req.method === 'GET' && ['/', '/review.js', '/speech.js', '/review.css', '/board.css'].includes(url.pathname)) {
+      if (req.method === 'GET' && ['/', '/review.js', '/speech.js', '/board-playback.js', '/review.css', '/board.css'].includes(url.pathname)) {
         const file = url.pathname === '/' ? path.join(assets, 'review.html') : url.pathname === '/board.css' ? path.join(root, 'components/whiteboard/whiteboard.css') : path.join(assets, url.pathname.slice(1));
         return send(200, fs.readFileSync(file), url.pathname === '/' ? 'text/html; charset=utf-8' : url.pathname.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/css; charset=utf-8');
       }
@@ -174,7 +174,7 @@ export function createReviewServer({ dataRoot = path.join(root, '.data/evaluatio
           reviewCriteria: r.reviewCriteria ?? cases.find(c => c.id === r.case)?.review, inputMessages: await inputFor(record),
           rawContent: r.rawContent, acceptedSpeech: r.speech ?? '', acceptedBoard: r.board ?? null,
           unresolvedHighlightIds: r.unresolvedHighlightIds ?? [], events: r.events ?? [],
-          rendering: renderReview(r, url.searchParams.get('stage') ?? 'final', Number(url.searchParams.get('time') ?? 0)) });
+          rendering: renderReview(r, url.searchParams.get('stage') ?? 'final', Number(url.searchParams.get('time') ?? 0), url.searchParams.get('reveal') === '1') });
       }
       if (req.method !== 'POST') return send(404, { error: 'Not found' });
       if (!req.headers.origin || req.headers['x-review-token'] !== csrf || !req.headers['content-type']?.startsWith('application/json')) return send(403, { error: 'Same-origin review token required' });

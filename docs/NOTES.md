@@ -14,7 +14,7 @@ Updated: 2026-09-14. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
-- David wants fewer choices; Opus/Astra/Fable remain candidates. Same-voice astronomy replay is now cached at 3106, with 12 clips and board stages on audio playing. Model latency is historical, TTS dollar cost unknown; no new LLM calls. TUTOR_REVIEW documents controls/limits. Diagram styling stays deferred.
+- David prioritizes first useful audible response over total duration. Astra/Fable astronomy labels collide; prose containing = is misclassified as math. Replay now schedules real glyph/stroke markup from media time. No layout/runtime fix or new provider call. See TUTOR_REVIEW for evidence and next slice.
 - Quality-first correction: David rejected starting with Flash/Haiku for speed. The active comparison uses flagship reasoning candidates, with explicit effort/budget settings. OpenRouter is now configured privately for benchmark children only; never put its key in notes. Current-stack controls and 8,000-token capability pilots are different experiments.
 - Pilot failure evidence is in TUTOR_EVALUATION and evaluations/2026-09-14-model-pilot.md: Fable's seventh draw was clipped before a highlight referenced it; Opus returned fenced JSON; Gemini returned an empty object twice. No runtime fix. Do not repeat unchanged Gemini requests or treat compatibility failures as intelligence rankings.
 
@@ -26,7 +26,7 @@ Updated: 2026-09-14. Keep this short and current. Search [archived notes](archiv
 - Historical delays are evidence of model planning costs, not microphone latency. Health checks only report key presence. Synthetic Silero tests do not prove quiet-voice or echo reliability.
 - Concept teaching may explain requested equations/examples directly. Graded work retains final-answer protection across workspace modes. Change representation after repeated struggle; avoid forced quizzes and invented course citations. Human PROMPT/PEDAGOGY remain frozen.
 
-- Local observability: npm run review:tutor serves port 3106 independently of the tutor. Reports and ratings stay in ignored .data/evaluation. See TUTOR_REVIEW for human steps and limitations. It uses real layout/drawing modules but bypasses audio/reveal/full-client filtering. New runs capture progress; historical boards are reconstructions.
+- Local observability: npm run review:tutor serves port 3106 independently of the tutor. Reports and ratings stay in ignored .data/evaluation. See TUTOR_REVIEW for human steps and limitations. Static panes bypass reveal; cached listening has ordered writing/audio but omits full-client filtering. New runs capture progress; historical boards are reconstructions.
 - Visible biology discovery: Opus introduced animation IDs absent from its static scene, triggering loadAnimation's new-page rule. The membrane stayed on page 1 while molecules moved on page 2. See evaluations/2026-09-14-visible-biology.md. This is a current-store reconstruction, not a verified historical playback failure. No fix yet.
 
 ## Whiteboard and workspace

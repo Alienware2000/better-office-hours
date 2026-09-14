@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
+import vm from 'node:vm';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { createReviewServer, readReports } from './review-tutor-models.mjs';
@@ -27,7 +28,7 @@ try {
   const page=await (await request(`/api/report?id=${id}`)).json();
   assert.ok(page.rendering.pages[0].svg.includes('data-board-group="object"'));
   assert.deepEqual(page.inputMessages,input.messages);
-  for(const asset of ['/','/review.css','/review.js','/board.css'])assert.equal((await request(asset)).status,200);
+  for(const asset of ['/','/review.css','/review.js','/board.css','/board-playback.js','/speech.js'])assert.equal((await request(asset)).status,200);
   assert.equal((await request('/.env.benchmark.local')).status,404);
   assert.equal((await request('/api/state',undefined,{Origin:'https://outside.example'})).status,403);
   assert.equal((await request('/api/run',{},{'X-Review-Token':'wrong'})).status,403);
@@ -49,6 +50,27 @@ try {
   for(let i=0;i<40;i++){state=await(await request('/api/state')).json();if(state.job.state!=='running')break;await new Promise(r=>setTimeout(r,10));}
   assert.equal(state.job.state,'cancelled');assert.equal(calls,1,'Cancellation prevents next request');assert.equal(state.reports.length,2);
   assert.ok(renderReview({...result,appParsed:false,rawContent:'```json\n{}\n```'}).error);
+  const revealView=renderReview(result,'1',0,true);
+  assert.ok(revealView.pages[0].reveals[0].svg.includes('is-entering'));
+  assert.ok(revealView.pages[0].reveals[0].duration>=520);
+  assert.equal(renderReview(result).pages[0].reveals,undefined,'Static inspectors stay static');
+  const words={...lesson,beats:[{...lesson.beats[0],draw:[JSON.stringify({op:'text',id:'topic',text:'A useful heading',at:{x:.1,y:.1},size:'s'})]}]};
+  const typed=renderReview({...result,rawContent:JSON.stringify(words)},'1',0,true);
+  assert.ok(typed.pages[0].reveals[0].svg.includes('board-glyph'));
+  const closing=renderReview({...result,rawContent:JSON.stringify(words)},'final',0,true);
+  assert.equal(typed.pages[0].reveals[0].source,closing.pages[0].reveals[0].source,'Closing questions do not mark existing content as new');
+  const playbackContext={window:{}};
+  vm.runInNewContext(fs.readFileSync(new URL('./evaluation/board-playback.js',import.meta.url),'utf8'),playbackContext);
+  const playback=new playbackContext.window.BoardPlayback({replaceChildren(){}});
+  const stroke={style:{}},glyph={style:{}},later={style:{}};
+  playback.tracks=[{node:stroke,kind:'path',start:0,dash:'5px, 4px'},
+    {node:glyph,kind:'glyph',start:520,opacity:'1'}, {node:later,kind:'group',start:900,opacity:'1'}];
+  playback.seek(.26);assert.equal(stroke.style.strokeDashoffset,'0.5');assert.equal(glyph.style.opacity,'0');assert.equal(later.style.opacity,'0');
+  playback.seek(.65);assert.equal(glyph.style.opacity,'1');assert.equal(later.style.opacity,'0');assert.equal(stroke.style.strokeDasharray,'5px, 4px');
+  playback.seek(.65);assert.equal(later.style.opacity,'0','A paused media clock cannot advance the next group');
+  playback.seek(Infinity);assert.equal(later.style.opacity,'1');
+  playback.seek(0);assert.equal(glyph.style.opacity,'0');assert.equal(stroke.style.strokeDashoffset,'1','Seeking back restores the reveal');
+  playback.reset();assert.equal(playback.tracks.length,0);
   const clipped={...lesson,beats:[{...lesson.beats[0],draw:Array.from({length:7},(_,i)=>JSON.stringify({op:'circle',id:`object${i}`,center:{x:.4,y:.4},r:.01}))},{...lesson.beats[0],draw:[JSON.stringify({op:'highlight',id:'object6'})]}]};
   const view=renderReview({...result,rawContent:JSON.stringify(clipped)});
   assert.ok(view.warnings.some(w=>w.includes('only the first six')));

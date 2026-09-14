@@ -23,11 +23,11 @@ Keep raw output, parser acceptance, rendered layout, and audio timing distinct. 
 
 ## Validation
 
-Offline benchmark and review-server checks cover parsing, isolation, persistence, rendering, request bounds, live progress, and cancellation. Browser verified board stages and a paid two-request biology batch. [Biology results](evaluations/2026-09-14-visible-biology.md) record timings, costs, and animation/page separation. Speech cache checks and browser playback passed; listening feedback remains pending. No runtime/frozen file changes.
+Offline benchmark and review-server checks cover parsing, isolation, persistence, rendering, request bounds, live progress, and cancellation. Browser verified board stages and a paid two-request biology batch. [Biology results](evaluations/2026-09-14-visible-biology.md) record timings, costs, and animation/page separation. Review/speech checks and lint passed. Browser verified full three-model playback, frozen media time on pause, resumed reveal, and completion. David reports poor Astra/Fable layouts; these remain unresolved. No runtime/frozen file changes.
 
 ## Next action
 
-David authorized testing Opus/Astra/Fable aloud. The review page now plays their saved astronomy answers using 12 cached same-voice clips, with board stages tied to clip playback. Next: David judges listening quality, then test fresh end-to-end latency. Replay does not simulate model waiting. No runtime switch; diagram styling remains deferred.
+Cached astronomy replay now adds ordered glyph/stroke reveal and Pause / Resume. David prioritizes the first useful audible response, not total duration. Next: fix prose/math classification and label collisions in an isolated renderer slice, then measure fresh end-to-end first audio. See TUTOR_REVIEW for observed defects and replay limits. No runtime switch or new provider calls in this correction.
 
 ## Blockers
 
