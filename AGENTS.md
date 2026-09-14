@@ -1,66 +1,47 @@
-# AGENTS.md
+# Better Office Hours: agent instructions
 
-## Post-hackathon local-only work, September 13, 2026
+## Current authority and safety
 
-David has submitted the project and is waiting for results. All new work stays local on `lane/post-hackathon-local` or another explicitly local development branch. Local edits, tests, and commits are authorized. Do not push any branch or tag, open or update PRs, merge on GitHub, deploy to Vercel, or modify production configuration/data unless David explicitly lifts this freeze. This overrides the older push/PR/deployment checklist below and any historical merge authorization in the docs. Keep the submitted baseline and hosted app unchanged. Read `docs/POST_HACKATHON_HANDOFF.md` after the prescribed docs for the current continuation brief.
+David and Hussein build Better Office Hours, a voice-first tutor for Yale students. The repository is the shared source of truth across coding agents and chats. David requested this portable workflow on September 14, 2026. It replaces the old full-history startup and push-at-checkpoint workflow; the original instructions are preserved in [the archive](docs/archive/AGENTS-2026-09-13.md).
 
-You are a coding agent working on Better Office Hours, a voice-first tutor for Yale students being built in about 36 hours for a hackathon. Two humans (David and Hussein) run agents on two machines against this repo. Other agents and harnesses will pick up the same repo. The repo is the source of truth, not any chat.
+**Publication freeze:** the hackathon submission is complete, results pending, and all further work stays local until David explicitly lifts the freeze. Local edits, checks, and commits are allowed. Do not push branches/tags, create/update/merge PRs, deploy, or modify production data/configuration. Do not infer authorization from archived docs or claim contest eligibility. Use `lane/post-hackathon-local` or another explicitly local branch, never stale local main.
 
-## Read in this order
+## Start or resume
 
-1. `docs/STATUS.md` - where we are, what is waiting on a human, what to do next. Read this every session, including mid-conversation if you just resumed.
-2. `docs/DESIGN.md` - what we are building and every decision made. This wins over anything else for product questions.
-3. `docs/ARCHITECTURE.md` - system shape, your lane's directories, and the contracts in `lib/types.ts`.
-4. `docs/PROMPT.md` - the tutor's system prompt. Do not rewrite it. Humans edit it.
-5. `docs/PEDAGOGY.md` - the learning-science basis. Read it if your work touches tutor behavior, the recap, the whiteboard triggers, or timing.
-6. `docs/DEMO.md` - the 90-second demo. Everything we build exists to make that take work.
-7. `docs/NOTES.md` - per-lane stubs and gotchas.
-8. `docs/LANES.md` - Hussein's starting slices, ownership, integration boundaries, and PR acceptance checks.
+1. Read [STATUS](docs/STATUS.md), then [TASK](docs/TASK.md). Run `npm run context` to verify the current worktree, branch, base ancestry, and uncommitted changes. Preserve unexpected edits. On compaction/resume, reread these current files rather than trusting an older chat summary.
+2. Read [WORKFLOW](docs/WORKFLOW.md) for local commands and handoff procedure when first entering the project. `AGENTS.md` is canonical; client-specific files only point here.
+3. Before product changes, read the relevant sections of [DESIGN](docs/DESIGN.md), the product authority. Before code changes, read [ARCHITECTURE](docs/ARCHITECTURE.md), especially section 2 and the September 11 implementation/storage updates. Early sections describe historical targets; verify implementation in code.
+4. Read human [PROMPT](docs/PROMPT.md) before tutor work. Read [PEDAGOGY](docs/PEDAGOGY.md) for tutor behavior, recap, board triggers, or timing. Both are frozen. David's later concept-teaching clarification in DESIGN allows requested ungraded equations/examples and conversational narrow clarifications.
+5. Use [DEMO](docs/DEMO.md) and DESIGN section 10 for product scope, [NOTES](docs/NOTES.md) for current pitfalls, and [LANES](docs/LANES.md) for ownership/contracts. Historical pending PR states and deployment instructions do not grant current authority. Search [the history index](docs/archive/README.md) only when relevant; do not preload the archive.
+6. Confirm the active task and next action, then continue authorized work. A review checkpoint blocks that task's next slice, not independent work David explicitly requests. If TASK is complete, use the new user request to define the next bounded task; do not invent roadmap authorization.
 
-If your assigned lane is waiting on human review, do not start its next checkpoint. Another lane's pending hardware review does not block an explicitly authorized first slice in docs/LANES.md.
+## Product boundaries
 
-## Rules
+- Voice is the only tutor input. Keep the paper UI, compact toolbar, PDF desk, generated annotated diagrams, audio-timed animations, independent student ink authorship, and optional Canvas flow. No chat boxes or tutor-command menus.
+- Never reveal final answers or complete solutions on graded work. Stop if a change could leak them. Ungraded concept teaching may give equations and worked examples; narrow clarifications need not become a quiz. Tutor notes are never evidence of a student's attempt or mastery.
+- Visuals are composed per turn from a general spec. No hardcoded topic scenes or fixture selection in tutor behavior. The projectile scene is a renderer test fixture/fallback only. Keep unknown outcomes hidden at the relevant teaching step.
+- Work within the assigned lane (ARCHITECTURE section 2). David owns voice, workspace, whiteboard; Hussein owns context, recap, shell. Stop and explain any required shared-contract change. Do not edit frozen `lib/types.ts`, human PROMPT, or PEDAGOGY. Coordinate shared integration changes; developer-workflow files are authorized by David's September 14 request.
+- Features must be in DEMO or DESIGN section 10, or explicitly requested by David. Prefer reliable, small changes. After two honest failed attempts, record evidence in NOTES and move on to independent work.
+- No em dashes in user-facing text or docs. Never commit secrets, provider responses containing private material, student exports, or uploaded PDFs. No automatic tool co-author attribution.
 
-- Work only inside your lane's directories (ARCHITECTURE.md section 2). If you need to change a shared contract, stop and say so; do not edit `lib/types.ts` silently.
-- Branch is `lane/<name>`. Commit small and often. Open a PR to `main` when your slice runs. `main` must always build and deploy.
-- Hussein's lanes go through PRs to main. David reviews and merges them; agents must not merge their own PRs or push directly to main without David explicitly asking.
-- Never commit secrets. Use `.env.example` names. Do not add automatic tool co-author attribution.
-- Voice is the only input to the agent. Do not add chat boxes, command buttons, or menus for talking to the tutor.
-- The tutor never gives final answers on graded work. If you are writing anything that could leak solution text to the student, stop.
-- Nothing on the whiteboard is scripted for the demo. Animations are composed by the tutor per turn from a general spec. The hand-written projectile scene is a test fixture and fallback only; do not wire the prompt to it.
-- The demo is the spec. If a feature does not appear in DEMO.md and is not in DESIGN.md section 10, do not build it.
-- Prefer the boring reliable choice. A working pointer beats a beautiful flaky one.
-- When something does not work after two honest attempts, write down what you tried in `docs/NOTES.md` under your lane and move on.
-- No em dashes in any user-facing text or docs.
+## Local development and validation
 
-## Priorities
+`npm ci`, then `npm run dev:local` (default localhost:3105). This launches the existing Next.js stack with cloud storage and Google auth disabled. Keep credentials in ignored `.env.local`; names are in `.env.example`. Groundtrack is engineering memory, not part of the tutor stack.
 
-1. The voice loop feels good: first word within about a second, barge-in works, tutor turns are short.
-2. The pointer and highlight land on the right spot of the PDF.
-3. Whiteboard strokes animate in as the tutor names them, the tutor's generated animations play with the student's numbers, and student drawings reach the model.
-4. Course context is real: retrieval returns the right lecture chunks and solutions stay hidden.
-5. Recap is spoken, saved, and shows as a card.
-6. Everything else.
+The local launcher uses this checkout's `.data`. Never link it to another worktree's data. Do not kill arbitrary Node processes or rebuild under a live user session. Inspect a listening process's cwd before stopping it. Preserve browser-origin IndexedDB saves and PDF bytes. Use another isolated checkout/data set for write-capable browser regressions and builds during live sessions. No production test targets. `npm run dev` is the raw launcher and lacks the local-only guard.
 
-## Cut order if behind at the Friday morning checkpoint
+Implemented stack: Next.js/TypeScript, Tailwind, Motion, custom SVG/MathJax board, PDF.js, local Silero, ElevenLabs Scribe STT/conversational TTS, fast Grok routing and Grok reasoning. Scoped retrieval, optional Google identity, private cloud course/PDF adapters, and browser-local recap/sessions exist. Cloud session sync/learner memory do not. No tldraw or managed ElevenLabs conversation SDK migration.
 
-Pointer overlay, then Grok Bot ingestion (fall back to manual upload), then style presets. Never cut voice, PDF workspace, whiteboard, or recap.
+Priority: voice cadence/interruption, accurate PDF cues, narrated visuals/student ink, real safe retrieval, useful recap. Run focused checks appropriate to the change; inspect rendered UI when changing it. Separate synthetic tests, real provider calls, and human acoustic evidence. Do not call a health endpoint proof of usable credits or end-to-end voice quality. Check scripts before running them because some consume credits or write storage.
 
-## Stack
+## Checkpoint before stopping or changing chats
 
-Implemented: Next.js (App Router, TypeScript), Tailwind, Motion, custom SVG whiteboard, PDF.js, ElevenLabs STT/TTS through a custom voice loop, and Grok via `https://api.x.ai/v1` with the OpenAI SDK. Planned integrations: Supabase and authentication. tldraw and the ElevenLabs Conversational AI SDK are not installed; do not replace the working implementations to satisfy an older stack description. Vercel deployment configuration still needs verification.
+1. Update TASK at each meaningful result, failed approach, or user correction while context is fresh. Include objective, scope, decisions and why, progress, exact next action, relevant file paths, checks with results/evidence, and blockers. Record unfinished work honestly.
+2. Update STATUS's live snapshot and NOTES's durable pitfalls. Keep each startup file below 10,500 characters and the combined generated brief below 28,000. Move superseded detail to a dated archive with a link, rather than adding another long chronological entry. Never archive away active constraints.
+3. Run `npm run context:check` and relevant implementation checks. Commit only intended files locally, in small slices. Do not push during the freeze.
+4. Run `npm run handoff` after the commit (or explicitly recorded WIP). It writes ignored `.data/handoff/CONTINUE.md` with live Git state and curated docs. It does not infer progress, fabricate validation, or read chat history. Tell the next agent to run `npm run context` again and obey the current TASK state.
 
-## Checkpoints and handoff
-
-Humans review at checkpoints. Do not run ahead into the next lane or feature after a checkpoint unless STATUS or a human says to continue.
-
-Before you stop a session, even if the slice is unfinished:
-
-1. Update `docs/STATUS.md`: timestamp, who, what changed, what the next person or agent should do, blockers.
-2. Update `docs/NOTES.md` under your lane: what works, what is stubbed, what the other lanes need to know. Keep it to a few lines.
-3. Commit those files with the slice and push the lane branch (or `main` if you are on the shared scaffold).
-
-Hussein or another harness should be able to clone, read STATUS, and continue without the previous chat.
+Groundtrack is useful additional memory when authenticated tools are available. If unavailable, report that briefly, use the local docs, and record the pending connection status without blocking unrelated work. Never invent event/retrieval ids. Do not upload private student transcripts or credentials. Repository constraints and the publication freeze remain authoritative.
 
 <!-- groundtrack:start version=3 -->
 
