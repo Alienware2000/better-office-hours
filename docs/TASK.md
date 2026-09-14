@@ -1,37 +1,34 @@
 # Active task
 
 Updated: 2026-09-14
-State: complete
+State: in_progress
 Branch: lane/post-hackathon-local
-Base: e66a21fe69112120f01242db72942c91e7cbd25d
+Base: 189cc7f5028ca8d2a18c9762d8dea8371fabf3cf
 
 ## Objective
 
-Explain project memory to David in plain language and document a reproducible setup for future projects.
+Reduce tutor latency while retaining smart teaching and accurate whiteboard use. Compare OpenRouter/model options; review David's saved Chrome sessions separately.
 
 ## Scope and constraints
 
-Local documentation only. Preserve the running tutor, other checkouts, private data, and existing implementation. Publication freeze remains active. Do not turn the explanation into a new service or claim automatic conversation capture.
+Local only. Preserve the running tutor, Chrome sessions, private exports, and submitted baseline. No provider-default change without comparison and David's choice. PROMPT/PEDAGOGY and lib/types.ts remain frozen. No production writes or transmission of private sessions to new providers.
 
 ## Progress
 
-- Archived the completed checkout-aware task at docs/archive/tasks/2026-09-14-checkout-aware-handoffs.md.
-- Wrote docs/MEMORY_GUIDE.md with everyday prompts, command explanations, the file map, checkout examples, limits, and recovery steps.
-- Wrote docs/MEMORY_RECIPE.md with a reusable setup request, starter templates, implementation adaptation points, and acceptance checks.
-- Linked the guides from README, WORKFLOW, and current notes; they are retrieved on demand rather than included in the default brief.
+Recorded every-spoken-turn board use and narration/visible-state agreement in DESIGN; these are not yet implemented. Audited routing, deep generation, TTS, buffering, timing boundaries, and visual exceptions. Added bench-tutor-models.mjs and check-tutor-benchmark.mjs with five synthetic cases and real request capture/parsing. Full findings, candidate screening, commands, and saved-session review procedure are in [TUTOR_EVALUATION](TUTOR_EVALUATION.md). No live model calls, Chrome inspection, or runtime changes.
 
 ## Decisions
 
-The agent curates memory; scripts validate and assemble it. Document that distinction explicitly. Reuse the plain Markdown/Git pattern, adapting BOH-specific policies and installation namespaces in another project. Provide a setup recipe rather than claiming the current helper is a universal installer. No new dependencies or client configuration changes.
+Compare Grok directly and via OpenRouter before attributing differences to a model change. Measure content, speech readiness, board readiness, and completion separately. Same prompt/schema/budget; explicit effort/provider settings; no hidden retries/fallbacks. Human quality review and actual rendered/audio timing remain necessary. Preserve all-turn board scope rather than silently narrowing it.
 
 ## Validation
 
-Passed 31 local document-link checks, no-em-dash checks, byte-for-byte archive fidelity, default/full context budgets, and git diff --check. Command descriptions were checked against package.json and scripts/context.mjs. Implementation regression results remain in the prior task archive; no implementation changes or application tests in this documentation task. Reproduction is an adaptation recipe, not a claim that another real project was installed.
+Offline benchmark suite and changed-script lint pass. Dry-run inputs contain 48,676 to 49,139 serialized message characters, not a latency measurement. Document links, archive fidelity, unchanged runtime/frozen files, diff formatting, and both context budgets pass. Full context overflow was resolved by compacting duplicate detail into existing references.
 
 ## Next action
 
-Take David's next concrete request; archive this task before replacing it. For memory questions, use MEMORY_GUIDE. For another project's setup, follow MEMORY_RECIPE with its actual policies and an isolated installation namespace.
+Configure OPENROUTER_API_KEY through local secret handling. Run TUTOR_EVALUATION's small synthetic comparison, review output/rendering, then expand repetitions before selecting a model. Review every saved Chrome session across topics when that separate task starts. Archive this task only when the agreed latency slice is complete.
 
 ## Blockers
 
-Groundtrack tools remain unavailable; the guides document its pending live verification and the functioning local fallback. No documentation blocker.
+OpenRouter key is not configured; live comparisons have not run. Groundtrack tools are unavailable. Chrome origin/session inventory and the reported stars-related mismatch are unverified. Latency and broader board coverage remain unresolved.

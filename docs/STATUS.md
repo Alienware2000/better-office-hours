@@ -30,6 +30,8 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Open issues
 
+- September 14 priority: David reports severe latency, missing board use, and speech/visual disagreements across subjects. [TUTOR_EVALUATION](TUTOR_EVALUATION.md) records the requirements, source audit, synthetic comparison harness, and queued review of every saved Chrome session. The new every-spoken-turn board requirement is in DESIGN and is not yet implemented.
+
 - Cadence: historical deep-request-to-first-audio medians were roughly 9 to 13 seconds, excluding endpointing/STT/routing. Quick work checks still incur reasoning latency. No fresh latency benchmark in this task.
 - Visual correctness: a generated Follow object stayed stationary while its arrow changed. Renderer correctness does not guarantee model semantics. Replay actual specs/transcripts before choosing a fix.
 - Teaching: repeated questions after confusion and an ungrounded recap reference were recorded. Do not infer understanding from tutor notes or assent. Keep graded-answer protection and direct ungraded concept teaching.
@@ -38,8 +40,6 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Next
 
-Local stack and initial workflow setup completed at 75412c1. The checkout-aware follow-up makes default orientation lean and read-only even in old/detached checkouts. Git worktrees are discovered automatically; `npm run handoff` also records a small local checkpoint so separately registered clones can find each other. The standalone helper is installed outside this checkout with `npm run context -- --install`. No cloud sync, code copying, or automatic switching occurs; unavailable commits and uncommitted work are explicitly flagged.
+Local stack and memory setup are complete. Use `npm run context` to reorient and `npm run handoff` before switching chats. The installed `~/.local/bin/boh-context` handles older checkouts. Worktrees are automatic, independent clones require checkpoint registration, and another machine requires explicit code/context transfer. See WORKFLOW and archived completed tasks for setup and validation details.
 
-Both isolated workflow regression suites, script lint, context budgets, and read-only orientation in the actual older checkout pass. See TASK for validation details. Use `npm run handoff` before moving to another agent/chat. Completed task detail moves to the dated task archive. For another machine, explicitly transfer/share committed code and a checkpoint while respecting the publication freeze; the local index does not span computers.
-
-Gather David's next concrete product issue against the new local desk. Cadence and visual correctness evaluation remain the recommended next product slice; cloud memory and auth/collector reconciliation are separate. No current acoustic quality or full production-build result is implied by the workflow checks.
+Latency evaluation is now active. The offline bench-tutor-models harness captures actual teaching requests and measures content, speech readiness, and structurally valid board readiness on synthetic streams. OpenRouter credentials are not configured here. No live comparison, saved-session review, model migration, or board-policy implementation has happened. Next: local credential setup and a small compatibility comparison, then quality/rendered review before any runtime change. Keep the current stack and Chrome sessions intact.
