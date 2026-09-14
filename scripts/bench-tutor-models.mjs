@@ -73,10 +73,15 @@ export function createHarness() {
   };
 }
 
-export function candidateRequest(baseline, route, model, effort = 'low') {
+export function candidateRequest(baseline, route, model, effort = 'low', settings = {}) {
   if (!['xai', 'openrouter'].includes(route)) throw new Error('Route must be xai or openrouter');
   const request = structuredClone(baseline);
   request.model = model;
+  if (settings.maxTokens !== undefined) {
+    if (!Number.isInteger(settings.maxTokens) || settings.maxTokens < 2400 || settings.maxTokens > 16000) throw new Error('Max tokens must be 2400 through 16000');
+    request.max_tokens = settings.maxTokens;
+  }
+  if (settings.temperature === 'default') delete request.temperature;
   delete request.reasoning_effort;
   if (route === 'xai') {
     if (effort !== 'default') request.reasoning_effort = effort;
@@ -121,6 +126,14 @@ export async function measure(createStream, request, harness, testCase, now = ()
     if (hasBoard(turn)) result.firstBoardReadyMs ??= Math.round(now() - started);
     result.boardPresent = hasBoard(turn);
     result.boardRepairNeeded = harness.needsBoardRepair(turn, null, ids);
+    const availableIds = new Set(ids);
+    result.unresolvedHighlightIds = [];
+    for (const command of turn.board?.commands ?? []) {
+      if (command.op === 'highlight' && !availableIds.has(command.id)) result.unresolvedHighlightIds.push(command.id);
+      else if (['text','circle','line','arrow','curve','axes'].includes(command.op)) availableIds.add(command.id);
+      else if (command.op === 'remove') availableIds.delete(command.id);
+      else if (command.op === 'clear') availableIds.clear();
+    }
     result.speech = turn.speech;
     result.board = turn.board ?? null;
     if (result.finishReason !== 'stop') result.failure = 'stream_did_not_finish_normally';
@@ -128,6 +141,8 @@ export async function measure(createStream, request, harness, testCase, now = ()
   } catch (error) {
     // Do not dump provider error bodies or credentials into reports.
     result.failure = error instanceof SyntaxError ? 'invalid_json' : 'request_or_parse_failed';
+    result.httpStatus = Number.isInteger(error?.status) ? error.status : null;
+    result.timedOut = ['TimeoutError', 'APIConnectionTimeoutError'].includes(error?.name);
   }
   result.totalMs = Math.round(now() - started);
   result.rawContent = raw; // Synthetic content only; retain unfiltered output for disclosure/schema review.
@@ -138,19 +153,21 @@ async function main() {
   if (process.cwd() !== root) throw new Error('Run from the repository root so the real prompt loader reads this checkout');
   const args = process.argv.slice(2);
   if (args.includes('--live') && args.includes('--dry-run')) throw new Error('Choose --live or --dry-run, not both');
-  const options = { route: 'xai', model: null, effort: 'low', runs: 1, case: 'all', live: false };
+  const options = { route: 'xai', model: null, effort: 'low', runs: 1, case: 'all', live: false, maxTokens: undefined, temperature: 'baseline' };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--live') options.live = true;
     else if (args[i] === '--dry-run') continue;
     else if (args[i] === '--help') {
-      console.log('node scripts/bench-tutor-models.mjs [--dry-run|--live] [--route xai|openrouter] [--model ID] [--effort default|none|minimal|low|medium|high] [--case ID|all] [--runs 1..5]\nDefault: offline request metadata only. --live sends synthetic cases, requires the route API key in the environment, and consumes credits. JSON report goes to stdout. No TTS, browser access, or tutor changes.');
+      console.log('node scripts/bench-tutor-models.mjs [--dry-run|--live] [--route xai|openrouter] [--model ID] [--effort default|none|minimal|low|medium|high] [--case ID|all] [--runs 1..5] [--max-tokens 2400..16000] [--temperature baseline|default]\nDefault: offline request metadata only. --live sends synthetic cases, requires the route API key in the environment, and consumes credits. JSON report goes to stdout. No TTS, browser access, or tutor changes.');
       return;
-    } else if (['--route','--model','--effort','--case','--runs'].includes(args[i]) && args[i + 1]) {
-      const key = args[i].slice(2); options[key] = key === 'runs' ? Number(args[++i]) : args[++i];
+    } else if (['--route','--model','--effort','--case','--runs','--max-tokens','--temperature'].includes(args[i]) && args[i + 1]) {
+      const key = args[i] === '--max-tokens' ? 'maxTokens' : args[i].slice(2);
+      options[key] = ['runs','maxTokens'].includes(key) ? Number(args[++i]) : args[++i];
     } else throw new Error('Unknown or incomplete argument; use --help');
   }
   if (!Number.isInteger(options.runs) || options.runs < 1 || options.runs > 5) throw new Error('Runs must be 1 through 5');
   if (!['default','none','minimal','low','medium','high'].includes(options.effort)) throw new Error('Unsupported effort option');
+  if (!['baseline','default'].includes(options.temperature)) throw new Error('Temperature must be baseline or default');
   if (options.live && !options.model) throw new Error('--live requires an explicit --model');
   if (options.route === 'openrouter' && !options.model) throw new Error('OpenRouter requires an explicit --model');
   const selected = cases.filter(c => options.case === 'all' || c.id === options.case);
@@ -159,7 +176,7 @@ async function main() {
   const requests = [];
   for (const c of selected) {
     const baseline = await harness.request(c);
-    requests.push({ testCase: c, request: candidateRequest(baseline, options.route, options.model ?? baseline.model, options.effort) });
+    requests.push({ testCase: c, request: candidateRequest(baseline, options.route, options.model ?? baseline.model, options.effort, options) });
   }
   const report = { kind: options.live ? 'live-synthetic-teaching-benchmark' : 'offline-request-audit',
     revision: execFileSync('git', ['rev-parse','HEAD'], { encoding: 'utf8' }).trim(),
@@ -168,7 +185,7 @@ async function main() {
     scope: 'Deep teaching request only. No routing, retrieval, images, STT, TTS, playback, repair request, or semantic correctness measurement. Synthetic board metadata only.',
     requests: requests.map(({ testCase, request }) => ({ case: testCase.id, model: request.model,
       inputCharacters: JSON.stringify(request.messages).length, inputSha256: createHash('sha256').update(JSON.stringify(request.messages)).digest('hex'),
-      maxTokens: request.max_tokens, responseFormat: request.response_format?.json_schema?.name,
+      maxTokens: request.max_tokens, temperature: request.temperature ?? 'provider_default', responseFormat: request.response_format?.json_schema?.name,
       provider: request.provider ?? null })), results: [] };
   if (options.live) {
     const keyName = options.route === 'xai' ? 'XAI_API_KEY' : 'OPENROUTER_API_KEY';

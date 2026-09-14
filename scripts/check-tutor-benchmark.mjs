@@ -22,6 +22,12 @@ assert.equal(routed.provider.allow_fallbacks, false);
 assert.deepEqual(routed.messages, baseline.messages, 'Compare the same real prompt');
 assert.deepEqual(routed.response_format, baseline.response_format);
 assert.equal(baseline.reasoning_effort, 'low', 'Candidate configuration cannot mutate the baseline');
+const quality = candidateRequest(baseline, 'openrouter', 'synthetic/model', 'high', { maxTokens: 8000, temperature: 'default' });
+assert.equal(quality.max_tokens, 8000);
+assert.equal(quality.temperature, undefined, 'Models without temperature support can retain strict parameter routing');
+assert.equal(baseline.max_tokens, 2400);
+assert.equal(baseline.temperature, .5);
+assert.throws(() => candidateRequest(baseline, 'openrouter', 'synthetic/model', 'high', { maxTokens: 100000 }));
 assert.equal(candidateRequest(baseline, 'openrouter', 'synthetic/model', 'default').reasoning, undefined);
 assert.throws(() => candidateRequest(baseline, 'unknown', 'synthetic/model'));
 
@@ -60,6 +66,12 @@ const earlyEnd = await run(JSON.stringify(lesson), null);
 assert.equal(earlyEnd.failure, 'stream_did_not_finish_normally');
 const verbal = await run(JSON.stringify({ ...lesson, move: 'consolidate', visual: 'none', beats: [] }));
 assert.equal(verbal.boardPresent, false, 'Old visual=none policy must remain visible in benchmark results');
+const clipped = await run(JSON.stringify({ ...lesson, beats: [
+  { ...lesson.beats[0], draw: Array.from({ length: 7 }, (_, i) => JSON.stringify({ op: 'text', id: `label-${i}`, at: { x: .5, y: .2 + i * .08 }, text: `Label ${i}` })) },
+  { ...lesson.beats[0], draw: [JSON.stringify({ op: 'highlight', id: 'label-6' })] },
+] }));
+assert.ok(!clipped.board.commands.some(c => c.op === 'text' && c.id === 'label-6'));
+assert.deepEqual(clipped.unresolvedHighlightIds, ['label-6'], 'A label clipped by the six-command limit must not silently pass focus review');
 const failed = await measure(async () => { throw new Error('private-key-canary'); }, routed, harness, cases[0]);
 assert.equal(failed.failure, 'request_or_parse_failed');
 assert.ok(!JSON.stringify(failed).includes('private-key-canary'));

@@ -15,6 +15,9 @@ Updated: 2026-09-14. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
+- Quality-first correction: David rejected starting with Flash/Haiku for speed. The active comparison uses flagship reasoning candidates, with explicit effort/budget settings. OpenRouter is now configured privately for benchmark children only; never put its key in notes. Current-stack controls and 8,000-token capability pilots are different experiments.
+- Live synthetic discovery: Fable emitted seven DRAW strings in one beat; conceptResponse keeps six, dropping abs-label before a later highlight targets it. This reproduces a missing-target mechanism, not David's uninspected Chrome session. Benchmark detects unresolved highlights; no runtime fix. Opus initially returned fenced JSON; Gemini returned an empty object twice despite strict format requests. Stop identical Gemini retries and investigate schema/provider handling. Treat these as integration failures, not intelligence rankings.
+
 - September 14 audit: [TUTOR_EVALUATION](TUTOR_EVALUATION.md). Synthetic deep requests serialize to 48,676 to 49,139 message characters without images/history/retrieval; prompt-size causality is unmeasured. New benchmark uses real request capture/parsing and reports text vs speech/board readiness, not audible latency. Do not use the old simplified bench-deep to select a model for structured board lessons.
 - David requires board involvement on every spoken turn; current visual=none and direct-definition paths do not fulfill this. Narration/rendering agreement requires semantic and actual playback review, beyond valid schema. Existing Chrome sessions across subjects are queued for review; the reported stars-related mismatch is not yet inspected. Do not infer the exact topic from its voice transcription.
 

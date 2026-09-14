@@ -7,7 +7,7 @@ Base: 189cc7f5028ca8d2a18c9762d8dea8371fabf3cf
 
 ## Objective
 
-Reduce tutor latency while retaining smart teaching and accurate whiteboard use. Compare OpenRouter/model options; review David's saved Chrome sessions separately.
+Find the strongest teaching model that can respond quickly with accurate whiteboard use. Quality is the gate, then latency. Compare OpenRouter/model options; review David's saved Chrome sessions separately.
 
 ## Scope and constraints
 
@@ -15,7 +15,7 @@ Local only. Preserve the running tutor, Chrome sessions, private exports, and su
 
 ## Progress
 
-Recorded every-spoken-turn board use and narration/visible-state agreement in DESIGN; these are not yet implemented. Audited routing, deep generation, TTS, buffering, timing boundaries, and visual exceptions. Added bench-tutor-models.mjs and check-tutor-benchmark.mjs with five synthetic cases and real request capture/parsing. Full findings, candidate screening, commands, and saved-session review procedure are in [TUTOR_EVALUATION](TUTOR_EVALUATION.md). No live model calls, Chrome inspection, or runtime changes.
+Board requirements recorded, not implemented. Benchmark supports explicit budgets, temperature omission, and unresolved-highlight diagnostics. David's OpenRouter key is stored only in ignored benchmark config. Eleven synthetic pilot requests completed for Grok, Astra, Opus, Fable, and Gemini Pro. See [pilot results](evaluations/2026-09-14-model-pilot.md) and [TUTOR_EVALUATION](TUTOR_EVALUATION.md). No runtime or Chrome changes; no model selected.
 
 ## Decisions
 
@@ -23,12 +23,12 @@ Compare Grok directly and via OpenRouter before attributing differences to a mod
 
 ## Validation
 
-Offline benchmark suite and changed-script lint pass. Dry-run inputs contain 48,676 to 49,139 serialized message characters, not a latency measurement. Document links, archive fidelity, unchanged runtime/frozen files, diff formatting, and both context budgets pass. Full context overflow was resolved by compacting duplicate detail into existing references.
+Eleven live reports share identical message hashes. Offline benchmark checks, changed-script lint, context budgets, and diff formatting pass. Credential is ignored, mode 600, and absent from reports/changed files. Runtime/frozen files are unchanged. Pilot timings exclude actual audio/rendering and do not establish quality or tail latency.
 
 ## Next action
 
-Configure OPENROUTER_API_KEY through local secret handling. Run TUTOR_EVALUATION's small synthetic comparison, review output/rendering, then expand repetitions before selecting a model. Review every saved Chrome session across topics when that separate task starts. Archive this task only when the agreed latency slice is complete.
+Expand Opus/Astra checks across subjects with repeated samples and pinned/recorded providers, then review rendered boards and actual voice latency. Investigate Gemini's repeated empty-object output separately rather than rerunning identical requests. Review every saved Chrome session when that task starts. Archive only when the agreed latency slice is complete.
 
 ## Blockers
 
-OpenRouter key is not configured; live comparisons have not run. Groundtrack tools are unavailable. Chrome origin/session inventory and the reported stars-related mismatch are unverified. Latency and broader board coverage remain unresolved.
+Groundtrack tools are unavailable. Chrome origin/session inventory and the reported stars-related mismatch are unverified. Latency and broader board coverage remain unresolved. Provider/parser compatibility failures in the initial pilot need investigation; one-case timing is not a model ranking.
