@@ -1,6 +1,6 @@
 # Current status
 
-Updated: 2026-09-14
+Updated: 2026-09-15
 By: Codex, David's local continuation
 Branch: lane/post-hackathon-local
 Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
@@ -42,4 +42,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Local stack and memory setup are complete. Use `npm run context` to reorient and `npm run handoff` before switching chats. The installed `~/.local/bin/boh-context` handles older checkouts. Worktrees are automatic, independent clones require checkpoint registration, and another machine requires explicit code/context transfer. See WORKFLOW and archived completed tasks for setup and validation details.
 
-The original review remains at 3106. David authorized a temporary Opus-low live trial and drawing-contract extension. Run `npm run trial:tutor` for isolated port 3107; [trial guide](TUTOR_TRIAL.md) covers use, restart, evidence, and limits. Generic panels reserve layout space and use literal colors; invalid drawing beats stay silent. A visible timer measures detected speech ending to audio playback. Five synthetic model requests, one TTS request, browser rendering, and focused regressions were checked. Actual microphone timing/teaching review is next. No production migration or publication. Preserve existing tutor/Chrome state.
+David tested the isolated Opus-low trial at 3107 and reports better explanations and diagrams, with rendering still improvable. He reports an unfinished-sounding voice ending. Complete teaching beats now stay in one TTS clip; closing guidance avoids tiny trailing asides. New playback_end diagnostics distinguish completion, interruption, and failure. Simulated lifecycle/streaming checks pass; the audible fix awaits his retry. See [TUTOR_TRIAL](TUTOR_TRIAL.md). Preserve the paused session and 3105/3106. No production migration or publication.

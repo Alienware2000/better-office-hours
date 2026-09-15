@@ -203,7 +203,8 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
 
   const speak = useCallback(
     async (text: string, previousText?: string, epoch = playbackEpochRef.current,
-      prepared?: Promise<{ blob: Blob } | { error: unknown }>, onStart?: () => void) => {
+      prepared?: Promise<{ blob: Blob } | { error: unknown }>, onStart?: () => void,
+      diagnostic?: { request: string | null; deep: boolean; chunk: number }) => {
       if (!text.trim() || epoch !== playbackEpochRef.current) return;
       const controller = abortRef.current ?? new AbortController();
       abortRef.current = controller;
@@ -239,13 +240,23 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
         audio.playbackRate = 1.08;
         audio.preservesPitch = true;
         await new Promise<void>((resolve, reject) => {
-          const finish = () => {
+          const playbackCreatedAt = performance.now();
+          let settled = false;
+          const recordEnd = (message: string) => {
+            if (settled) return false;
+            settled = true;
             controller.signal.removeEventListener("abort", cancel);
-            resolve();
+            if (diagnostic) recordSessionDiagnostic({ kind: 'playback_end', ...diagnostic, message,
+              elapsedMs: Math.round(performance.now() - playbackCreatedAt),
+              audioPositionMs: Number.isFinite(audio.currentTime) ? Math.round(audio.currentTime * 1000) : undefined,
+              audioDurationMs: Number.isFinite(audio.duration) ? Math.round(audio.duration * 1000) : undefined });
+            return true;
           };
+          const finish = () => { if (recordEnd('ended')) resolve(); };
+          const fail = (error: unknown) => { if (recordEnd('error')) reject(error); };
           const cancel = () => {
             audio.pause();
-            finish();
+            if (recordEnd('interrupted')) resolve();
           };
           if (controller.signal.aborted) {
             cancel();
@@ -260,11 +271,8 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
             onStart?.();
           };
           audio.onended = finish;
-          audio.onerror = () => {
-            controller.signal.removeEventListener("abort", cancel);
-            reject(new Error("Audio failed"));
-          };
-          void audio.play().catch(reject);
+          audio.onerror = () => fail(new Error("Audio failed"));
+          void audio.play().catch(fail);
         });
       } catch (error) {
         if (controller.signal.aborted || (error as Error).name === "AbortError") return;
@@ -479,12 +487,14 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
       let summaryRequested = false;
       let spoken: Promise<void> = Promise.resolve();
       let preparationQueue: Promise<unknown> = Promise.resolve();
+      let chunkNumber = 0;
       let pendingVisuals: AgentTurn[] = [];
 
       // Shortness is a tutor instruction, never a silent client-side audio cut.
       const enqueueSpeech = (chunk: string) => {
         const trimmed = chunk.trim();
         if (!trimmed || signal.aborted || playbackEpoch !== playbackEpochRef.current) return;
+        const clipIndex = ++chunkNumber;
         const visuals = pendingVisuals;
         pendingVisuals = [];
         const previousText = saidSoFar;
@@ -530,7 +540,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
               historyMessage = { role: "assistant", content: (summaryRequested ? "[SUMMARY_REQUEST]" : "") + heard };
               historyRef.current = [...historyRef.current, historyMessage];
             } else historyMessage.content = (summaryRequested ? "[SUMMARY_REQUEST]" : "") + heard;
-          }); } catch (error) { speechFailure = error; throw error; }
+          }, { request, deep, chunk: clipIndex }); } catch (error) { speechFailure = error; throw error; }
         });
       };
 
@@ -553,17 +563,19 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
         // A lead-in turn is not worth speaking in pieces, and speaking it
         // before [THINK] arrives would strand the student mid-thought.
         if (partial.think) return;
-        let next = takeSpeechChunks(partial.speech, emitted);
-        while (next.chunk) {
-          emitted = next.consumed;
-          enqueueSpeech(next.chunk);
-          next = takeSpeechChunks(partial.speech, emitted);
-        }
-        // This is a completed model-authored unit, not a partial token string.
-        // Do not wait for the next expensive diagram to supply whitespace.
+        // A completed teaching beat is one prosodic unit. Splitting it first
+        // stranded short closing sentences in their own unnatural TTS clip.
+        // It is already complete, so preserving it adds no first-beat wait.
         if (speechBoundary) {
           const ready = partial.speech.slice(emitted).trim();
           if (ready) { enqueueSpeech(ready); emitted = partial.speech.length; }
+        } else {
+          let next = takeSpeechChunks(partial.speech, emitted);
+          while (next.chunk) {
+            emitted = next.consumed;
+            enqueueSpeech(next.chunk);
+            next = takeSpeechChunks(partial.speech, emitted);
+          }
         }
       });
 

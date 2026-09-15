@@ -763,3 +763,44 @@ console.log('PASS: student-first summary metadata, recap/audio synchronization, 
   app.cleanup();
   console.log('PASS: isolated trial skips routing and records speech-end to playback once, including endpointing and STT.');
 }
+
+// A short closing sentence belongs to its completed teaching beat, not a
+// separate five-word synthesis request. The first beat still starts early.
+for (const ending of ['ended', 'interrupted', 'error']) {
+  let output;
+  const response = new Response(new ReadableStream({ start(controller) { output = controller; } }));
+  const test = await mount({ llmResponse: response, manualAudio: true });
+  const speaking = test.hook.sendUtterance('Explain a simple spectrum.');
+  const emit = content => output.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ bohSpeechBoundary: true, choices: [{ delta: { content } }] })}\n\n`));
+  const first = 'A star sends out many colors. We can spread them into a rainbow.';
+  const last = 'The gas removes some colors. These gaps are just schematic.';
+  emit('[TEACH move=consolidate visual=none]\n' + first + '\n');
+  await settle();
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1);
+  assert.equal(JSON.parse(test.requests.find(r => r.url.endsWith('/tts')).body).text, first);
+  assert.equal(test.audio.length, 1, 'Complete first beat starts before the response ends');
+  test.audio[0].currentTime = 4; test.audio[0].duration = 4; test.audio[0].onended();
+  emit(last + '\n'); output.close(); await settle();
+  const tts = test.requests.filter(r => r.url.endsWith('/tts'));
+  assert.equal(tts.length, 2, 'Two teaching beats produce two clips, not four sentence clips');
+  assert.equal(JSON.parse(tts[1].body).text, last);
+  const audio = test.audio[1]; audio.duration = 3; audio.currentTime = ending === 'ended' ? 3 : 1.2;
+  if (ending === 'ended') audio.onended();
+  else if (ending === 'interrupted') test.hook.pauseVoice();
+  else {
+    audio.onerror(); await settle();
+    // The existing error recovery speaks a separate short failure notice.
+    test.audio.slice(2).forEach(clip => clip.onended?.());
+  }
+  await speaking; await settle();
+  const endings = test.diagnostics.filter(d => d.kind === 'playback_end');
+  assert.equal(endings.length, 2);
+  assert.equal(endings[1].message, ending);
+  assert.equal(endings[1].chunk, 2);
+  assert.equal(endings[1].audioDurationMs, 3000);
+  assert.equal(endings[1].audioPositionMs, ending === 'ended' ? 3000 : 1200);
+  audio.onended();
+  assert.equal(test.diagnostics.filter(d => d.kind === 'playback_end').length, 2, 'Late ended event cannot rewrite interruption or error');
+  test.cleanup();
+}
+console.log('PASS: complete teaching beats stay together; natural, interrupted, and failed playback endings are recorded once.');

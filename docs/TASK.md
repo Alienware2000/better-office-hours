@@ -1,34 +1,34 @@
 # Active task
 
-Updated: 2026-09-14
+Updated: 2026-09-15
 State: ready_for_review
 Branch: lane/post-hackathon-local
-Base: 5da2a99671551813d11db0dc542288a813e1f242
+Base: 747c5b352024260d08f7d7eb3190ac651fcf3547
 
 ## Objective
 
-Trial a strong teaching model with simple explanations, readable matching diagrams, and visible first-audio delay. David authorized the Opus-low local trial and necessary drawing-contract extension.
+Preserve the improved Opus-low teaching trial and make its spoken endings feel complete. David tested 3107: explanations and diagrams felt good, rendering can improve, but the voice sounded unfinished at the end.
 
 ## Scope and constraints
 
-Local only. Preserve tutor 3105, review 3106, Chrome histories, private exports, and submitted baseline. No production model selection or publication. Human PROMPT/PEDAGOGY remain unchanged. Contract extension is limited to panels, literal colors, and line labels. No private-session transmission.
+Local only. Preserve 3105/3106, the paused 3107 session, Chrome histories, and private data. No production model selection or publication. Human PROMPT/PEDAGOGY remain frozen. No private-session transmission.
 
 ## Progress
 
-`npm run trial:tutor` launches an isolated source/build/storage snapshot at 3107. Opus low bypasses the extra routing pass. The model supplies generic panels with reserved text/figure regions and meaningful colors. Each spoken beat must have valid panel commands or an existing-panel highlight. Rejected drawings fail visibly before their speech. Existing audio-synchronized writing and interruption remain. A visible timer records detected speech ending to audio playback.
+Structured speech boundaries now queue each complete teaching beat as one audio clip, instead of splitting its sentences into isolated fragments. The saved visible transcript ended with a five-word caveat; existing logs showed separate TTS requests. Trial guidance asks for a complete takeaway and integrated caveats. Playback diagnostics now distinguish natural ending, interruption, and failure, with clip position/duration.
 
 ## Decisions
 
-Use one temporary flagship baseline and generic panels. Keep raw model quality, accepted drawings, and measured audio timing distinct. Human judgment decides the next iteration.
+Keep the model, voice, playback speed, and diagram design stable. Do not add arbitrary silence or claim proven acoustic truncation. The previous session has no retained audio or end-event diagnostics; the exact audible fault remains unconfirmed.
 
 ## Validation
 
-Five synthetic Opus requests and one TTS request; browser-inspected actual revised board. Panel/layout/stream/disclosure, voice lifecycle/timing, concept, saved-session, diagram, and review checks pass, with TypeScript and focused lint. Raw reports stay private. [Trial guide](TUTOR_TRIAL.md) records observed failures and limitations. Real microphone timing and teaching quality need David's judgment. Panels are a limited trial, not a complete diagram language.
+Simulated streaming checks preserve whole beats and early first playback; natural, interrupted, and failed clips record one ending each. Existing voice lifecycle and saved-session checks, TypeScript, and focused lint pass. No new provider calls. See [trial guide](TUTOR_TRIAL.md).
 
 ## Next action
 
-David opens 3107, taps the orb, asks a simple concept question, then interrupts with "I don't understand. Make it simpler." Review audible delay, clarity, and matching board together. Keep the running snapshot stable during this test. Do not broaden the model comparison or migrate production yet.
+David retries a response in the updated 3107 trial. Judge whether the ending sounds complete. If it still cuts off, inspect playback_end events alongside the spoken words before changing TTS. Preserve the successful teaching style; broader rendering work follows this check.
 
 ## Blockers
 
-Groundtrack tools remain unavailable. Saved Chrome session review is still queued. A different checkout needs explicit private configuration/report transfer. Live hardware behavior is unverified.
+Groundtrack tools unavailable. Physical audio/prosody remains a human check. Earlier Chrome session review remains queued. New checkouts need explicit private configuration/report transfer.
