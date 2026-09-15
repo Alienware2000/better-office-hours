@@ -1,3 +1,4 @@
+import { parseDrawCommand } from '@/lib/whiteboard/parse-draw';
 import { trialEnabled, TRIAL_GUIDANCE, TRIAL_MODEL } from './trial';
 import { awaitingSummary, RECAP_FORMAT, RECAP_GUIDANCE } from './closing';
 import { validateRecap } from '@/lib/session/recap';
@@ -214,7 +215,7 @@ export async function* streamGrok(
     const intent = parseAgentTurn(last).teaching;
     messages.push({ role: 'system', content: `Silent visual recovery for this already chosen teaching move: ${teachingTag(intent)}. Keep that move and its disclosure boundary. Compose only the missing visual for the last explanation, without advancing the hint ladder or revealing what the student was asked to supply. Return [BOARD open] and at most five compact valid DRAW commands, no speech. Use a static conceptual sketch for diagram/animation, never another animation attempt. A sketch needs meaningful geometry and clear short labels, not a formula-only note. For notes use only already established givens, learner-supplied relationships, or the specifically justified hint. Never a computed graded answer, complete solution, invented given, or scripted fixture. Do not clear/remove existing work. Use ops text, line, arrow, curve, circle, axes. Put circle positions in center:{x,y}. If it cannot be illustrated without giving away the question, return nothing.` });
   }
-  if (trialRequest && visualRepair) messages.push({ role: 'system', content: 'For this silent repair only, override the JSON lesson envelope: return only [BOARD open][DRAW {"op":"panel",...}] tags using the panel schema above. No speech, no free-form geometry, no new teaching content. Preserve the existing teaching move and graded-work boundary.' });
+  if (trialRequest && visualRepair) messages.push({ role: 'system', content: 'For this silent repair only, override the JSON lesson envelope: return only [BOARD open][DRAW {...}] tags using any valid static drawing commands above, including text equations when the teaching move permits them. No speech or new teaching content. Preserve the existing teaching move and graded-work boundary.' });
   const stream = await grok.chat.completions.create({
     model: trialRequest ? TRIAL_MODEL : deep ? GROK_DEEP_MODEL : GROK_MODEL,
     ...(trialRequest ? { provider: { sort: 'latency', require_parameters: true, allow_fallbacks: false } } : { temperature: visualRepair ? 0.3 : deep ? 0.5 : 0.85 }),
@@ -230,9 +231,11 @@ export async function* streamGrok(
     ...(conceptRouting ? { response_format: CONCEPT_ROUTING_FORMAT } : {}),
   }, { signal });
 
-  const lessonOptions = trialRequest ? { panelsOnly: true, panelSlots: Object.fromEntries((board?.tutorItems ?? []).flatMap(item => {
-    try { const source = JSON.parse(item.layout ?? ''); return source.op === 'panel' ? [[item.id, source.slot]] : []; } catch { return []; }
-  })) } : {};
+  const lessonOptions = trialRequest ? { requireVisuals: true, currentAnimation: board?.animation?.spec,
+    currentDraw: (board?.tutorItems ?? []).flatMap(item => {
+      try { const command = parseDrawCommand(item.layout ?? ''); return command ? [command] : []; } catch { return []; }
+    }),
+  } : {};
   let lesson = '';
   let emitted = '';
   for await (const part of stream) {

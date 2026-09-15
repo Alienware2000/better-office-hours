@@ -42,6 +42,8 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
     .map((group) => `${group.id}:${group.version ?? 0}`)
     .join(",");
 
+  const activeWritingKey = pendingKey.split(',')[0];
+
   useEffect(() => { if (expanded) openBoard(); }, [expanded]);
 
   useEffect(() => subscribeBoard(() => setTick((n) => n + 1)), []);
@@ -81,7 +83,7 @@ export function Whiteboard({ active = true, expanded = false, onExpand }: { acti
     }
     const wait = window.setTimeout(() => markGroupShown(pending[0].id), groupReveal(pending[0]).duration);
     return () => window.clearTimeout(wait);
-  }, [pendingKey, reduceMotion, board.pageId]);
+  }, [activeWritingKey, reduceMotion, board.pageId]);
 
   useEffect(() => {
     setBoardSnapshotProvider(() => {

@@ -38,13 +38,17 @@ export function writingBounds(mark: TextMark): Box {
 export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { points: { x: number; y: number }[] }[], motion: ShapeGroup[] = []): ShapeGroup | null {
   if (group.fixedLayout) return group;
   if (group.drawables.length !== 1 || group.drawables[0].kind !== 'text') return group;
-  const mark = group.drawables[0];
+  const original = group.drawables[0];
+  // TeX spacing sometimes leaks into ordinary symbol legends. Keep prose
+  // readable without changing actual mathematical commands or expressions.
+  const mark = !isMathText(original.text) ? { ...original, text: original.text.replace(/\\[,;:! ]/g, ' ').replace(/\s+/g, ' ').trim() } : original;
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
   const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
   if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color, false) ?? undefined }] };
   if (!note && !math && width(mark.text, .038, false) <= .91 && groups.some(group => group.geometry?.length)) return group;
-  let fontSize = heading ? .057 : mark.size === 'm' ? .085 : .068;
+  const caption = note && !heading && !math && groups.some(group => group.geometry?.length);
+  let fontSize = heading ? .048 : caption ? .038 : mark.size === 'm' ? .085 : .068;
   const available = 1 - margin * 2;
   const fullFormula = math && hasLatex(mark.text) ? typesetMath(mark.text, mark.color) : null;
   const latex = Boolean(fullFormula);
@@ -54,7 +58,7 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   let line = '';
   // Keep a product such as 2 a Δy together. Only long expressions need a
   // continuation, preferably at a relation or additive operator.
-  const rows = note && !heading && !latex ? mark.text.split(/,\s*(?=[^,]+[=≈])/u) : [mark.text];
+  const rows = note && !heading && !caption && !latex ? mark.text.split(/,\s*(?=[^,]+[=≈])/u) : [mark.text];
   for (const row of latex ? [] : rows) {
     const tokens = latex ? [row] : math ? row.split(/\s+(?=[=+−]|-(?!\d))/) : row.split(/\s+/);
     for (const token of tokens) {

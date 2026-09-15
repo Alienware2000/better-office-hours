@@ -67,3 +67,32 @@ store.resetBoard(); store.applyDrawCommands([panel]); store.markGroupShown(panel
 store.applyDrawCommands([{ ...panel, title: 'A refined explanation' }]);
 assert.equal(store.getBoardState().groups[0].appear, 'pending', 'Revised panel text gets the writing reveal again');
 console.log('Every streaming boundary withholds unmatched speech; panel revisions animate.');
+
+// Rich trial vocabulary must survive every streaming prefix without allowing
+// a spoken beat whose drawing cannot be rendered.
+const equation = {op:'text',id:'relation',at:{x:.5,y:.8},text:String.raw`\lambda = \frac{h}{p}`,size:'m'};
+const wave = {op:'curve',id:'wave',points:[{x:.1,y:.4},{x:.3,y:.2},{x:.5,y:.4},{x:.7,y:.6},{x:.9,y:.4}],label:'Wavelength'};
+const rich = {...lesson, beats:[{...lesson.beats[0],draw:[JSON.stringify(wave)],speech:'A wave has a spacing.'},{...lesson.beats[0],draw:[JSON.stringify(equation)],speech:'The equation connects spacing and momentum.'}]};
+const encoded = JSON.stringify(rich);
+assert.doesNotThrow(()=>conceptResponse(encoded,{requireVisuals:true}));
+for(let i=0;i<=encoded.length;i++) {
+  const partial = conceptProgress(encoded.slice(0,i),{requireVisuals:true});
+  if(partial.includes(rich.beats[1].speech)) assert.ok(partial.includes('\\\\lambda'));
+}
+for(const draw of [[],[{op:'circle',id:'invalid'}],[{op:'highlight',id:'missing'}],[{op:'clear'}]]) {
+  assert.throws(()=>conceptResponse(JSON.stringify({...lesson,beats:[{...lesson.beats[0],draw:draw.map(JSON.stringify)}]}),{requireVisuals:true}));
+}
+assert.throws(()=>conceptResponse(JSON.stringify({...rich,move:'orient'}),{requireVisuals:true}), /matching drawing/);
+assert.doesNotThrow(()=>conceptResponse(JSON.stringify({...lesson,beats:[{...lesson.beats[0],draw:[JSON.stringify({op:'highlight',id:'wave'})]}]}),{requireVisuals:true,currentDraw:[wave]}));
+store.resetBoard();store.applyDrawCommands([panel]);store.addStudentStroke(stroke);store.applyDrawCommands([wave,equation]);
+assert.equal(store.getBoardState().pageId,2);
+assert.equal(store.getBoardState().groups.length,2);
+assert.ok(JSON.stringify(store.getBoardState().earlierPages).includes('student'));
+store.applyDrawCommands([panel]);assert.equal(store.getBoardState().pageId,3);
+console.log('PASS: rich equations/geometry, streamed visual pairing, invalid/stale/disallowed drawing rejection, and format pagination.');
+const animation={id:'motion',duration:1,shapes:[{kind:'dot',id:'particle',keyframes:[{t:0,at:{x:.2,y:.5},r:.03},{t:1,at:{x:.6,y:.5},r:.03}]}]};
+const motionLesson={...lesson,visual:'animation',beats:[{...lesson.beats[0],draw:[],animation:JSON.stringify(animation)}]};
+assert.doesNotThrow(()=>conceptResponse(JSON.stringify(motionLesson),{requireVisuals:true}));
+assert.doesNotThrow(()=>conceptResponse(JSON.stringify({...motionLesson,beats:[{...motionLesson.beats[0],animation:'focus=particle'}]}),{requireVisuals:true,currentAnimation:animation}));
+assert.throws(()=>conceptResponse(JSON.stringify({...motionLesson,beats:[{...motionLesson.beats[0],animation:'resume'}]}),{requireVisuals:true}));
+console.log('PASS: rich trial animation, valid focus, and missing-scene rejection.');

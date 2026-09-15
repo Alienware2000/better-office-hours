@@ -1,6 +1,6 @@
 # Current engineering notes
 
-Updated: 2026-09-14. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
+Updated: 2026-09-15. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
 
 ## Workflow and environment
 
@@ -10,11 +10,11 @@ Updated: 2026-09-14. Keep this short and current. Search [archived notes](archiv
 - Standalone helper: ~/.local/bin/boh-context, not on PATH. Refresh with npm run context -- --install after changes. BOH_CONTEXT_HOME isolates fixtures; see MEMORY_RECIPE for reuse.
 - Groundtrack tools remain absent. Config and simulated enrichment passed; sign-in/hook approval and live verification are pending. Local continuation works without it. Never invent event IDs.
 - npm run dev:local binds to loopback on 3105, uses this checkout's .data, refuses occupied ports/external data symlinks, and disables cloud storage/Google config including dotenv values. It is not an outbound-network sandbox. Preserve old PDF files, browser-origin saves, and server processes. Raw dev/build lack these guards.
-- Fast Refresh can interrupt audio. Keep tutor source stable during live sessions; do not build there. Use isolated test data and a separate runtime for voice/renderer checks, never links to live data. Prior builds failed with an externally linked .data.
+- Fast Refresh can interrupt audio and previously erased board state on module replacement. This update lost the saved trial drawings; transcript survived. Development store now survives replacement, with a regression test. Export and verify a recovery snapshot before future live-runtime edits. Keep tutor source stable during live sessions; do not build there. Use isolated test data and a separate runtime for voice/renderer checks, never links to live data. Prior builds failed with an externally linked .data.
 
 ## Voice and pedagogy
 
-- Opus-low trial authorized at 3107 with isolated source/build/storage; see TUTOR_TRIAL. Panels/literal colors/line labels are the coordinated contract extension. Human prompts remain frozen. Initial five model calls/one TTS; David now reports good teaching/diagrams but odd voice endings. Strict per-beat validation prevents speaking when a panel is rejected or stale. A valid panel still may teach incorrectly. Initial caption spacing was checked against the existing padded bounds before browser inspection.
+- Opus trial at 3107: panel-only instructions caused box-only explanations and omitted equations despite an explicit request. Restored full DRAW/ANIM with per-beat validation. Shared-clock glyph prefixes replace independent CSS timers; compact legends avoid needless page breaks. Two synthetic calls plus browser/layout/voice checks; see TUTOR_TRIAL. Model semantics remain experimental; human prompts stay frozen. check-board.mjs expects a live 3100 server and stopped before inference; use focused offline checks instead. Groundtrack unavailable.
 - Quality-first correction: David rejected starting with Flash/Haiku for speed. The active comparison uses flagship reasoning candidates, with explicit effort/budget settings. OpenRouter is configured privately for benchmark children and the isolated trial; never put its key in notes. Current-stack controls and 8,000-token capability pilots are different experiments.
 - Pilot failure evidence is in TUTOR_EVALUATION and evaluations/2026-09-14-model-pilot.md: Fable's seventh draw was clipped before a highlight referenced it; Opus returned fenced JSON; Gemini returned an empty object twice. No runtime fix. Do not repeat unchanged Gemini requests or treat compatibility failures as intelligence rankings.
 

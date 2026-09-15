@@ -1,4 +1,6 @@
 import { teachingIntent, teachingTag, teachingDraw } from './teaching-intent';
+import type { AnimationSpec, DrawCommand } from '@/lib/types';
+import { interpretCommand } from '@/lib/whiteboard/geometry';
 import { parseDrawCommand } from '@/lib/whiteboard/parse-draw';
 import { validateAnimation } from '@/lib/whiteboard/animation';
 
@@ -48,7 +50,7 @@ export function conceptHeader(raw: string): string {
   return `${teachingTag(intent)}\n${spoken(JSON.parse(match[4]))}\n`;
 }
 
-type LessonOptions = { panelsOnly?: boolean; panelSlots?: Record<string, number> };
+type LessonOptions = { panelsOnly?: boolean; panelSlots?: Record<string, number>; requireVisuals?: boolean; currentDraw?: DrawCommand[]; currentAnimation?: AnimationSpec };
 export function conceptResponse(raw: string, options: LessonOptions = {}): string {
   const value = JSON.parse(raw) as { handoff: boolean; move?: string; visual?: string; introduction?: string; beats?: unknown[]; question?: string };
   if (!value || typeof value.handoff !== 'boolean') throw new Error('The concept explanation was incomplete. Please try again.');
@@ -60,6 +62,8 @@ export function conceptResponse(raw: string, options: LessonOptions = {}): strin
   const header = `${teachingTag(intent)}\n${spoken(value.introduction)}\n`;
   const result: string[] = [header];
   const slots = new Map(Object.entries(options.panelSlots ?? {}));
+  const current = new Map<string, DrawCommand>((options.currentDraw ?? []).flatMap(command => 'id' in command ? [[command.id, command] as const] : []));
+  let scene = options.currentAnimation;
   let previousSpeech = spoken(value.introduction);
   for (const item of value.beats.slice(0, 3)) {
     if (!item || typeof item !== 'object') continue;
@@ -77,6 +81,42 @@ export function conceptResponse(raw: string, options: LessonOptions = {}): strin
           throw new Error('The tutor referenced a panel that is no longer on this page.');
         }
       }
+    }
+    if (options.requireVisuals && spoken(beat.speech)) {
+      let visible = false;
+      if (intent.visual === 'none' || !Array.isArray(beat.draw) || beat.draw.length > 6) throw new Error('The tutor could not prepare a matching drawing. Please try a smaller step.');
+      for (const raw of beat.draw) {
+        const command = typeof raw === 'string' ? parseDrawCommand(raw) : null;
+        const allowed = command && teachingDraw(command, intent);
+        const op = allowed && interpretCommand(allowed, current.size + 1);
+        if (!command || !allowed || !op) throw new Error('The tutor could not prepare a matching drawing. Please try a smaller step.');
+        if (op.kind === 'clear') { current.clear(); scene = undefined; visible = false; }
+        else if (op.kind === 'remove') current.delete(op.id);
+        else if (op.kind === 'highlight') {
+          if (!current.has(op.id)) throw new Error('The tutor referenced a drawing that is no longer on this page.');
+          visible = true;
+        } else {
+          const differentFormat = [...current.values()].some(item => (item.op === 'panel') !== (command.op === 'panel'));
+          const occupiedSlot = command.op === 'panel' && [...current.values()].some(item => item.op === 'panel' && item.id !== command.id && item.slot === command.slot);
+          const oldTopic = current.get('topic');
+          const newTopic = command.op === 'text' && command.id === 'topic' && oldTopic?.op === 'text' && oldTopic.text.trim().toLowerCase() !== command.text.trim().toLowerCase();
+          if (differentFormat || occupiedSlot || newTopic) { current.clear(); scene = undefined; }
+          current.set(op.group.id, command);
+          visible = true;
+        }
+      }
+      if (typeof beat.animation === 'string' && beat.animation.trim()) {
+        const control = beat.animation.trim();
+        if (control === 'resume' || control.startsWith('focus=')) {
+          if (!scene || (control !== 'resume' && !scene.shapes.some(shape => shape.id === control.slice(6)))) throw new Error('The tutor referenced an animation that is no longer available.');
+        } else {
+          const animation = validateAnimation(JSON.parse(control));
+          if (!animation) throw new Error('The tutor could not prepare a matching animation.');
+          scene = animation;
+        }
+        visible = true;
+      }
+      if (!visible) throw new Error('The tutor could not prepare a matching drawing. Please try a smaller step.');
     }
     // Keep the existing measured PDF targeting path. A beat cannot inject a
     // mode switch or a different teaching move through this field.
