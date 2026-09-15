@@ -15,8 +15,8 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', llmResponse = null, manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, realIntent = false, startup = {} } = {}) {
-  const effects = [], states = [], requests = [], recordings = [];
+async function mount({ llmText = '', llmResponse = null, manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, realIntent = false, startup = {}, trial = false } = {}) {
+  const effects = [], states = [], requests = [], recordings = [], diagnostics = [];
   const inputAudioState = { value: 'running' };
   const stt = deferred();
   const sttNext = deferred();
@@ -64,7 +64,8 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     './constants': { pickGreeting: () => 'What are we working on?', CHIPS: [] },
   };
   const globals = {
-    process: { env: { NODE_ENV: 'test' } },
+    process: { env: { NODE_ENV: 'test', NEXT_PUBLIC_BOH_VOICE_TRIAL: trial ? '1' : '' } },
+    CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
     Blob, FormData, AbortController, Response, TextDecoder, URL, DOMException,
     Audio: class {
       paused = false;
@@ -98,7 +99,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     requestAnimationFrame: callback => { frame = callback; return 1; },
     cancelAnimationFrame: noOp,
     document: { hidden: false, addEventListener: (name, cb) => listeners.set(name, cb), removeEventListener: noOp },
-    window: { matchMedia: () => ({ matches: false }), addEventListener: (name, cb) => listeners.set(name, cb), removeEventListener: noOp, setTimeout },
+    window: { dispatchEvent: event => { diagnostics.push(event.detail); }, matchMedia: () => ({ matches: false }), addEventListener: (name, cb) => listeners.set(name, cb), removeEventListener: noOp, setTimeout },
     fetch: async (url, options) => {
       requests.push({ url, ...options });
       if (url.endsWith('/health')) return startup.health ?? Response.json({ grok: true, elevenlabs: true });
@@ -158,7 +159,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     assert.equal(states[13], 'transcribing', 'Pending STT identifies the actual stage');
     assert.equal(recordings.length, 1, 'One recording before the first transcription');
   }
-  return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks,
+  return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks, diagnostics,
     track,
     resourceCounts: () => ({ mediaRequests, closedContexts, destroyedDetectors }),
     expireStartup: milliseconds => {
@@ -740,3 +741,25 @@ for (const cancel of [false, true]) {
   test.cleanup();
 }
 console.log('PASS: student-first summary metadata, recap/audio synchronization, interruption, and recap recovery.');
+
+{
+  const app = await mount({ trial: true, llmText: 'Light carries clues about the star.', deferPlaying: true });
+  await app.record();
+  app.tick(false, 1200);
+  app.stt.resolve(Response.json({ text: 'Explain starlight simply.' }));
+  await settle();
+  const requests = app.requests.filter(r => r.url.endsWith('/llm'));
+  assert.equal(requests.length, 1, 'Trial skips the separate fast routing request');
+  assert.equal(JSON.parse(requests[0].body).deep, true);
+  assert.equal(app.diagnostics.filter(d => d.kind === 'response_latency').length, 0, 'TTS readiness is not playback');
+  app.tick(false, 800);
+  app.audio[0].onplaying?.();
+  await settle();
+  const timing = app.diagnostics.filter(d => d.kind === 'response_latency');
+  assert.equal(timing.length, 1);
+  assert.ok(timing[0].elapsedMs >= 3900, 'Includes silence endpoint, STT, and playback wait');
+  app.audio[0].onplaying?.();
+  assert.equal(app.diagnostics.filter(d => d.kind === 'response_latency').length, 1, 'Duplicate playing event does not duplicate the timing');
+  app.cleanup();
+  console.log('PASS: isolated trial skips routing and records speech-end to playback once, including endpointing and STT.');
+}

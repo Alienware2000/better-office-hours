@@ -2,6 +2,8 @@
 
 Read DESIGN.md first. This doc defines the system shape and the contracts between lanes so that agents on two machines can build in parallel without talking.
 
+September 14 coordinated local-trial exception: David authorized extending DrawCommand with generic panels and optional line labels, plus six literal Color values. Existing operations remain compatible. `lib/whiteboard/panel.ts` owns fixed panel layout; the trial-only parser validates each beat. `scripts/trial-tutor.mjs` isolates port 3107 and enables Opus low. See [TUTOR_TRIAL](TUTOR_TRIAL.md). Other shared-contract freezes remain.
+
 ## Implementation baseline
 
 The diagram and interfaces below include target integrations. Read LANES.md for an inventory of actual files and first PR boundaries. Currently the browser owns the custom voice loop and calls the LLM route; STT and TTS are separate ElevenLabs API calls. The whiteboard is custom SVG. Auth, Supabase, ingest/retrieve endpoints, persistent session/recap endpoints, and the spoken recap flow are not implemented. Shared types describe their target data, not working services.

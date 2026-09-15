@@ -1,4 +1,4 @@
-import { teachingIntent, teachingTag } from './teaching-intent';
+import { teachingIntent, teachingTag, teachingDraw } from './teaching-intent';
 import { parseDrawCommand } from '@/lib/whiteboard/parse-draw';
 import { validateAnimation } from '@/lib/whiteboard/animation';
 
@@ -48,7 +48,8 @@ export function conceptHeader(raw: string): string {
   return `${teachingTag(intent)}\n${spoken(JSON.parse(match[4]))}\n`;
 }
 
-export function conceptResponse(raw: string): string {
+type LessonOptions = { panelsOnly?: boolean; panelSlots?: Record<string, number> };
+export function conceptResponse(raw: string, options: LessonOptions = {}): string {
   const value = JSON.parse(raw) as { handoff: boolean; move?: string; visual?: string; introduction?: string; beats?: unknown[]; question?: string };
   if (!value || typeof value.handoff !== 'boolean') throw new Error('The concept explanation was incomplete. Please try again.');
   if (value.handoff === true) {
@@ -58,10 +59,25 @@ export function conceptResponse(raw: string): string {
   if (!intent || !Array.isArray(value.beats)) throw new Error('The concept explanation was incomplete. Please try again.');
   const header = `${teachingTag(intent)}\n${spoken(value.introduction)}\n`;
   const result: string[] = [header];
+  const slots = new Map(Object.entries(options.panelSlots ?? {}));
   let previousSpeech = spoken(value.introduction);
   for (const item of value.beats.slice(0, 3)) {
     if (!item || typeof item !== 'object') continue;
     const beat = item as { pdf?: string; draw?: unknown[]; animation?: string; speech?: string };
+    if (options.panelsOnly && spoken(beat.speech)) {
+      const commands = (beat.draw ?? []).map(raw => typeof raw === 'string' ? parseDrawCommand(raw) : null);
+      if (!commands.length || commands.length > 6 || commands.some(command => !command || !['panel', 'highlight'].includes(command.op) || !teachingDraw(command, intent))) {
+        throw new Error('The tutor could not prepare a matching drawing. Please try a smaller step.');
+      }
+      for (const command of commands) {
+        if (command?.op === 'panel') {
+          if ([...slots].some(([id, slot]) => id !== command.id && slot === command.slot)) slots.clear();
+          slots.set(command.id, command.slot);
+        } else if (command?.op === 'highlight' && !slots.has(command.id)) {
+          throw new Error('The tutor referenced a panel that is no longer on this page.');
+        }
+      }
+    }
     // Keep the existing measured PDF targeting path. A beat cannot inject a
     // mode switch or a different teaching move through this field.
     if (typeof beat.pdf === 'string' && /^\[(?:POINT|HIGHLIGHT) [^\[\]\r\n]{1,500}\]$/.test(beat.pdf.trim())) result.push(beat.pdf.trim() + '\n');
@@ -96,7 +112,7 @@ export function conceptResponse(raw: string): string {
 
 // Release each complete beat while later beats are still arriving. A brace
 // inside quoted LaTeX/JSON is data, and cannot end a beat early.
-export function conceptProgress(raw: string): string {
+export function conceptProgress(raw: string, options: LessonOptions = {}): string {
   const match = raw.match(HEADER);
   if (!match) return '';
   const header = conceptHeader(raw);
@@ -126,5 +142,5 @@ export function conceptProgress(raw: string): string {
       start = -1;
     }
   }
-  return conceptResponse(JSON.stringify({ handoff: false, move: match[2], visual: match[3], introduction: JSON.parse(match[4]), beats, question: '' }));
+  return conceptResponse(JSON.stringify({ handoff: false, move: match[2], visual: match[3], introduction: JSON.parse(match[4]), beats, question: '' }), options);
 }

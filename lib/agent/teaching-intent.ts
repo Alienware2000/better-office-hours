@@ -44,6 +44,7 @@ export function isRelationship(text: string): boolean {
 
 export function teachingDraw(command: DrawCommand, intent?: TeachingIntent): DrawCommand | null {
   if (canRevealRelationship(intent)) return command;
+  if (command.op === 'panel') return [command.title, ...command.items.map(item => item.label)].some(isRelationship) ? null : command;
   if (command.op === 'text') return isRelationship(command.text) ? null : command;
   if ('label' in command && command.label && isRelationship(command.label)) return { ...command, label: undefined };
   if (command.op === 'axes') return { ...command,

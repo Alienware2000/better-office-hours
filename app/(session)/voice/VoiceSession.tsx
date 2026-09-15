@@ -19,6 +19,7 @@ import type { SavedSession, SessionDiagnostic } from './saved-sessions';
 import type { PdfViewState } from '@/lib/pdf/view-state';
 import { resetBoard, subscribeBoard } from '@/lib/whiteboard/store';
 import "./session.css";
+import { TrialStatus } from "./TrialStatus";
 
 export function VoiceSession(props: { ownerKey?: string; studentName?: string; accountName?: string; signInAvailable?: boolean }) {
   return <SessionLibrary {...props} Desk={SessionDesk} />;
@@ -189,6 +190,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
   return (
     <>
     <CourseConnection headerActions={headerActions} recap={recap} selected={courseId} onSelect={id => { pauseVoice(); setCourseId(id); }} onOpen={pauseVoice} />
+    {process.env.NEXT_PUBLIC_BOH_VOICE_TRIAL === "1" && <TrialStatus key={saved.id} />}
     <main className="session-shell">
       <LayoutGroup id="session-layout">
         {!split ? (

@@ -99,7 +99,7 @@ export function validateAnimation(input: unknown): AnimationSpec | null {
             position(f.from) &&
             position(f.to) &&
             (f.color === undefined ||
-              ["ink", "accent", "muted", "warn"].includes(String(f.color))),
+              ["ink", "accent", "muted", "warn", "red", "orange", "yellow", "green", "blue", "violet"].includes(String(f.color))),
         );
         break;
       case "dot":

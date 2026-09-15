@@ -439,3 +439,9 @@
 
 .takeaway-dialog > article { box-shadow: none; }
 .takeaway-dialog > article > header { display: none; }
+
+.trial-status { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem 1.25rem; margin: .8rem auto 0; flex: 0 0 auto; padding: .7rem 1rem; width: min(92%, 70rem); border: 1px solid #ccd4ca; border-radius: .8rem; background: #f5f7f1; color: #283c32; font-size: .85rem; }
+.trial-status small { flex-basis: 100%; color: #63716a; font-size: .75rem; }
+
+.session-desk:has(.trial-status) { display: flex; flex-direction: column; }
+.session-desk > .trial-status + .session-shell { flex: 1; height: auto; }

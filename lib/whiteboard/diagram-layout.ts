@@ -48,8 +48,8 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
     (!mark.heading && !/^(?:topic(?:-|$)|(?:given|note|definition)-)/.test(group.id) && (!isMathText(mark.text) || isCompactMath(mark.text)));
   const normalized = groups.map(group => ({ ...group, drawables: group.drawables.map(mark =>
     mark.kind === 'text' && mark.heading ? { ...mark, fontSize: .048 } : mark) }));
-  const occupied: Box[] = normalized.flatMap(group => group.drawables.flatMap(mark => mark.kind === 'text' && !isLabel(group, mark) ? [writingBounds(mark)] : []));
-  return normalized.map(group => ({ ...group, drawables: group.drawables.flatMap((mark): Drawable | Drawable[] => {
+  const occupied: Box[] = normalized.flatMap(group => group.drawables.flatMap(mark => mark.kind === 'text' && (group.fixedLayout || !isLabel(group, mark)) ? [writingBounds(mark)] : []));
+  return normalized.map(group => group.fixedLayout ? group : ({ ...group, drawables: group.drawables.flatMap((mark): Drawable | Drawable[] => {
     if (mark.kind === 'path' && mark.annotation) return [];
     if (mark.kind === 'text' && mark.heading) return { ...mark, fontSize: .048 };
     if (mark.kind !== 'text' || !isLabel(group, mark)) return mark;

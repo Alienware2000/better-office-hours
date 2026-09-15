@@ -127,6 +127,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, pulseId: op.id };
       continue;
     }
+    if (command.op === 'panel' && next.groups.some(group => group.source?.op === 'panel' && group.source.slot === command.slot && group.id !== command.id)) next = nextPage(next);
     const previous = next.groups.find(group => group.id === op.group.id);
     if (op.group.source && previous?.source && JSON.stringify(op.group.source) === JSON.stringify(previous.source)) continue;
     // A new topic continues below the old work, with its student ink intact.
@@ -143,7 +144,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
     if (!laidOut) continue;
     const existing = next.groups.findIndex((group) => group.id === op.group.id);
     if (existing >= 0 && JSON.stringify(next.groups[existing].drawables) === JSON.stringify(laidOut.drawables)) continue;
-    const geometryEdit = previous?.source && op.group.source?.op === previous.source.op && previous.appear === 'done' && !previous.unresolved;
+    const geometryEdit = command.op !== 'panel' && previous?.source && op.group.source?.op === previous.source.op && previous.appear === 'done' && !previous.unresolved;
     const group: BoardGroup = { ...laidOut, appear: geometryEdit ? 'done' : 'pending', version: geometryEdit ? previous.version : next.seq };
     if (existing >= 0) {
       const groups = next.groups.slice();

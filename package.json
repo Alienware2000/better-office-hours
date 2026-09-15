@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "trial:tutor": "node scripts/trial-tutor.mjs",
     "review:tutor": "node scripts/review-tutor-models.mjs",
     "dev:local": "node scripts/dev-local.mjs",
     "context": "node scripts/context.mjs",

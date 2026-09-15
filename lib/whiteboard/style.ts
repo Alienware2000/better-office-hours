@@ -8,6 +8,8 @@ export const boardStyle = {
     accent: "#b95832",
     muted: "#938b7d",
     warn: "#a77726",
+    red: "#cf3434", orange: "#ef842d", yellow: "#eacb38",
+    green: "#329653", blue: "#347ac5", violet: "#7850b1",
   } satisfies Record<Color, string>,
   stroke: 2.25,
   label: { s: 0.054, m: 0.075 },

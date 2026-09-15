@@ -1,3 +1,4 @@
+import { trialEnabled, TRIAL_GUIDANCE, TRIAL_MODEL } from './trial';
 import { awaitingSummary, RECAP_FORMAT, RECAP_GUIDANCE } from './closing';
 import { validateRecap } from '@/lib/session/recap';
 import OpenAI from "openai";
@@ -30,19 +31,24 @@ export const GROK_MODEL = "grok-4.20-0309-non-reasoning";
 // Reasoning lane, for turns where being wrong costs the student. Low effort
 // reduces the wait, but recent visual turns still took 24-33s. Structured
 // handoffs are silent; no placeholder speech hides that generation delay.
-export const GROK_DEEP_MODEL = "grok-4.6";
+export const GROK_DEEP_MODEL = trialEnabled() ? TRIAL_MODEL : "grok-4.6";
 
 // Teaching desks use narrated lessons for concepts and homework setups alike.
 // Topic names never select fixtures; the model decides what needs a picture.
 export function usesConceptLesson(deep = false, visualRepair = false, request = snapshot()): boolean {
-  return deep && !visualRepair && Boolean(request.page || request.board?.open);
+  return deep && !visualRepair && Boolean(trialEnabled() || request.page || request.board?.open);
 }
 
 export function usesConceptRouter(deep = false, visualRepair = false): boolean {
   return !deep && !visualRepair;
 }
 
-function client() {
+function client(deep = false) {
+  if (trialEnabled() && deep) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error('The local trial needs OPENROUTER_API_KEY');
+    return new OpenAI({ apiKey, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 0, timeout: 60000 });
+  }
   const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) {
     throw new Error("XAI_API_KEY is not set");
@@ -190,7 +196,8 @@ export async function* streamGrok(
   visualRepair = false,
   request = snapshot(),
 ): AsyncGenerator<string> {
-  const grok = client();
+  const trialRequest = trialEnabled() && (deep || visualRepair);
+  const grok = client(trialRequest || deep);
   const conceptTeaching = usesConceptLesson(deep, visualRepair, request);
   const conceptRouting = usesConceptRouter(deep, visualRepair);
   const { page: live, board } = request;
@@ -201,26 +208,31 @@ export async function* streamGrok(
       tutorItems: board?.tutorItems?.map(item => ({ id: item.id, text: item.text, status: item.status })).slice(-12) ?? [] },
   }) : toApiMessages(history, event, deep, request);
   if (conceptTeaching) messages.push({ role: 'system', content: CONCEPT_FORMAT_GUIDANCE });
+  if (trialRequest) messages.push({ role: 'system', content: TRIAL_GUIDANCE });
   if (visualRepair) {
     const last = history.filter(message => message.role === 'assistant').at(-1)?.content ?? '';
     const intent = parseAgentTurn(last).teaching;
     messages.push({ role: 'system', content: `Silent visual recovery for this already chosen teaching move: ${teachingTag(intent)}. Keep that move and its disclosure boundary. Compose only the missing visual for the last explanation, without advancing the hint ladder or revealing what the student was asked to supply. Return [BOARD open] and at most five compact valid DRAW commands, no speech. Use a static conceptual sketch for diagram/animation, never another animation attempt. A sketch needs meaningful geometry and clear short labels, not a formula-only note. For notes use only already established givens, learner-supplied relationships, or the specifically justified hint. Never a computed graded answer, complete solution, invented given, or scripted fixture. Do not clear/remove existing work. Use ops text, line, arrow, curve, circle, axes. Put circle positions in center:{x,y}. If it cannot be illustrated without giving away the question, return nothing.` });
   }
+  if (trialRequest && visualRepair) messages.push({ role: 'system', content: 'For this silent repair only, override the JSON lesson envelope: return only [BOARD open][DRAW {"op":"panel",...}] tags using the panel schema above. No speech, no free-form geometry, no new teaching content. Preserve the existing teaching move and graded-work boundary.' });
   const stream = await grok.chat.completions.create({
-    model: deep ? GROK_DEEP_MODEL : GROK_MODEL,
-    temperature: visualRepair ? 0.3 : deep ? 0.5 : 0.85,
+    model: trialRequest ? TRIAL_MODEL : deep ? GROK_DEEP_MODEL : GROK_MODEL,
+    ...(trialRequest ? { provider: { sort: 'latency', require_parameters: true, allow_fallbacks: false } } : { temperature: visualRepair ? 0.3 : deep ? 0.5 : 0.85 }),
     // Reasoning tokens count against this, so a tight cap on the deep lane
     // returns an empty message.
     // Board turns need room for a few DRAW tags plus a short spoken line.
     // 220 cut mid-tag and left the board empty.
-    max_tokens: conceptRouting ? 300 : deep ? 2400 : 1800,
+    max_tokens: trialRequest ? 8000 : conceptRouting ? 300 : deep ? 2400 : 1800,
     stream: true,
     messages,
-    ...(deep ? { reasoning_effort: "low" as const } : {}),
+    ...(trialRequest ? { reasoning: { effort: "low", exclude: true } } : deep ? { reasoning_effort: "low" as const } : {}),
     ...(conceptTeaching ? { response_format: CONCEPT_RESPONSE_FORMAT } : {}),
     ...(conceptRouting ? { response_format: CONCEPT_ROUTING_FORMAT } : {}),
   }, { signal });
 
+  const lessonOptions = trialRequest ? { panelsOnly: true, panelSlots: Object.fromEntries((board?.tutorItems ?? []).flatMap(item => {
+    try { const source = JSON.parse(item.layout ?? ''); return source.op === 'panel' ? [[item.id, source.slot]] : []; } catch { return []; }
+  })) } : {};
   let lesson = '';
   let emitted = '';
   for await (const part of stream) {
@@ -229,7 +241,7 @@ export async function* streamGrok(
     if (!conceptTeaching && !conceptRouting) { yield text; continue; }
     lesson += text;
     if (conceptRouting) continue;
-    const progress = conceptProgress(lesson);
+    const progress = conceptProgress(lesson, lessonOptions);
     if (progress.length > emitted.length) {
       if (!progress.startsWith(emitted)) throw new Error('The concept explanation changed while loading. Please try again.');
       yield progress.slice(emitted.length);
@@ -247,7 +259,7 @@ export async function* streamGrok(
       if (!awaitingSummary(history)) {
         yield '[SUMMARY_REQUEST]Before we wrap up, what is one idea you are taking away?';
       } else {
-        const completion = await grok.chat.completions.create({ model: GROK_DEEP_MODEL, reasoning_effort: 'low', temperature: 0.3, max_tokens: 900,
+        const completion = await client(true).chat.completions.create({ model: GROK_DEEP_MODEL, reasoning_effort: 'low', temperature: 0.3, max_tokens: 900,
           messages: [{ role: 'system', content: loadTutorPrompt('your course') + '\n' + buildContextBlock(request.student) + '\n' + RECAP_GUIDANCE }, ...history.filter(m => m.role !== 'system').slice(-24)], response_format: RECAP_FORMAT,
         }, { signal });
         const data = JSON.parse(completion.choices[0]?.message.content ?? '');
@@ -261,7 +273,7 @@ export async function* streamGrok(
     } else yield conceptRoute(lesson, !live && !board?.open);
   }
   if (conceptTeaching) {
-    const complete = conceptResponse(lesson);
+    const complete = conceptResponse(lesson, lessonOptions);
     if (!complete.startsWith(emitted)) throw new Error('The concept explanation changed while loading. Please try again.');
     yield complete.slice(emitted.length);
   }

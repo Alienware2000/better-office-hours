@@ -36,6 +36,7 @@ export function writingBounds(mark: TextMark): Box {
 // Resolve writing once in board coordinates. The snapshot and rendered board
 // consume the same lines; existing writing never jumps when a new line arrives.
 export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { points: { x: number; y: number }[] }[], motion: ShapeGroup[] = []): ShapeGroup | null {
+  if (group.fixedLayout) return group;
   if (group.drawables.length !== 1 || group.drawables[0].kind !== 'text') return group;
   const mark = group.drawables[0];
   const heading = group.id === 'topic' || group.id.startsWith('topic-');

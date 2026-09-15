@@ -1,34 +1,34 @@
 # Active task
 
 Updated: 2026-09-14
-State: in_progress
+State: ready_for_review
 Branch: lane/post-hackathon-local
-Base: 189cc7f5028ca8d2a18c9762d8dea8371fabf3cf
+Base: 5da2a99671551813d11db0dc542288a813e1f242
 
 ## Objective
 
-Find a strong, fast teaching model with accurate whiteboard use. Quality first, then latency. Give David direct visibility and his own review controls.
+Trial a strong teaching model with simple explanations, readable matching diagrams, and visible first-audio delay. David authorized the Opus-low local trial and necessary drawing-contract extension.
 
 ## Scope and constraints
 
-Local only. Preserve the tutor at 3105, Chrome sessions, private exports, and submitted baseline. No model-default change without comparison and David's choice. PROMPT/PEDAGOGY and lib/types.ts stay frozen. No private-session transmission to new providers.
+Local only. Preserve tutor 3105, review 3106, Chrome histories, private exports, and submitted baseline. No production model selection or publication. Human PROMPT/PEDAGOGY remain unchanged. Contract extension is limited to panels, literal colors, and line labels. No private-session transmission.
 
 ## Progress
 
-Local review server at 3106 shows thirteen synthetic reports, raw/accepted output, reconstructed boards, timings, live tests, and saved human ratings. Start with npm run review:tutor; see [walkthrough](TUTOR_REVIEW.md). Eleven earlier pilot requests plus two visible biology requests completed. Opus/Astra/Fable remain candidates; no model selected. The board policy is recorded, not implemented.
+`npm run trial:tutor` launches an isolated source/build/storage snapshot at 3107. Opus low bypasses the extra routing pass. The model supplies generic panels with reserved text/figure regions and meaningful colors. Each spoken beat must have valid panel commands or an existing-panel highlight. Rejected drawings fail visibly before their speech. Existing audio-synchronized writing and interruption remain. A visible timer records detected speech ending to audio playback.
 
 ## Decisions
 
-Keep raw output, parser acceptance, rendered layout, and audio timing distinct. Same prompt/schema; explicit budgets/effort/provider settings; no hidden retries/fallbacks. Provider selection is recorded, not pinned. Human quality review is required. New progress snapshots contain synthetic speech/board data, not hidden reasoning or audio.
+Use one temporary flagship baseline and generic panels. Keep raw model quality, accepted drawings, and measured audio timing distinct. Human judgment decides the next iteration.
 
 ## Validation
 
-Math, diagram/motion, review/speech checks, lint, and TypeScript passed. Browser bounds show no text collisions in both reported final astronomy boards. Model output/audio and frozen files are unchanged; local renderer files changed.
+Five synthetic Opus requests and one TTS request; browser-inspected actual revised board. Panel/layout/stream/disclosure, voice lifecycle/timing, concept, saved-session, diagram, and review checks pass, with TypeScript and focused lint. Raw reports stay private. [Trial guide](TUTOR_TRIAL.md) records observed failures and limitations. Real microphone timing and teaching quality need David's judgment. Panels are a limited trial, not a complete diagram language.
 
 ## Next action
 
-Local fixes prioritize label separation, reserve server font slack, and keep prose out of math. Review warns on unsupported line labels. David also rejects complex language and narration about colors absent on screen. [Evidence and next proposal](evaluations/2026-09-14-visual-teaching-review.md): coordinate literal colors/line labels in the frozen drawing contract, then evaluate simpler teaching with matching visuals and fresh first-audio timing. No new provider calls or model switch.
+David opens 3107, taps the orb, asks a simple concept question, then interrupts with "I don't understand. Make it simpler." Review audible delay, clarity, and matching board together. Keep the running snapshot stable during this test. Do not broaden the model comparison or migrate production yet.
 
 ## Blockers
 
-Groundtrack tools remain unavailable. Chrome session inventory and reported stars-related mismatch are unverified. Latency, all-turn board coverage, and provider/parser compatibility remain unresolved. Private reports/config need explicit transfer in a different checkout.
+Groundtrack tools remain unavailable. Saved Chrome session review is still queued. A different checkout needs explicit private configuration/report transfer. Live hardware behavior is unverified.

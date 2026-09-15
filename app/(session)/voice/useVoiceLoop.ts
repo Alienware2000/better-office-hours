@@ -421,6 +421,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
   // One model pass. Returns as soon as the text is in, with `spoken` resolving
   // when its audio finishes, so the caller can start the next pass underneath
   // the audio that is still playing.
+  const studentSpeechEndRef = useRef<number | null>(null);
   const runPass = useCallback(
     async ({
       event,
@@ -428,12 +429,14 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
       signal,
       playbackEpoch,
       onProgress,
+      studentEndedAt = null,
     }: {
       event?: SessionEvent;
       deep: boolean;
       signal: AbortSignal;
       playbackEpoch: number;
       onProgress?: () => void;
+      studentEndedAt?: number | null;
     }): Promise<{ full: string; turn: AgentTurn; spoken: Promise<void> }> => {
       // Each model pass has its own tag stream. Reset so a deep turn after
       // [THINK] does not skip DRAW commands that share indices with the lead-in.
@@ -518,6 +521,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
               console.info('Tutor visual playback ' + JSON.stringify({ request: response.headers.get('x-tutor-request'), deep, beats: visuals.length, page: board.pageId, groups: board.groups?.length, animation: Boolean(board.animation), revision: board.revision }));
             }
             heard = [heard, trimmed].filter(Boolean).join(" ");
+            if (!captionStarted && studentEndedAt !== null) recordSessionDiagnostic({ kind: 'response_latency', request, deep, elapsedMs: Math.round(performance.now() - studentEndedAt), message: 'Last detected speech to audio playing; useful content needs human judgment.' });
             if (!captionStarted) recordSessionDiagnostic({ kind: 'first_audio', request, deep, elapsedMs: Math.round(performance.now() - requestedAt) });
             if (!captionStarted && process.env.NODE_ENV !== 'production') console.info('Tutor speech playback ' + JSON.stringify({ request: response.headers.get('x-tutor-request'), deep, firstAudioMs: Math.round(performance.now() - requestedAt) }));
             if (!captionStarted) { addTurn("tutor", heard); captionStarted = true; }
@@ -580,7 +584,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
       let visualRepair: Promise<void> = Promise.resolve();
       const currentBoard = getBoardState();
       if (needsBoardRepair(turn, currentBoard.animation, currentBoard.groups.filter(group => !group.unresolved).map(group => group.id))) {
-        visualRepair = withRequestTimeout(signal, 6000, 'Board preparation timed out', async repairSignal => {
+        visualRepair = withRequestTimeout(signal, process.env.NEXT_PUBLIC_BOH_VOICE_TRIAL === '1' ? 15000 : 6000, 'Board preparation timed out', async repairSignal => {
           const response = await fetch('/api/agent/llm', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: repairSignal,
             body: JSON.stringify({ courseId: courseRef.current, visualRepair: true, messages: [...historyRef.current, { role: 'assistant', content: teachingTag(turn.teaching) + turn.speech }], livePage: visualSource, liveBoard: getLiveBoard() }),
@@ -608,6 +612,10 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
   const runTurn = useCallback(
     async ({ text, event }: { text?: string; event?: SessionEvent }) => {
       const said = text?.trim() ?? "";
+      const studentEndedAt = said ? studentSpeechEndRef.current : null;
+      studentSpeechEndRef.current = null;
+      const trial = process.env.NEXT_PUBLIC_BOH_VOICE_TRIAL === '1';
+      if (trial && said && layoutRef.current === 'orb_only') { adoptKind('concept', false); setLayout('concept'); openBoard(); }
       if (said) pendingAttachmentRef.current = null;
       if (!said && !event) return;
       if (said && isJunkSpeech(said)) return;
@@ -658,14 +666,15 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
         addTurn("student", said);
       }
 
-      const lead = await withRequestTimeout(signal, 30000, "The tutor took too long. Please try again.", signal => runPass({ event, deep: false, signal, playbackEpoch }));
+      const lead = await withRequestTimeout(signal, 30000, "The tutor took too long. Please try again.", (signal, onProgress) => runPass({ event, deep: trial, signal, playbackEpoch, studentEndedAt, onProgress }),
+        trial ? { idleMilliseconds: 20000, totalMilliseconds: 60000 } : undefined);
 
 
       if (lead.turn.think) {
         // Fired before waiting on the lead-in audio, so the reasoning wait
         // happens underneath it rather than after it.
         const deep = withRequestTimeout(signal, 30000, "The tutor took too long. Please try again.",
-          (signal, onProgress) => runPass({ event, deep: true, signal, playbackEpoch, onProgress }),
+          (signal, onProgress) => runPass({ event, deep: true, signal, playbackEpoch, onProgress, studentEndedAt }),
           { idleMilliseconds: 20000, totalMilliseconds: 60000 });
         void deep.catch(() => {});
         await lead.spoken;
@@ -869,7 +878,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
     let probabilityPeak = 0;
     let pcmPeak = 0;
     let raf = 0;
-    let capture: { controller: AbortController; epoch: number; pending: number; failed?: boolean; parts: (string | null)[] } | null = null;
+    let capture: { controller: AbortController; epoch: number; pending: number; failed?: boolean; parts: (string | null)[]; endedAt?: number } | null = null;
     const flushCapture = () => {
       const batch = capture;
       if (!batch || batch.pending || recordingRef.current) return;
@@ -877,7 +886,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
       capture = null;
       if (transcriptionAbortRef.current === batch.controller) transcriptionAbortRef.current = null;
       const text = batch.failed ? '' : batch.parts.filter((part): part is string => Boolean(part)).join(' ');
-      if (text) void sendRef.current(text);
+      if (text) { studentSpeechEndRef.current = batch.endedAt ?? null; void sendRef.current(text); }
       else if (!playingRef.current && !turnAbortRef.current) setOrb('listening');
     };
     const tabId = crypto.randomUUID();
@@ -969,6 +978,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
         capture = { controller: new AbortController(), epoch, pending: 0, parts: [] };
       }
       const batch = capture;
+      batch.endedAt = lastLoud || performance.now();
       const controller = batch.controller;
       const part = batch.parts.length;
       batch.parts.push(null);

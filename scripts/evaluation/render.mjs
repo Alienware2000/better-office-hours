@@ -80,11 +80,9 @@ export function renderReview(result, stage = 'final', animationTime = 0, include
     const beat = i > 0 ? lesson.beats[i - 1] : null;
     const delta = parseAgentTurn(conceptResponse(JSON.stringify({ ...lesson, introduction: '', beats: beat ? [beat] : [], question: '' })));
     if (beat?.draw?.length > 6) warnings.push(`Current parser check: beat ${i} generated ${beat.draw.length} drawing commands; only the first six are considered.`);
-    const missingLineLabels = (delta.board?.commands ?? []).filter(command => command.op === 'line' && typeof command.label === 'string' && command.label.trim());
-    if (missingLineLabels.length) warnings.push(`Missing visual: the current renderer does not display labels on ${missingLineLabels.map(command => `line "${command.id}"`).join(', ')}.`);
     for (const command of delta.board?.commands ?? []) {
       if (command.op === 'highlight' && !availableIds.has(command.id)) warnings.push(`Current parser check: highlight targets missing object "${command.id}".`);
-      else if (['text','circle','line','arrow','curve','axes'].includes(command.op)) availableIds.add(command.id);
+      else if (['text','circle','line','arrow','curve','axes','panel'].includes(command.op)) availableIds.add(command.id);
       else if (command.op === 'clear') availableIds.clear();
       else if (command.op === 'remove') availableIds.delete(command.id);
     }
