@@ -15,13 +15,13 @@ Local only. Preserve 3105/3106, paused 3107, browser histories, and private data
 
 ## Progress
 
-September 16: 3107 had no listener. Restarted a detached trial snapshot with existing storage/signing and the same origin; HTTP 200. No provider calls.
+September 16: restarted 3107 detached, same data/origin, HTTP 200. Later mic stall had live tracks but no detector frames. One UI retry restored Listening and fresh PCM/probabilities after five seconds. No code change; physical speech remains unverified.
 
 Restored DRAW/ANIM/math with per-beat visual validation. Panels remain optional. Shared-clock prefixes prevent independent letter animation; queued groups no longer restart the current timer. Compact legends stay beside diagrams.
 
 ## Decisions
 
-Keep Opus low for a fair capability test, not a production endorsement. Our panel-only restriction caused missing equations. Exact historical letter-paint failure remains unconfirmed.
+Keep Opus low for a fair capability test, not a production endorsement. Our panel-only restriction caused missing equations.
 
 ## Validation
 

@@ -24,6 +24,7 @@ Updated: 2026-09-16. Keep this short and current. Search [archived notes](archiv
 
 - Fast routing chooses logistics versus substantive reasoning; handoffs are silent. Rejected direct fast confirmations misclassified ambiguity, new equations, and misconceptions. Extra compact reasoning verification still took seconds and could add a request. Do not restore either without a controlled evaluation.
 - Completed structured beats stay in one TTS clip; sentence splitting stranded five-word closing caveats. Legacy streaming still releases sentences. Playback_end records ended/interrupted/error plus media position/duration, not acoustic completeness. No retained old audio. Keep audio-timed visuals, cancellation, barge-in, and ink ownership.
+- Live mic tracks do not prove detector frames arrive. September 16 retry restored PCM after a stall; cause unconfirmed.
 - Historical delays are evidence of model planning costs, not microphone latency. Health checks only report key presence. Synthetic Silero tests do not prove quiet-voice or echo reliability.
 - Concept teaching may explain requested equations/examples directly. Graded work retains final-answer protection across workspace modes. Change representation after repeated struggle; avoid forced quizzes and invented course citations. Human PROMPT/PEDAGOGY remain frozen.
 
