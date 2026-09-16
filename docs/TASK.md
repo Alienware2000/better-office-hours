@@ -1,38 +1,36 @@
 # Active task
 
 Updated: 2026-09-16
-State: ready_for_review
+State: complete
 Branch: lane/post-hackathon-local
-Base: 88892ff6bfd63aa4e5f1ada6933ed8911c8ed036
+Base: f3b85edcce071056ab8eb467adcd0685fd6457f4
 
 ## Objective
 
-Correct the Opus trial after David reported out-of-order letters, box-only explanations, and missing requested equations. Inspect the saved visible session before judging the model.
+Research a robust, intentional teaching board, with relevant systems, learning research, and a concrete direction grounded in the current implementation.
 
 ## Scope and constraints
 
-Local only. Preserve 3105/3106, paused 3107, browser histories, and private data. No publication or production model choice. Human PROMPT/PEDAGOGY and shared types unchanged. No private-session transmission.
+Research and local docs only. Preserve 3105/3106/3107 and private history. No publication, migration, dependency install, or runtime change. Human prompts and shared types remain frozen.
 
 ## Progress
 
-Restored rich visuals, ordered lettering, compact legends, and development-refresh preservation. Server restart and microphone retry recovered local access. David now likes the drawings and perceived speed but misses intentional animation and finds explanations curt.
+[WHITEBOARD_RESEARCH](WHITEBOARD_RESEARCH.md) compares systems and proposes a prototype. David's follow-up is covered in [learning research](WHITEBOARD_LEARNING_RESEARCH.md): instructor drawing, cinema, short videos, learner drawing, and retention. Evidence is separated from design hypotheses.
 
-Read-only review confirmed a stale Brownian takeaway on the projectile page and a static, 74-word projectile response. [Scene review](evaluations/2026-09-16-scene-direction.md) records evidence, the likely pagination gap, and a proposed next slice. No runtime or session changes during this review.
+David's correction: quality includes composition, meaningful color, linked mathematics, and richness, beyond reveal timing. Grok screenshots are a reference, not proof of accuracy or a model ranking. Audit found existing constraint/layout capabilities; symbol-based math colors do not establish quantity-to-diagram identity. Prior trial checkpoint archived.
 
 ## Decisions
 
-Keep Opus low for a fair capability test, not a production endorsement. Our panel-only restriction caused missing equations.
+Recommend extending current SVG/math/voice runtime with explicit scene relationships, visual roles, measured layout, and narrated events. No full rewrite or serial multi-model pipeline. Proposal only, not an implementation decision.
 
 ## Validation
 
-Two synthetic calls produced waves and equations. Browser check: 297 frames, no ordering violations. Streaming/disclosure/layout/math/review/voice/session checks, TypeScript, and lint pass. Evidence and semantic limitations: [trial guide](TUTOR_TRIAL.md).
+Primary sources and current code reviewed. Context and diff checks pass after compacting startup notes. No provider calls, acoustic tests, competitor trials, or performance gains claimed.
 
 ## Next action
 
-Proposed next slice: general scene continuity and purposeful visual sequencing, preserving first-response speed. Use projectile motion as a regression example, never a scripted runtime scene. No implementation started; explanation-style work can follow. See the scene review above.
+Review research with David. Proposed slice: isolated synthetic playback comparison with stable scene identity, quantity-linked styling, measured layout, and purposeful events. Do not silently start a migration. Chrome-session review remains queued.
 
 ## Blockers
 
-Update incident: replacing the board module reset the paused trial board and autosave saved it empty. Transcript remains; old drawings were not recovered. A tab-owned development store now survives module replacement, tested with retained callbacks/subscriptions.
-
-Groundtrack tools unavailable. Physical audio/prosody remains a human check. Earlier Chrome session review remains queued.
+Groundtrack unavailable. Earlier live update lost trial drawings; transcript survived and refresh safeguard is tested. Verify recovery export before live edits. Word-level synchronization requires alignment data absent from the MP3 TTS route.

@@ -6,12 +6,12 @@ Updated: 2026-09-16. Keep this short and current. Search [archived notes](archiv
 
 - AGENTS.md is shared authority; CLAUDE.md and Cursor point there. See MEMORY_GUIDE, MEMORY_RECIPE, and WORKFLOW for human instructions. Scripts validate/assemble memory; agents write it.
 - Archive completed TASKs before replacing them. Caps: TASK 6,000, default context 12,000, full context 28,000 characters. Strict writes validate branch/base/fields/links. This review again exceeded the full cap; compact duplicate detail into linked guides, never increase the cap.
-- Handoff writes .data/handoff/CONTINUE.md and the local checkout index. Worktrees are automatic; clones need registration. No code, private files, or chats are copied. Verify source status/commits; timestamps and stale snapshots are not authority. Cross-machine transfer is explicit. See WORKFLOW.
+- Handoff writes a local brief/index, not code or private data. Worktrees are automatic; clones need registration. Verify source commits/dirty state; cross-machine transfer is explicit. See WORKFLOW.
 - Standalone helper: ~/.local/bin/boh-context, not on PATH. Refresh with npm run context -- --install after changes. BOH_CONTEXT_HOME isolates fixtures; see MEMORY_RECIPE for reuse.
 - Groundtrack tools remain absent. Config and simulated enrichment passed; sign-in/hook approval and live verification are pending. Local continuation works without it. Never invent event IDs.
-- npm run dev:local binds to loopback on 3105, uses this checkout's .data, refuses occupied ports/external data symlinks, and disables cloud storage/Google config including dotenv values. It is not an outbound-network sandbox. Preserve old PDF files, browser-origin saves, and server processes. Raw dev/build lack these guards.
+- dev:local uses loopback 3105 and checkout-local .data; rejects occupied ports/data symlinks and disables cloud/Google settings. It is not a network sandbox. Preserve files, saves, and other servers. Raw dev/build lack these guards; see WORKFLOW.
 - A bare background nohup did not persist in the tool shell. September 16 trial restart used a detached process session with a local log; verify HTTP, not just spawn success.
-- Fast Refresh can interrupt audio and previously erased board state on module replacement. This update lost the saved trial drawings; transcript survived. Development store now survives replacement, with a regression test. Export and verify a recovery snapshot before future live-runtime edits. Keep tutor source stable during live sessions; do not build there. Use isolated test data and a separate runtime for voice/renderer checks, never links to live data. Prior builds failed with an externally linked .data.
+- Fast Refresh lost saved trial drawings; transcript survived. A tested development store now survives module replacement. Verify a recovery export before live edits. Keep live source stable; build/test with isolated data/runtime, never linked live .data. See TUTOR_TRIAL for the incident.
 
 ## Voice and pedagogy
 
@@ -36,6 +36,8 @@ Updated: 2026-09-16. Keep this short and current. Search [archived notes](archiv
 
 - Follow uses the path's `drawn` progress, normalized 0..1. Constant drawn=1 intentionally fixes the object at the endpoint; a valid schema can still contradict narration. Do not silently invent motion from topic names.
 - Declared vector attachments/projections enforce geometry, not physics. Signed relative endpoints must remain signed until composition. Static/animated shapes and snapshots share math and annotation layout. Keep scene IDs, current pages, background, and student ink across revisions.
+- Visual quality is broader than reveal timing. Math colors in text.ts/math-layout.ts derive partly from symbol identity, not scene quantities. WHITEBOARD_RESEARCH.md proposes linked quantity roles, stable scenes, and measured composition; no redesign implemented.
+- WHITEBOARD_LEARNING_RESEARCH.md separates attention, understanding, and retention. Instructor drawing effects do not prove a typewriter effect works; student-generated marks and tutor ink are different evidence.
 - Saved sessions are per browser origin and identity. New port 3105 does not inherit 3102's IndexedDB. PDF bytes are server references, not embedded in JSON exports. Never delete old data to fix a missing attachment; exports/old origin must be handled explicitly.
 
 ## Context, recap, and shell
