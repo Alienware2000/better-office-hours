@@ -1,6 +1,6 @@
 # Active task
 
-Updated: 2026-09-15
+Updated: 2026-09-16
 State: ready_for_review
 Branch: lane/post-hackathon-local
 Base: 88892ff6bfd63aa4e5f1ada6933ed8911c8ed036
@@ -14,6 +14,8 @@ Correct the Opus trial after David reported out-of-order letters, box-only expla
 Local only. Preserve 3105/3106, paused 3107, browser histories, and private data. No publication or production model choice. Human PROMPT/PEDAGOGY and shared types unchanged. No private-session transmission.
 
 ## Progress
+
+September 16: 3107 had no listener. Restarted a detached trial snapshot with existing storage/signing and the same origin; HTTP 200. No provider calls.
 
 Restored DRAW/ANIM/math with per-beat visual validation. Panels remain optional. Shared-clock prefixes prevent independent letter animation; queued groups no longer restart the current timer. Compact legends stay beside diagrams.
 

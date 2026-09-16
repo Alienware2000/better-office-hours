@@ -1,6 +1,6 @@
 # Current engineering notes
 
-Updated: 2026-09-15. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
+Updated: 2026-09-16. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
 
 ## Workflow and environment
 
@@ -10,6 +10,7 @@ Updated: 2026-09-15. Keep this short and current. Search [archived notes](archiv
 - Standalone helper: ~/.local/bin/boh-context, not on PATH. Refresh with npm run context -- --install after changes. BOH_CONTEXT_HOME isolates fixtures; see MEMORY_RECIPE for reuse.
 - Groundtrack tools remain absent. Config and simulated enrichment passed; sign-in/hook approval and live verification are pending. Local continuation works without it. Never invent event IDs.
 - npm run dev:local binds to loopback on 3105, uses this checkout's .data, refuses occupied ports/external data symlinks, and disables cloud storage/Google config including dotenv values. It is not an outbound-network sandbox. Preserve old PDF files, browser-origin saves, and server processes. Raw dev/build lack these guards.
+- A bare background nohup did not persist in the tool shell. September 16 trial restart used a detached process session with a local log; verify HTTP, not just spawn success.
 - Fast Refresh can interrupt audio and previously erased board state on module replacement. This update lost the saved trial drawings; transcript survived. Development store now survives replacement, with a regression test. Export and verify a recovery snapshot before future live-runtime edits. Keep tutor source stable during live sessions; do not build there. Use isolated test data and a separate runtime for voice/renderer checks, never links to live data. Prior builds failed with an externally linked .data.
 
 ## Voice and pedagogy
