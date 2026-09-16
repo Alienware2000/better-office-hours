@@ -2,6 +2,8 @@
 
 Research and design proposal, September 16, 2026. Repository baseline: `f3b85ed`. Requested by David after comparing the current trial with earlier Grok diagrams. This document proposes a direction; no renderer replacement, model migration, or runtime change was made.
 
+Priority update later September 16: David reaffirmed latency evaluation as the immediate work. The prototype proposed below is deferred. Preserve these findings for later; they do not supersede first-useful-audio optimization with a teaching-quality floor.
+
 David's follow-up on cinema, explainer videos, notes, and retention is covered in [Drawing, cinema, and remembering an explanation](WHITEBOARD_LEARNING_RESEARCH.md), with original studies, limitations, and a proposed learning evaluation.
 
 ## Recommendation in plain language

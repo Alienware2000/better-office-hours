@@ -21,7 +21,7 @@ David's correction: quality includes composition, meaningful color, linked mathe
 
 ## Decisions
 
-Recommend extending current SVG/math/voice runtime with explicit scene relationships, visual roles, measured layout, and narrated events. No full rewrite or serial multi-model pipeline. Proposal only, not an implementation decision.
+David reaffirmed latency as the immediate priority after this research. Board redesign is deferred. Optimize first useful audio while preserving teaching/visual quality; model choice is one variable alongside voice-pipeline delays. Research recommendations remain proposals.
 
 ## Validation
 
@@ -29,7 +29,7 @@ Primary sources and current code reviewed. Context and diff checks pass after co
 
 ## Next action
 
-Review research with David. Proposed slice: isolated synthetic playback comparison with stable scene identity, quantity-linked styling, measured layout, and purposeful events. Do not silently start a migration. Chrome-session review remains queued.
+Return to latency evaluation: measure end of student speech to useful audio by stage, then compare candidates with equivalent prompts and visual capabilities, including quality and cost. Do not start the proposed board prototype yet. No new benchmark or runtime change in this priority checkpoint. Chrome-session review remains queued.
 
 ## Blockers
 
