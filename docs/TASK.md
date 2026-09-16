@@ -15,9 +15,9 @@ Local only. Preserve 3105/3106, paused 3107, browser histories, and private data
 
 ## Progress
 
-September 16: restarted 3107 detached, same data/origin, HTTP 200. Later mic stall had live tracks but no detector frames. One UI retry restored Listening and fresh PCM/probabilities after five seconds. No code change; physical speech remains unverified.
+Restored rich visuals, ordered lettering, compact legends, and development-refresh preservation. Server restart and microphone retry recovered local access. David now likes the drawings and perceived speed but misses intentional animation and finds explanations curt.
 
-Restored DRAW/ANIM/math with per-beat visual validation. Panels remain optional. Shared-clock prefixes prevent independent letter animation; queued groups no longer restart the current timer. Compact legends stay beside diagrams.
+Read-only review confirmed a stale Brownian takeaway on the projectile page and a static, 74-word projectile response. [Scene review](evaluations/2026-09-16-scene-direction.md) records evidence, the likely pagination gap, and a proposed next slice. No runtime or session changes during this review.
 
 ## Decisions
 
@@ -29,7 +29,7 @@ Two synthetic calls produced waves and equations. Browser check: 297 frames, no 
 
 ## Next action
 
-Retry a requested equation or spatial explanation at 3107. Judge actual diagram relevance, clarity, ordered rendering, and voice completion. This correction is ready for human review; broader scientific accuracy and cross-subject evaluation remain open.
+Proposed next slice: general scene continuity and purposeful visual sequencing, preserving first-response speed. Use projectile motion as a regression example, never a scripted runtime scene. No implementation started; explanation-style work can follow. See the scene review above.
 
 ## Blockers
 

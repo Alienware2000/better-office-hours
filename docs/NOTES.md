@@ -15,7 +15,7 @@ Updated: 2026-09-16. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
-- Opus trial at 3107: panel-only instructions caused box-only explanations and omitted equations despite an explicit request. Restored full DRAW/ANIM with per-beat validation. Shared-clock glyph prefixes replace independent CSS timers; compact legends avoid needless page breaks. Two synthetic calls plus browser/layout/voice checks; see TUTOR_TRIAL. Model semantics remain experimental; human prompts stay frozen. check-board.mjs expects a live 3100 server and stopped before inference; use focused offline checks instead. Groundtrack unavailable.
+- Opus trial 3107 now supports full DRAW/ANIM/math with per-beat validation and ordered glyphs. Prior panel restriction confounded evaluation. See TUTOR_TRIAL for evidence and failures; semantics remain experimental. Human prompts stay frozen. Groundtrack unavailable.
 - Quality-first correction: David rejected starting with Flash/Haiku for speed. The active comparison uses flagship reasoning candidates, with explicit effort/budget settings. OpenRouter is configured privately for benchmark children and the isolated trial; never put its key in notes. Current-stack controls and 8,000-token capability pilots are different experiments.
 - Pilot failure evidence is in TUTOR_EVALUATION and evaluations/2026-09-14-model-pilot.md: Fable's seventh draw was clipped before a highlight referenced it; Opus returned fenced JSON; Gemini returned an empty object twice. No runtime fix. Do not repeat unchanged Gemini requests or treat compatibility failures as intelligence rankings.
 
@@ -24,7 +24,8 @@ Updated: 2026-09-16. Keep this short and current. Search [archived notes](archiv
 
 - Fast routing chooses logistics versus substantive reasoning; handoffs are silent. Rejected direct fast confirmations misclassified ambiguity, new equations, and misconceptions. Extra compact reasoning verification still took seconds and could add a request. Do not restore either without a controlled evaluation.
 - Completed structured beats stay in one TTS clip; sentence splitting stranded five-word closing caveats. Legacy streaming still releases sentences. Playback_end records ended/interrupted/error plus media position/duration, not acoustic completeness. No retained old audio. Keep audio-timed visuals, cancellation, barge-in, and ink ownership.
-- Live mic tracks do not prove detector frames arrive. September 16 retry restored PCM after a stall; cause unconfirmed.
+- Live mic tracks do not prove detector frames arrive. September 16 retry restored PCM; cause unconfirmed.
+- Topic headings can append to unrelated overflow notes when that page has no prior topic ID. See evaluations/2026-09-16-scene-direction.md; diagnosis recorded, not fixed.
 - Historical delays are evidence of model planning costs, not microphone latency. Health checks only report key presence. Synthetic Silero tests do not prove quiet-voice or echo reliability.
 - Concept teaching may explain requested equations/examples directly. Graded work retains final-answer protection across workspace modes. Change representation after repeated struggle; avoid forced quizzes and invented course citations. Human PROMPT/PEDAGOGY remain frozen.
 
