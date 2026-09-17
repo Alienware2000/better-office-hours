@@ -804,3 +804,42 @@ for (const ending of ['ended', 'interrupted', 'error']) {
   test.cleanup();
 }
 console.log('PASS: complete teaching beats stay together; natural, interrupted, and failed playback endings are recorded once.');
+
+// A later rejected drawing/provider stream must not truncate an already
+// validated beat. Failure is reported after audio, unless the learner takes
+// the floor first. Never flush unmatched trailing tags or partial speech.
+for (const ending of ['finish', 'pause', 'new_turn']) {
+  let output;
+  const response = new Response(new ReadableStream({ start(controller) { output = controller; } }), { headers: { 'x-tutor-request': 'synthetic-partial' } });
+  let requestCount = 0;
+  const test = await mount({ llmResponse: () => ++requestCount === 1 ? response : new Response(`data: ${JSON.stringify({choices:[{delta:{content:'A separate response.'}}]})}\n\ndata: [DONE]\n\n`), manualAudio: true });
+  const speaking = test.hook.sendUtterance('Show me this setup.');
+  const emit = data => output.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(data)}\n\n`));
+  emit({ bohSpeechBoundary: true, choices: [{ delta: { content: '[TEACH move=orient visual=diagram][DRAW {"op":"circle","id":"object","center":{"x":0.4,"y":0.5},"r":0.05}] Here is the object we will examine.\n' } }] });
+  await settle();
+  assert.equal(test.audio.length, 1, 'The first accepted beat still starts early');
+  const first = test.audio[0]; first.duration = 6; first.currentTime = 1.5;
+  emit({ choices: [{ delta: { content: '[DRAW {"op":"circle","id":"trailing","center":{"x":0.5,"y":0.4},"r":0.05}] Unfinished' } }] });
+  emit({ error: { message: 'Synthetic later beat failed.', code: 'invalid_draw' } }); output.close();
+  await settle();
+  assert.equal(first.paused, false, 'Generation error cannot stop accepted audio');
+  assert.equal(test.states[3], null, 'Wait for accepted audio before presenting the failure');
+  assert.equal(test.diagnostics.find(d => d.kind === 'generation_error').request, 'synthetic-partial');
+  assert.equal(test.diagnostics.find(d => d.kind === 'generation_error').message, 'invalid_draw');
+  assert.equal(test.marks.length, 1, 'Do not release trailing unpaired visuals');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1, 'Do not synthesize unfinished text');
+  let next;
+  if (ending === 'finish') { first.currentTime = 6; first.onended(); }
+  else if (ending === 'pause') test.hook.pauseVoice();
+  else { next = test.hook.sendUtterance('A different question.'); await settle(); }
+  await speaking; await settle();
+  assert.equal(test.diagnostics.find(d => d.kind === 'playback_end').message, ending === 'finish' ? 'ended' : 'interrupted');
+  if (ending === 'finish') assert.match(test.states[3], /Synthetic later beat failed/);
+  else assert.equal(test.states[3], null, 'A superseded generation cannot display its old failure');
+  if (next) {
+    assert.equal(test.audio[1].paused, false, 'Old failure cannot abort the new turn');
+    test.audio[1].onended(); await next;
+  }
+  test.cleanup();
+}
+console.log('PASS: late generation failure preserves accepted playback, drops incomplete output, reports failure, and respects pause/new turns.');

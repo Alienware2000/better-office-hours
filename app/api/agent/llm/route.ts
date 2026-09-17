@@ -8,6 +8,7 @@ import { type LivePage } from "@/lib/pdf/live-page";
 import { asLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
 import { parseAgentTurn } from "@/lib/agent/tags";
+import { LessonValidationError } from "@/lib/agent/concept-response";
 
 export const maxDuration = 180;
 export const dynamic = "force-dynamic";
@@ -125,11 +126,13 @@ export async function POST(req: Request) {
         });
         if (!cancelled) controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (error) {
-        if (process.env.NODE_ENV !== 'production') console.info('Tutor visual incomplete ' + JSON.stringify({ request: id, deep, visualRepair, elapsedMs: Date.now() - started, firstVisualMs, cancelled, receivedCharacters: raw.length, errorType: error instanceof SyntaxError ? 'invalid_json' : 'request_failed' }));
+        const code = error instanceof LessonValidationError ? error.code : error instanceof SyntaxError ? 'invalid_json' : 'request_failed';
+        const status = error && typeof error === 'object' && 'status' in error && typeof error.status === 'number' ? error.status : undefined;
+        if (process.env.NODE_ENV !== 'production') console.info('Tutor visual incomplete ' + JSON.stringify({ request: id, deep, visualRepair, elapsedMs: Date.now() - started, firstVisualMs, cancelled, receivedCharacters: raw.length, errorType: code, beat: error instanceof LessonValidationError ? error.beat : undefined, status }));
         const message = error instanceof SyntaxError
           ? "The tutor's response was interrupted. Your work is still here. Please try again."
           : error instanceof Error ? error.message : "Tutor request failed";
-        send({ error: { message } });
+        send({ error: { message, code } });
       } finally {
         req.signal.removeEventListener("abort", cancel);
         if (!cancelled) controller.close();

@@ -27,6 +27,10 @@ export type WorkKind = "lobby" | "pset" | "concept";
 export type WorkSnapshot = { history: ChatMessage[]; turns: Turn[]; board: BoardState };
 export type VoiceArchive = { recap?: Recap | null; kind: WorkKind; current: WorkSnapshot; parked: { pset: WorkSnapshot | null; concept: WorkSnapshot | null } };
 
+class ResponseStreamError extends Error {
+  constructor(message: string, public code?: string) { super(message); this.name = 'ResponseStreamError'; }
+}
+
 async function readSseText(
   response: Response,
   onDelta: (full: string, speechBoundary: boolean) => void,
@@ -50,10 +54,10 @@ async function readSseText(
       if (!data || data === "[DONE]") continue;
       const json = JSON.parse(data) as {
         bohSpeechBoundary?: boolean;
-        error?: { message?: string };
+        error?: { message?: string; code?: string };
         choices?: { delta?: { content?: string } }[];
       };
-      if (json.error?.message) throw new Error(json.error.message);
+      if (json.error?.message) throw new ResponseStreamError(json.error.message, json.error.code);
       const content = json.choices?.[0]?.delta?.content;
       if (content) {
         full += content;
@@ -544,7 +548,8 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
         });
       };
 
-      const full = await readSseText(response, (raw, speechBoundary) => {
+      let full: string;
+      try { full = await readSseText(response, (raw, speechBoundary) => {
         if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
         onProgress?.();
         summaryRequested = raw.includes("[SUMMARY_REQUEST]");
@@ -577,7 +582,22 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
             next = takeSpeechChunks(partial.speech, emitted);
           }
         }
-      });
+      }); } catch (error) {
+        if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
+        recordSessionDiagnostic({ kind: 'generation_error', request, deep, elapsedMs: Math.round(performance.now() - requestedAt),
+          message: error instanceof ResponseStreamError && error.code ? error.code : error instanceof Error ? error.message : 'Tutor generation failed' });
+        // Only already accepted speech/visual beats may finish. Do not flush
+        // incomplete text, apply trailing tags, or run visual repair for a
+        // failed generation. Pause and barge-in still cancel the same queue.
+        const failed = spoken.catch(() => {}).then(() => {
+          if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
+          throw error;
+        });
+        void failed.catch(() => {});
+        // Generation has ended, so release its request deadline immediately.
+        // The caller still awaits audio and receives the failure afterward.
+        return { full: '', turn: { speech: '' }, spoken: failed };
+      }
 
       if (signal.aborted || playbackEpoch !== playbackEpochRef.current) throw new DOMException("Interrupted", "AbortError");
       const turn = parseAgentTurn(full);

@@ -82,7 +82,7 @@ for(let i=0;i<=encoded.length;i++) {
 for(const draw of [[],[{op:'circle',id:'invalid'}],[{op:'highlight',id:'missing'}],[{op:'clear'}]]) {
   assert.throws(()=>conceptResponse(JSON.stringify({...lesson,beats:[{...lesson.beats[0],draw:draw.map(JSON.stringify)}]}),{requireVisuals:true}));
 }
-assert.throws(()=>conceptResponse(JSON.stringify({...rich,move:'orient'}),{requireVisuals:true}), /matching drawing/);
+assert.throws(()=>conceptResponse(JSON.stringify({...rich,move:'orient'}),{requireVisuals:true}), error => error.code === 'disclosure_boundary' && error.beat === 2);
 assert.doesNotThrow(()=>conceptResponse(JSON.stringify({...lesson,beats:[{...lesson.beats[0],draw:[JSON.stringify({op:'highlight',id:'wave'})]}]}),{requireVisuals:true,currentDraw:[wave]}));
 store.resetBoard();store.applyDrawCommands([panel]);store.addStudentStroke(stroke);store.applyDrawCommands([wave,equation]);
 assert.equal(store.getBoardState().pageId,2);
@@ -96,3 +96,19 @@ assert.doesNotThrow(()=>conceptResponse(JSON.stringify(motionLesson),{requireVis
 assert.doesNotThrow(()=>conceptResponse(JSON.stringify({...motionLesson,beats:[{...motionLesson.beats[0],animation:'focus=particle'}]}),{requireVisuals:true,currentAnimation:animation}));
 assert.throws(()=>conceptResponse(JSON.stringify({...motionLesson,beats:[{...motionLesson.beats[0],animation:'resume'}]}),{requireVisuals:true}));
 console.log('PASS: rich trial animation, valid focus, and missing-scene rejection.');
+
+// Failure provenance identifies the failing beat without copying rejected
+// student content into logs. Earlier accepted beats remain progressive.
+for (const [code, changes] of [
+  ['missing_visual', {draw:[]}],
+  ['too_many_draws', {draw:Array(7).fill(JSON.stringify(wave))}],
+  ['invalid_draw', {draw:[JSON.stringify({op:'circle',id:'PRIVATE_LABEL'})]}],
+  ['stale_drawing', {draw:[JSON.stringify({op:'highlight',id:'PRIVATE_LABEL'})]}],
+  ['stale_animation', {draw:[],animation:'focus=PRIVATE_LABEL'}],
+  ['invalid_animation', {draw:[],animation:'{PRIVATE_LABEL'}],
+]) {
+  const sample={...rich,beats:[rich.beats[0],{...rich.beats[1],...changes}]};
+  assert.throws(()=>conceptResponse(JSON.stringify(sample),{requireVisuals:true}), error=>
+    error.code===code && error.beat===2 && !JSON.stringify(error).includes('PRIVATE_LABEL'));
+}
+console.log('PASS: visual failures identify their reason/beat without rejected content.');

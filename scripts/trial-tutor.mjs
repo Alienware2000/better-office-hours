@@ -8,13 +8,17 @@ import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:net';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const port = 3107;
+const args = process.argv.slice(2);
+if (args.length && (args.length !== 2 || args[0] !== '--port' || !/^\d+$/.test(args[1]))) throw new Error('Usage: npm run trial:tutor -- [--port PORT]');
+const port = args.length ? Number(args[1]) : 3107;
+if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Choose a local port from 1024 through 65535.');
 await new Promise((accept, reject) => {
   const probe = createServer();
   probe.once('error', () => reject(new Error(`Port ${port} is occupied. Nothing was stopped.`)));
   probe.listen(port, '127.0.0.1', () => probe.close(accept));
 });
-const base = join(root, '.data', 'voice-trial');
+// A second trial has independent storage/signing as well as its own origin.
+const base = join(root, '.data', port === 3107 ? 'voice-trial' : `voice-trial-${port}`);
 for (const dir of [join(root, '.data'), base]) {
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   if (lstatSync(dir).isSymbolicLink()) throw new Error('Trial storage must be inside this checkout, without symlinks.');

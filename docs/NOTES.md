@@ -1,12 +1,12 @@
 # Current engineering notes
 
-Updated: 2026-09-16. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
+Updated: 2026-09-17. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
 
 ## Workflow and environment
 
 - AGENTS.md is shared authority; CLAUDE.md and Cursor point there. See MEMORY_GUIDE, MEMORY_RECIPE, and WORKFLOW for human instructions. Scripts validate/assemble memory; agents write it.
 - Archive completed TASKs before replacing them. Caps: TASK 6,000, default context 12,000, full context 28,000 characters. Strict writes validate branch/base/fields/links. This review again exceeded the full cap; compact duplicate detail into linked guides, never increase the cap.
-- Handoff writes a local brief/index, not code or private data. Worktrees are automatic; clones need registration. Verify source commits/dirty state; cross-machine transfer is explicit. See WORKFLOW.
+- Handoff indexes a brief, not code/data. Verify commits and dirty state; clone registration and cross-machine transfer are explicit. See WORKFLOW.
 - Standalone helper: ~/.local/bin/boh-context, not on PATH. Refresh with npm run context -- --install after changes. BOH_CONTEXT_HOME isolates fixtures; see MEMORY_RECIPE for reuse.
 - Groundtrack tools remain absent. Config and simulated enrichment passed; sign-in/hook approval and live verification are pending. Local continuation works without it. Never invent event IDs.
 - dev:local uses loopback 3105 and checkout-local .data; rejects occupied ports/data symlinks and disables cloud/Google settings. It is not a network sandbox. Preserve files, saves, and other servers. Raw dev/build lack these guards; see WORKFLOW.
@@ -15,11 +15,13 @@ Updated: 2026-09-16. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
+- Late SSE errors previously aborted already playing accepted speech. The source/3108 fix drains accepted beats, drops incomplete output, and retains cancellation. 3107 is unchanged. Historical generation cause is unknown; use new validation codes/beat numbers with playback_end. See evaluations/2026-09-17-incomplete-responses.md.
+
 - Opus trial 3107 now supports full DRAW/ANIM/math with per-beat validation and ordered glyphs. Prior panel restriction confounded evaluation. See TUTOR_TRIAL for evidence and failures; semantics remain experimental. Human prompts stay frozen. Groundtrack unavailable.
 - Quality-first correction: David rejected starting with Flash/Haiku for speed. The active comparison uses flagship reasoning candidates, with explicit effort/budget settings. OpenRouter is configured privately for benchmark children and the isolated trial; never put its key in notes. Current-stack controls and 8,000-token capability pilots are different experiments.
 - Pilot failure evidence is in TUTOR_EVALUATION and evaluations/2026-09-14-model-pilot.md: Fable's seventh draw was clipped before a highlight referenced it; Opus returned fenced JSON; Gemini returned an empty object twice. No runtime fix. Do not repeat unchanged Gemini requests or treat compatibility failures as intelligence rankings.
 
-- Synthetic deep input is 48,676 to 49,139 characters without images/history/retrieval. Causality is unmeasured. The real-parser harness measures text/board readiness, not audible latency. Old bench-deep is unsuitable for current structured lessons; see TUTOR_EVALUATION.
+- Model benchmarks measure text/board readiness, not audible latency. Old bench-deep is unsuitable for structured lessons. Input-size evidence and current harness are in TUTOR_EVALUATION.
 - David requires board involvement on every spoken turn; current visual=none and direct-definition paths do not fulfill this. Narration/rendering agreement requires semantic and actual playback review, beyond valid schema. Existing Chrome sessions across subjects are queued for review; the reported stars-related mismatch is not yet inspected. Do not infer the exact topic from its voice transcription.
 
 - Fast routing chooses logistics versus substantive reasoning; handoffs are silent. Rejected direct fast confirmations misclassified ambiguity, new equations, and misconceptions. Extra compact reasoning verification still took seconds and could add a request. Do not restore either without a controlled evaluation.

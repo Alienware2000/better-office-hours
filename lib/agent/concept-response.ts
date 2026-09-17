@@ -51,6 +51,14 @@ export function conceptHeader(raw: string): string {
 }
 
 type LessonOptions = { panelsOnly?: boolean; panelSlots?: Record<string, number>; requireVisuals?: boolean; currentDraw?: DrawCommand[]; currentAnimation?: AnimationSpec };
+// Codes and beat numbers are safe to log. Never log the rejected command or
+// provider response: those can contain private student/document content.
+export class LessonValidationError extends Error {
+  constructor(public code: 'missing_visual' | 'too_many_draws' | 'invalid_draw' | 'disclosure_boundary' | 'stale_drawing' | 'stale_animation' | 'invalid_animation', public beat: number) {
+    super('The tutor could not finish preparing that explanation. Your work is still here. Please ask it to continue.');
+    this.name = 'LessonValidationError';
+  }
+}
 export function conceptResponse(raw: string, options: LessonOptions = {}): string {
   const value = JSON.parse(raw) as { handoff: boolean; move?: string; visual?: string; introduction?: string; beats?: unknown[]; question?: string };
   if (!value || typeof value.handoff !== 'boolean') throw new Error('The concept explanation was incomplete. Please try again.');
@@ -65,7 +73,7 @@ export function conceptResponse(raw: string, options: LessonOptions = {}): strin
   const current = new Map<string, DrawCommand>((options.currentDraw ?? []).flatMap(command => 'id' in command ? [[command.id, command] as const] : []));
   let scene = options.currentAnimation;
   let previousSpeech = spoken(value.introduction);
-  for (const item of value.beats.slice(0, 3)) {
+  for (const [index, item] of value.beats.slice(0, 3).entries()) {
     if (!item || typeof item !== 'object') continue;
     const beat = item as { pdf?: string; draw?: unknown[]; animation?: string; speech?: string };
     if (options.panelsOnly && spoken(beat.speech)) {
@@ -84,16 +92,20 @@ export function conceptResponse(raw: string, options: LessonOptions = {}): strin
     }
     if (options.requireVisuals && spoken(beat.speech)) {
       let visible = false;
-      if (intent.visual === 'none' || !Array.isArray(beat.draw) || beat.draw.length > 6) throw new Error('The tutor could not prepare a matching drawing. Please try a smaller step.');
+      const invalid: (code: LessonValidationError['code']) => never = code => { throw new LessonValidationError(code, index + 1); };
+      if (intent.visual === 'none' || !Array.isArray(beat.draw)) invalid('missing_visual');
+      if (beat.draw.length > 6) invalid('too_many_draws');
       for (const raw of beat.draw) {
         const command = typeof raw === 'string' ? parseDrawCommand(raw) : null;
         const allowed = command && teachingDraw(command, intent);
         const op = allowed && interpretCommand(allowed, current.size + 1);
-        if (!command || !allowed || !op) throw new Error('The tutor could not prepare a matching drawing. Please try a smaller step.');
+        if (!command) invalid('invalid_draw');
+        if (!allowed) invalid('disclosure_boundary');
+        if (!op) invalid('invalid_draw');
         if (op.kind === 'clear') { current.clear(); scene = undefined; visible = false; }
         else if (op.kind === 'remove') current.delete(op.id);
         else if (op.kind === 'highlight') {
-          if (!current.has(op.id)) throw new Error('The tutor referenced a drawing that is no longer on this page.');
+          if (!current.has(op.id)) invalid('stale_drawing');
           visible = true;
         } else {
           const differentFormat = [...current.values()].some(item => (item.op === 'panel') !== (command.op === 'panel'));
@@ -108,15 +120,17 @@ export function conceptResponse(raw: string, options: LessonOptions = {}): strin
       if (typeof beat.animation === 'string' && beat.animation.trim()) {
         const control = beat.animation.trim();
         if (control === 'resume' || control.startsWith('focus=')) {
-          if (!scene || (control !== 'resume' && !scene.shapes.some(shape => shape.id === control.slice(6)))) throw new Error('The tutor referenced an animation that is no longer available.');
+          if (!scene || (control !== 'resume' && !scene.shapes.some(shape => shape.id === control.slice(6)))) invalid('stale_animation');
         } else {
-          const animation = validateAnimation(JSON.parse(control));
-          if (!animation) throw new Error('The tutor could not prepare a matching animation.');
+          let parsed: unknown;
+          try { parsed = JSON.parse(control); } catch { invalid('invalid_animation'); }
+          const animation = validateAnimation(parsed);
+          if (!animation) invalid('invalid_animation');
           scene = animation;
         }
         visible = true;
       }
-      if (!visible) throw new Error('The tutor could not prepare a matching drawing. Please try a smaller step.');
+      if (!visible) invalid('missing_visual');
     }
     // Keep the existing measured PDF targeting path. A beat cannot inject a
     // mode switch or a different teaching move through this field.

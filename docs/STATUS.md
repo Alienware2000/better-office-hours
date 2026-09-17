@@ -1,6 +1,6 @@
 # Current status
 
-Updated: 2026-09-16
+Updated: 2026-09-17
 By: Codex, David's local continuation
 Branch: lane/post-hackathon-local
 Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
@@ -15,12 +15,11 @@ David's plain-language [memory walkthrough](MEMORY_GUIDE.md) explains everyday u
 
 ## Local runtime
 
-- This runtime checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`, branch above. It is an operational record, not a requirement to use that path everywhere. Run orientation in each checkout. Do not automatically switch to stale main, alter other checkouts, or assume cached code/data is present.
-- Start: `npm ci`, then `npm run dev:local`. Default URL: http://localhost:3105, bound to loopback. Runtime data lives in this checkout's ignored `.data`; this is a separate browser origin from the old 3102 preview.
-- September 16: trial 3107 had stopped. Restarted detached from the terminal; HTTP 200. Same storage/signing/origin, no data edits or provider calls. Runtime: .data/voice-trial/latest.json; log: .data/voice-trial/server-2026-09-16.log.
-- Only xAI and ElevenLabs API settings were copied privately from the prior worktree. Local signing secrets were newly generated. No production storage, Google OAuth, or production signing credentials were copied. The local launcher disables cloud storage and Google auth even if inherited/configured.
-- Root and configuration-only health endpoint return HTTP 200; health detects both provider keys. Start screen inspected. No new paid inference, speech synthesis, or human microphone validation in this setup slice.
-- Restarting stops the current process but never deletes browser history or `.data`. Inspect process cwd before stopping anything. Keep source stable during user voice sessions; run browser regressions/builds in an isolated copy.
+- Checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`. Reorient in each checkout; cached state is not code/data synchronization.
+- Default: `npm ci`, then `npm run dev:local` on loopback 3105, with checkout-local .data. Cloud storage and Google auth are disabled. Local signing secrets are separate from production.
+- Original trial 3107 remains untouched. Snapshot: .data/voice-trial/latest.json; log: server-2026-09-16.log in that directory.
+- Patched trial: `npm run trial:tutor -- --port 3108`. Independent sessions, storage, signing, and build under .data/voice-trial-3108. Landing UI checked; no human acoustic verification.
+- Inspect a listener's cwd before stopping it. Preserve all origins' browser saves and PDF data. Keep live source stable; isolate browser regressions/builds. Configuration health is not proof of usable provider credits.
 
 ## Product baseline
 
@@ -42,4 +41,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-David reaffirmed latency as the immediate priority. Return to first-useful-audio measurements and fair model comparisons with teaching quality and cost visible. [Whiteboard research](WHITEBOARD_RESEARCH.md) is retained; its prototype is deferred. The 3107 trial supports rich geometry/math and ordered lettering. [Scene review](evaluations/2026-09-16-scene-direction.md) records remaining quality issues; [trial guide](TUTOR_TRIAL.md) records recovery and the earlier loss of trial drawings. Transcript survived and a refresh safeguard is tested. Verify recovery export before live edits. No new model switch or benchmark in this checkpoint.
+David reaffirmed latency as the priority; board redesign is deferred. September 17: two trial streams failed after initial visuals. A demonstrated client bug aborted accepted audio on a later generation error. The patched 3108 trial lets accepted audio finish, preserves cancellation, and records precise validation failures. [Investigation](evaluations/2026-09-17-incomplete-responses.md) has tests and limits. Historical generation cause and diagram/acoustic quality remain unverified. 3107 was left intact because export recovery was unavailable. Test a fresh session on 3108 next; larger model/latency comparison and Chrome review remain queued.

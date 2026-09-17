@@ -1,36 +1,36 @@
 # Active task
 
-Updated: 2026-09-16
-State: complete
+Updated: 2026-09-17
+State: ready_for_review
 Branch: lane/post-hackathon-local
-Base: f3b85edcce071056ab8eb467adcd0685fd6457f4
+Base: d68cd607a64bad917c9e001675a6677e4457056b
 
 ## Objective
 
-Research a robust, intentional teaching board, with relevant systems, learning research, and a concrete direction grounded in the current implementation.
+Investigate David's sparse trial diagrams and abruptly cut speech; fix the bounded response/playback failure without starting the deferred board redesign.
 
 ## Scope and constraints
 
-Research and local docs only. Preserve 3105/3106/3107 and private history. No publication, migration, dependency install, or runtime change. Human prompts and shared types remain frozen.
+Local voice/board work only. Preserve 3105/3106/3107 and private history. Frozen human prompts/shared types and graded-work limits remain. Latency and quality together remain the priority. Groundtrack unavailable.
 
 ## Progress
 
-[WHITEBOARD_RESEARCH](WHITEBOARD_RESEARCH.md) compares systems and proposes a prototype. David's follow-up is covered in [learning research](WHITEBOARD_LEARNING_RESEARCH.md): instructor drawing, cinema, short videos, learner drawing, and retention. Evidence is separated from design hypotheses.
+Two 3107 streams failed after initial visuals, without cancellation; the precise cause was not logged. A reproduced client bug aborted accepted audio on later SSE errors. The source/3108 fix lets accepted beats finish before reporting failure, withholds incomplete output, and preserves pause/barge-in/new-turn cancellation. Generation deadlines end before audio drains. Safe visual failure codes identify the failing beat.
 
-David's correction: quality includes composition, meaningful color, linked mathematics, and richness, beyond reveal timing. Grok screenshots are a reference, not proof of accuracy or a model ranking. Audit found existing constraint/layout capabilities; symbol-based math colors do not establish quantity-to-diagram identity. Prior trial checkpoint archived.
+[Investigation](evaluations/2026-09-17-incomplete-responses.md) records evidence and limits. One synthetic Opus request completed two visual beats, so it did not reproduce the historical generation failure. No private inputs or TTS.
 
 ## Decisions
 
-David reaffirmed latency as the immediate priority after this research. Board redesign is deferred. Optimize first useful audio while preserving teaching/visual quality; model choice is one variable alongside voice-pipeline delays. Research recommendations remain proposals.
+Model, voice, teaching limits, and first-beat streaming are unchanged. Board redesign stays deferred. Recovery export could not be verified, so 3107 is untouched. Patched 3108 has independent sessions/storage/signing; .data/voice-trial-3108/latest.json and server-2026-09-17.log identify its snapshot/log.
 
 ## Validation
 
-Primary sources and current code reviewed. Context and diff checks pass after compacting startup notes. No provider calls, acoustic tests, competitor trials, or performance gains claimed.
+Voice lifecycle, concept streaming, and teaching-panel checks pass, including late-error playback completion and new-turn isolation. TypeScript, focused lint, diff/context checks pass. 3108 landing UI loads, microphone unactivated. No acoustic verification.
 
 ## Next action
 
-Return to latency evaluation: measure end of student speech to useful audio by stage, then compare candidates with equivalent prompts and visual capabilities, including quality and cost. Do not start the proposed board prototype yet. No new benchmark or runtime change in this priority checkpoint. Chrome-session review remains queued.
+David tests a fresh session at http://localhost:3108. Correlate any generation error code/beat with playback_end. Evaluate complete diagrams after generation is reliable. Broader latency comparison and Chrome review remain queued.
 
 ## Blockers
 
-Groundtrack unavailable. Earlier live update lost trial drawings; transcript survived and refresh safeguard is tested. Verify recovery export before live edits. Word-level synchronization requires alignment data absent from the MP3 TTS route.
+Exact historical failure and diagram/acoustic quality remain unverified. Do not patch/restart 3107 without recovery. Groundtrack unavailable; publication freeze remains.
