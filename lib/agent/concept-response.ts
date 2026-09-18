@@ -50,7 +50,7 @@ export function conceptHeader(raw: string): string {
   return `${teachingTag(intent)}\n${spoken(JSON.parse(match[4]))}\n`;
 }
 
-type LessonOptions = { panelsOnly?: boolean; panelSlots?: Record<string, number>; requireVisuals?: boolean; currentDraw?: DrawCommand[]; currentAnimation?: AnimationSpec };
+export type LessonOptions = { panelsOnly?: boolean; panelSlots?: Record<string, number>; requireVisuals?: boolean; currentDraw?: DrawCommand[]; currentAnimation?: AnimationSpec };
 // Codes and beat numbers are safe to log. Never log the rejected command or
 // provider response: those can contain private student/document content.
 export class LessonValidationError extends Error {
@@ -166,14 +166,15 @@ export function conceptResponse(raw: string, options: LessonOptions = {}): strin
 
 // Release each complete beat while later beats are still arriving. A brace
 // inside quoted LaTeX/JSON is data, and cannot end a beat early.
-export function conceptProgress(raw: string, options: LessonOptions = {}): string {
+export type ConceptLesson = { handoff: boolean; move: string; visual: string; introduction: string; beats: unknown[]; question: string };
+export function conceptDraft(raw: string): ConceptLesson | null {
   const match = raw.match(HEADER);
-  if (!match) return '';
-  const header = conceptHeader(raw);
-  if (!header || match[1] === 'true') return header;
+  if (!match || !conceptHeader(raw)) return null;
+  const draft: ConceptLesson = { handoff: match[1] === 'true', move: match[2], visual: match[3], introduction: JSON.parse(match[4]), beats: [], question: '' };
+  if (draft.handoff) return draft;
   const tail = raw.slice(match[0].length);
   const opening = tail.match(/^\s*,\s*"beats"\s*:\s*\[/);
-  if (!opening) return header;
+  if (!opening) return draft;
   const beats: unknown[] = [];
   let start = -1, depth = 0, quoted = false, escaped = false;
   for (let i = opening[0].length; i < tail.length && beats.length < 3; i++) {
@@ -196,5 +197,10 @@ export function conceptProgress(raw: string, options: LessonOptions = {}): strin
       start = -1;
     }
   }
-  return conceptResponse(JSON.stringify({ handoff: false, move: match[2], visual: match[3], introduction: JSON.parse(match[4]), beats, question: '' }), options);
+  return { ...draft, beats };
+}
+
+export function conceptProgress(raw: string, options: LessonOptions = {}): string {
+  const draft = conceptDraft(raw);
+  return draft ? conceptResponse(JSON.stringify(draft), options) : '';
 }

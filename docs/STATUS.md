@@ -1,6 +1,6 @@
 # Current status
 
-Updated: 2026-09-17
+Updated: 2026-09-18
 By: Codex, David's local continuation
 Branch: lane/post-hackathon-local
 Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
@@ -18,7 +18,7 @@ David's plain-language [memory walkthrough](MEMORY_GUIDE.md) explains everyday u
 - Checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`. Reorient in each checkout; cached state is not code/data synchronization.
 - Default: `npm ci`, then `npm run dev:local` on loopback 3105, with checkout-local .data. Cloud storage and Google auth are disabled. Local signing secrets are separate from production.
 - Original trial 3107 remains untouched. Snapshot: .data/voice-trial/latest.json; log: server-2026-09-16.log in that directory.
-- Patched trial: `npm run trial:tutor -- --port 3108`. Independent sessions, storage, signing, and build under .data/voice-trial-3108. Landing UI checked; no human acoustic verification.
+- Patched trial: `npm run trial:tutor -- --port 3109`, isolated under .data/voice-trial-3109. Landing UI checked; human audio test pending. 3108 remains intact because export produced no backup.
 - Inspect a listener's cwd before stopping it. Preserve all origins' browser saves and PDF data. Keep live source stable; isolate browser regressions/builds. Configuration health is not proof of usable provider credits.
 
 ## Product baseline
@@ -41,4 +41,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-David reaffirmed latency as the priority; board redesign is deferred. September 17: two trial streams failed after initial visuals. A demonstrated client bug aborted accepted audio on a later generation error. The patched 3108 trial lets accepted audio finish, preserves cancellation, and records precise validation failures. [Investigation](evaluations/2026-09-17-incomplete-responses.md) has tests and limits. Historical generation cause and diagram/acoustic quality remain unverified. 3107 was left intact because export recovery was unavailable. Test a fresh session on 3108 next; larger model/latency comparison and Chrome review remain queued.
+Latency remains the priority; board redesign is deferred. 1185aec fixed accepted audio aborting on late errors. The 3108 retest then identified a beat-2 disclosure rejection. Source/3109 fixes a numeric TeX false positive and permits one validated continuation without changing teaching intent. [Evidence](evaluations/2026-09-18-guard-recovery.md) separates that finding from the unknown rejected payload. Test a fresh 3109 session next. Existing sessions are preserved; export recovery failed. Model comparison and Chrome review remain queued.

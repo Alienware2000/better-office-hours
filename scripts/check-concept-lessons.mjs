@@ -10,13 +10,14 @@ const external = createRequire(import.meta.url);
 const cache = new Map();
 const requests = [];
 let chunks = [];
+let responseQueue = null;
 const fakeKey = process.env.XAI_API_KEY;
 process.env.XAI_API_KEY = 'test-only';
 class FakeOpenAI {
   chat = { completions: { create: async (request, options) => {
     requests.push({ request, options });
     return (async function* () {
-      for (const content of chunks) {
+      for (const content of responseQueue?.shift() ?? chunks) {
         if (options.signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
         yield { choices: [{ delta: { content } }] };
       }
@@ -218,3 +219,30 @@ assert.equal(boardStore.getBoardState().pageId, 2);
 assert.equal(boardStore.getBoardState().earlierPages[0].student[0].id, 'mine');
 assert.equal(asLiveBoard({ open: true, animation: { spec: {}, time: 99 } }).animation, undefined);
 console.log('PASS: structured replay/focus, absent-scene repair, static-to-moving continuity, scene revisions, ink preservation, separate pages, and current animation context.');
+
+// The real trial adapter performs one continuation request after a later
+// rejected beat, retaining the initial move and accepted scene context.
+const trialEnvironment = Object.fromEntries(['NODE_ENV','BOH_VOICE_TRIAL','OPENROUTER_API_KEY'].map(key=>[key,process.env[key]]));
+try {
+  process.env.NODE_ENV='development';process.env.BOH_VOICE_TRIAL='1';process.env.OPENROUTER_API_KEY='synthetic-only';
+  const start=requests.length;
+  const failed={...lesson,introduction:'',beats:[lesson.beats[0],{...lesson.beats[1],draw:[JSON.stringify(relation)]}]};
+  const repaired={...failed,beats:[{...lesson.beats[1],draw:[JSON.stringify(arrow)]}],question:'Which part is given?'};
+  responseQueue=[[...JSON.stringify(failed)],[...JSON.stringify(repaired)]];
+  let output='';let firstBeatCalls;
+  for await(const delta of streamGrok(history,null,true)) {
+    output+=delta;
+    if(!firstBeatCalls && parseAgentTurn(output).speech) firstBeatCalls=requests.length-start;
+  }
+  assert.equal(firstBeatCalls,1,'The first accepted beat streams without waiting for recovery');
+  assert.equal(requests.length-start,2,'Only one extra request on rejection');
+  assert.ok(!output.includes('frac'),'Rejected equation stays withheld');
+  assert.equal(parseAgentTurn(output).speech,[failed.beats[0].speech,repaired.beats[0].speech,repaired.question].join(' '));
+  const extra=requests.at(-1).request.messages.slice(-2);
+  assert.equal(JSON.parse(extra[0].content).beats.length,1);
+  assert.ok(extra[1].content.includes('move=orient'));
+} finally {
+  responseQueue=null;
+  for(const [key,value] of Object.entries(trialEnvironment)) if(value===undefined)delete process.env[key];else process.env[key]=value;
+}
+console.log('PASS: actual trial adapter requests one protected continuation while its first beat streams.');

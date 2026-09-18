@@ -37,7 +37,15 @@ export function isRelationship(text: string): boolean {
   if (/[∫∑∏]/u.test(compact)) return true;
   const relation = compact.match(/[=≈∝]/u);
   if (!relation) return /[\p{L}][₀-₉²³]*[+×*/−]\d*[\p{L}]/u.test(compact);
-  const rhs = compact.slice(relation.index! + 1);
+  // Presentation-only TeX around a numeric given must not turn it into a
+  // symbolic relationship. Keep unknown macros/expressions intact so they
+  // still fail the narrow literal-and-units check below.
+  const rhs = compact.slice(relation.index! + 1)
+    .replace(/\\(?:[,!;:]|quad\b|qquad\b)/g, '')
+    .replace(/\\(?:mathrm|text)\{([a-zA-Z°%/·²³^23]+)\}/g, '$1')
+    .replace(/\^(?:\{\\circ\}|\\circ\b)/g, '°')
+    .replace(/\^\{([23])\}/g, '^$1')
+    .replace(/\\cdot\b/g, '·');
   const unit = '(?:mm|cm|km|m|ms|s|kg|g|N|J|W|Pa|K|C|V|A|Hz|mol|L|rad|°|%)(?:[²³]|\\^[23])?';
   return !new RegExp(`^(?:[+−-]?\\d+(?:\\.\\d+)?|\\?)(?:${unit}(?:[/·]${unit})*)?$`, 'u').test(rhs);
 }

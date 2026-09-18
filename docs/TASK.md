@@ -1,36 +1,36 @@
 # Active task
 
-Updated: 2026-09-17
+Updated: 2026-09-18
 State: ready_for_review
 Branch: lane/post-hackathon-local
 Base: d68cd607a64bad917c9e001675a6677e4457056b
 
 ## Objective
 
-Investigate David's sparse trial diagrams and abruptly cut speech; fix the bounded response/playback failure without starting the deferred board redesign.
+Fix interrupted trial explanations while preserving fast first speech, graded-work limits, and existing sessions. Board redesign stays deferred.
 
 ## Scope and constraints
 
-Local voice/board work only. Preserve 3105/3106/3107 and private history. Frozen human prompts/shared types and graded-work limits remain. Latency and quality together remain the priority. Groundtrack unavailable.
+Local voice lane only. Preserve all existing origins and private data. Frozen prompts/shared types and publication freeze remain. Groundtrack unavailable.
 
 ## Progress
 
-Two 3107 streams failed after initial visuals, without cancellation; the precise cause was not logged. A reproduced client bug aborted accepted audio on later SSE errors. The source/3108 fix lets accepted beats finish before reporting failure, withholds incomplete output, and preserves pause/barge-in/new-turn cancellation. Generation deadlines end before audio drains. Safe visual failure codes identify the failing beat.
+The previous audio-drain fix is in 1185aec. David's 3108 retest finished its first sentence, then stopped: logs identify disclosure_boundary in beat 2, not demonstrated TTS truncation. Exact rejected text was not retained.
 
-[Investigation](evaluations/2026-09-17-incomplete-responses.md) records evidence and limits. One synthetic Opus request completed two visual beats, so it did not reproduce the historical generation failure. No private inputs or TTS.
+Fixed a reproduced guard false positive for numeric givens formatted with TeX units/degrees. Added one bounded trial continuation request on visual rejection, preserving accepted output and teaching intent. Revalidates the combined lesson; no repeated opening or rejected narration. Successful requests need no extra call; a rejection can add one call and waiting. [Evidence and limits](evaluations/2026-09-18-guard-recovery.md).
 
 ## Decisions
 
-Model, voice, teaching limits, and first-beat streaming are unchanged. Board redesign stays deferred. Recovery export could not be verified, so 3107 is untouched. Patched 3108 has independent sessions/storage/signing; .data/voice-trial-3108/latest.json and server-2026-09-17.log identify its snapshot/log.
+Model, voice, disclosure restrictions, and first-beat streaming remain. User confirmed JSON export produced no download. Do not update/restart live 3107/3108 without verified recovery. New isolated 3109 has independent storage, signing, and build; .data/voice-trial-3109/latest.json and server-2026-09-18.log identify it.
 
 ## Validation
 
-Voice lifecycle, concept streaming, and teaching-panel checks pass, including late-error playback completion and new-turn isolation. TypeScript, focused lint, diff/context checks pass. 3108 landing UI loads, microphone unactivated. No acoustic verification.
+Teaching-intent, concept-recovery, concept-lessons/trial adapter, teaching-panels, TypeScript, focused lint, and diff checks passed. One synthetic provider request completed two visual steps and a question without recovery: first speech text 6.760s, total 10.897s, not audible latency. 3109 landing UI loaded; microphone unactivated. No human acoustic verification of this patch.
 
 ## Next action
 
-David tests a fresh session at http://localhost:3108. Correlate any generation error code/beat with playback_end. Evaluate complete diagrams after generation is reliable. Broader latency comparison and Chrome review remain queued.
+David tests a fresh session at http://localhost:3109. If it stops, correlate validation/recovery events with playback_end. Judge complete diagrams once continuation is reliable. Export failure is recorded; do not mistake another click for a backup. Larger latency comparison and Chrome review stay queued.
 
 ## Blockers
 
-Exact historical failure and diagram/acoustic quality remain unverified. Do not patch/restart 3107 without recovery. Groundtrack unavailable; publication freeze remains.
+Exact rejected payload and acoustic/diagram quality remain unverified. Groundtrack unavailable. Older trials remain because their session recovery has not been verified.

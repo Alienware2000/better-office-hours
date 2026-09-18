@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import { TEACHING_GUIDANCE, teachingTag } from "./teaching-intent";
 import { DIAGRAM_GUIDANCE } from './diagram-guidance';
 import { CONCEPT_RESPONSE_FORMAT, CONCEPT_FORMAT_GUIDANCE, conceptProgress, conceptResponse } from './concept-response';
+import { streamValidatedLesson } from './concept-stream';
 import { CONCEPT_ROUTING_FORMAT, conceptRoutingMessages, conceptRoute, parseConceptRoute } from './concept-routing';
 import { parseAgentTurn } from "./tags";
 import {
@@ -216,7 +217,7 @@ export async function* streamGrok(
     messages.push({ role: 'system', content: `Silent visual recovery for this already chosen teaching move: ${teachingTag(intent)}. Keep that move and its disclosure boundary. Compose only the missing visual for the last explanation, without advancing the hint ladder or revealing what the student was asked to supply. Return [BOARD open] and at most five compact valid DRAW commands, no speech. Use a static conceptual sketch for diagram/animation, never another animation attempt. A sketch needs meaningful geometry and clear short labels, not a formula-only note. For notes use only already established givens, learner-supplied relationships, or the specifically justified hint. Never a computed graded answer, complete solution, invented given, or scripted fixture. Do not clear/remove existing work. Use ops text, line, arrow, curve, circle, axes. Put circle positions in center:{x,y}. If it cannot be illustrated without giving away the question, return nothing.` });
   }
   if (trialRequest && visualRepair) messages.push({ role: 'system', content: 'For this silent repair only, override the JSON lesson envelope: return only [BOARD open][DRAW {...}] tags using any valid static drawing commands above, including text equations when the teaching move permits them. No speech or new teaching content. Preserve the existing teaching move and graded-work boundary.' });
-  const stream = await grok.chat.completions.create({
+  const createStream = (extra: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = []) => grok.chat.completions.create({
     model: trialRequest ? TRIAL_MODEL : deep ? GROK_DEEP_MODEL : GROK_MODEL,
     ...(trialRequest ? { provider: { sort: 'latency', require_parameters: true, allow_fallbacks: false } } : { temperature: visualRepair ? 0.3 : deep ? 0.5 : 0.85 }),
     // Reasoning tokens count against this, so a tight cap on the deep lane
@@ -225,7 +226,7 @@ export async function* streamGrok(
     // 220 cut mid-tag and left the board empty.
     max_tokens: trialRequest ? 8000 : conceptRouting ? 300 : deep ? 2400 : 1800,
     stream: true,
-    messages,
+    messages: [...messages, ...extra],
     ...(trialRequest ? { reasoning: { effort: "low", exclude: true } } : deep ? { reasoning_effort: "low" as const } : {}),
     ...(conceptTeaching ? { response_format: CONCEPT_RESPONSE_FORMAT } : {}),
     ...(conceptRouting ? { response_format: CONCEPT_ROUTING_FORMAT } : {}),
@@ -236,6 +237,18 @@ export async function* streamGrok(
       try { const command = parseDrawCommand(item.layout ?? ''); return command ? [command] : []; } catch { return []; }
     }),
   } : {};
+  if (trialRequest && conceptTeaching) {
+    yield* streamValidatedLesson(async recovery => {
+      if (!recovery) return createStream();
+      console.info('Tutor visual recovery ' + JSON.stringify({ code: recovery.failure.code, beat: recovery.failure.beat, acceptedBeats: recovery.prefix.beats.length }));
+      return createStream([
+        { role: 'assistant', content: JSON.stringify(recovery.prefix) },
+        { role: 'system', content: `The previous JSON is the accepted lesson prefix, already delivered. A later beat was rejected (${recovery.failure.code}). Continue the SAME teaching step with only the missing continuation. Return the concept_lesson JSON with handoff=false, move=${recovery.prefix.move}, visual=${recovery.prefix.visual}, introduction="", one to ${recovery.remaining} remaining beats, and a complete natural ending or one useful question. Do not repeat the accepted prefix or change its drawing IDs. Its drawings are available for valid highlights. Check every command. All original graded-work and disclosure restrictions remain: for elicit/orient, show only established givens/objects/events and leave the requested relationship or outcome unseen. Do not introduce a formula that gives away a prediction. Numeric givens may use ordinary text units. A rejected drawing is not permission to speak its answer without drawing it. If you cannot continue within that boundary, ask one safe question about an existing object using a valid highlight. No acknowledgement, technical error narration, or invented student progress.` },
+      ]);
+    }, lessonOptions, signal);
+    return;
+  }
+  const stream = await createStream();
   let lesson = '';
   let emitted = '';
   for await (const part of stream) {
