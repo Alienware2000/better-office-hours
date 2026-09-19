@@ -1,6 +1,6 @@
 # Active task
 
-Updated: 2026-09-18
+Updated: 2026-09-19
 State: ready_for_review
 Branch: lane/post-hackathon-local
 Base: d68cd607a64bad917c9e001675a6677e4457056b
@@ -29,7 +29,7 @@ Teaching-intent, concept-recovery, concept-lessons/trial adapter, teaching-panel
 
 ## Next action
 
-David tests a fresh session at http://localhost:3109. If it stops, correlate validation/recovery events with playback_end. Judge complete diagrams once continuation is reliable. Export failure is recorded; do not mistake another click for a backup. Larger latency comparison and Chrome review stay queued.
+September 19: David reports the server died and requests continuation in a new task. His visible browser is on 3105; the latest patched voice trial is 3109. First inspect listeners and runtime logs, restore the appropriate local runtime while preserving existing data/origins, and verify its UI. Then David tests 3109 for complete speech. Correlate any failure with validation/recovery events and playback_end. Export did not produce a backup. Broader latency comparison and Chrome review stay queued.
 
 ## Blockers
 
