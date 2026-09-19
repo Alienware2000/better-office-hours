@@ -1,6 +1,6 @@
 # Current status
 
-Updated: 2026-09-18
+Updated: 2026-09-19
 By: Codex, David's local continuation
 Branch: lane/post-hackathon-local
 Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
@@ -18,7 +18,7 @@ David's plain-language [memory walkthrough](MEMORY_GUIDE.md) explains everyday u
 - Checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`. Reorient in each checkout; cached state is not code/data synchronization.
 - Default: `npm ci`, then `npm run dev:local` on loopback 3105, with checkout-local .data. Cloud storage and Google auth are disabled. Local signing secrets are separate from production.
 - Original trial 3107 remains untouched. Snapshot: .data/voice-trial/latest.json; log: server-2026-09-16.log in that directory.
-- Patched trial: `npm run trial:tutor -- --port 3109`, isolated under .data/voice-trial-3109. Landing UI checked; human audio test pending. 3108 remains intact because export produced no backup.
+- Patched trial: `npm run trial:tutor -- --port 3109`, isolated under .data/voice-trial-3109. September 19: 3109 HTTP/UI and saved session load verified; 3105 stopped. Audio quality remains unverified; later beat-3 stale_drawing failure persists. 3108 remains intact.
 - Inspect a listener's cwd before stopping it. Preserve all origins' browser saves and PDF data. Keep live source stable; isolate browser regressions/builds. Configuration health is not proof of usable provider credits.
 
 ## Product baseline

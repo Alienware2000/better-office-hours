@@ -1,6 +1,6 @@
 # Current engineering notes
 
-Updated: 2026-09-18. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
+Updated: 2026-09-19. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
 
 ## Workflow and environment
 
@@ -15,7 +15,7 @@ Updated: 2026-09-18. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
-- Late SSE errors previously aborted accepted audio; 1185aec drains it while retaining cancellation. The 3108 retest instead logged beat-2 disclosure_boundary; exact rejected text is unavailable. Numeric TeX units/degrees caused a reproduced false positive. Source/3109 normalizes those narrowly and permits one continuation under the same guard/intent. Never attribute the historical rejection to a guessed label. See evaluations/2026-09-18-guard-recovery.md. User confirmed 3108 export produced no download; preserve its runtime and data.
+- Late SSE errors previously aborted accepted audio; 1185aec drains it while retaining cancellation. The 3108 retest instead logged beat-2 disclosure_boundary; exact rejected text is unavailable. Numeric TeX units/degrees caused a reproduced false positive. Source/3109 normalizes those narrowly and permits one continuation under the same guard/intent. Never attribute the historical rejection to a guessed label. See evaluations/2026-09-18-guard-recovery.md. 3109 later logged stale_drawing at beat 3 after one recovery; do not claim all cutoffs fixed. User confirmed 3108 export failed; preserve data.
 
 - Opus trial 3107 now supports full DRAW/ANIM/math with per-beat validation and ordered glyphs. Prior panel restriction confounded evaluation. See TUTOR_TRIAL for evidence and failures; semantics remain experimental. Human prompts stay frozen. Groundtrack unavailable.
 - Quality-first correction: David rejected starting with Flash/Haiku for speed. The active comparison uses flagship reasoning candidates, with explicit effort/budget settings. OpenRouter is configured privately for benchmark children and the isolated trial; never put its key in notes. Current-stack controls and 8,000-token capability pilots are different experiments.

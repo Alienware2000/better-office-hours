@@ -29,7 +29,7 @@ Teaching-intent, concept-recovery, concept-lessons/trial adapter, teaching-panel
 
 ## Next action
 
-September 19: David reports the server died and requests continuation in a new task. His visible browser is on 3105; the latest patched voice trial is 3109. First inspect listeners and runtime logs, restore the appropriate local runtime while preserving existing data/origins, and verify its UI. Then David tests 3109 for complete speech. Correlate any failure with validation/recovery events and playback_end. Export did not produce a backup. Broader latency comparison and Chrome review stay queued.
+September 19 continuation: 3105 has no listener, but 3107/3108/3109 remain running. Verified 3109 listener cwd matches its saved snapshot, HTTP 200, and browser restored its saved session/PDF with Start the tutor available. No restart or data migration was needed. Logs show two completed lessons plus a later non-cancelled stale_drawing rejection at beat 3 after one recovery (two accepted beats). This is a remaining validation failure, not a server crash or proven audio truncation. Next inspect that failure without mutating the live snapshot, and get David's acoustic feedback. Preserve existing origins; JSON export is still unverified. Broader latency comparison and Chrome review remain queued.
 
 ## Blockers
 
