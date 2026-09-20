@@ -210,6 +210,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
       <LayoutGroup id="session-layout">
         {!split ? (
           <motion.section key="welcome" className="welcome-stage">
+            <header className="welcome-intro"><p>Better Office Hours</p><h1>Let’s work it out.</h1></header>
             <motion.div
               layoutId="tutor-orb"
               className="orb-frame orb-frame-home"
@@ -409,8 +410,8 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
 }
 
 function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean, phase: ReturnType<typeof useVoiceLoop>['responsePhase'], micMuted: boolean): string {
-  if (!inputReady && state !== "thinking" && state !== "speaking") return micMuted ? "Mic off · typing available" : inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to speak";
-  if (paused) return micMuted ? "Mic off · typing available" : "Tap to speak";
+  if (!inputReady && state !== "thinking" && state !== "speaking") return micMuted ? "Mic off" : inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to speak";
+  if (paused) return micMuted ? "Mic off" : "Tap to speak";
   if (recording) return "Listening · tap when finished";
   if (state === "speaking") return "Speaking · mic muted";
   if (state === "thinking") {
@@ -419,7 +420,7 @@ function statusText(state: OrbState, paused: boolean, recording: boolean, inputR
     if (phase === 'voice') return 'Preparing voice · mic muted';
     return 'Thinking · mic muted';
   }
-  if (micMuted) return "Mic off · typing available";
+  if (micMuted) return "Mic off";
   if (state === "listening") return "Listening · you can speak";
   return "Tap to speak";
 }

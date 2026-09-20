@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 export function TutorInput({ open, value, busy, micOff, canEnableMic, onOpen, onChange, onSend, onMic }: {
   open: boolean; value: string; busy: boolean; micOff: boolean; canEnableMic: boolean;
@@ -8,24 +8,41 @@ export function TutorInput({ open, value, busy, micOff, canEnableMic, onOpen, on
   onSend: () => void; onMic: () => void;
 }) {
   const id = useId();
-  return <div className="tutor-input">
-    <div className="tutor-input-controls">
-      <button type="button" aria-expanded={open} aria-controls={id} onClick={() => onOpen(!open)}>{open ? 'Hide typing' : 'Type instead'}</button>
-      <button type="button" aria-pressed={micOff} disabled={micOff && !canEnableMic} onClick={onMic}
-        title="Microphone only. This does not stop the tutor's response.">{micOff ? 'Turn mic on' : 'Mute mic'}</button>
-      {micOff && <span>Mic off</span>}
-    </div>
+  const input = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (open) input.current?.focus(); }, [open]);
+  const microphone = <button type="button" className="input-mic" aria-label={micOff ? 'Turn mic on' : 'Mute mic'}
+    aria-pressed={micOff} disabled={micOff && !canEnableMic} onClick={onMic}
+    title="Microphone only. Your tutor keeps responding.">
+    <svg aria-hidden viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v3M9 21h6"/>{micOff && <path d="m3 3 18 18"/>}</svg>
+    <span>{micOff ? 'Mic off' : 'Mic on'}</span>
+  </button>;
+  return <div className={`tutor-input${open ? ' is-open' : ''}`}>
+    {!open && <div className="tutor-input-controls">
+      <button type="button" aria-expanded={false} aria-controls={id} onClick={() => onOpen(true)}>
+        <svg aria-hidden viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 9h.01M11 9h.01M15 9h2M7 12h.01M11 12h.01M15 12h2M7 15h10"/></svg>
+        Type a message
+      </button>
+      <span className="input-divider" aria-hidden />
+      {microphone}
+    </div>}
     {open && <form id={id} onSubmit={event => { event.preventDefault(); if (value.trim() && !busy) onSend(); }}>
-      <label htmlFor={`${id}-text`}>Message your tutor</label>
-      <textarea id={`${id}-text`} value={value} rows={2} maxLength={2000} placeholder="Ask a question or share your thinking…"
+      <textarea ref={input} id={`${id}-text`} aria-label="Message your tutor" aria-describedby={`${id}-hint`} value={value} rows={2} maxLength={2000} placeholder="What are you working on?"
         onChange={event => onChange(event.target.value)}
         onKeyDown={event => {
           if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault(); if (value.trim() && !busy) onSend();
           }
         }} />
-      <div className="tutor-input-footer"><small>{busy ? 'You can draft while the tutor responds.' : 'Same voice and whiteboard. Enter to send; Shift+Enter for a new line.'}</small>
-        <button type="submit" disabled={!value.trim() || busy}>Send</button></div>
+      <div className="tutor-input-footer">
+        {microphone}
+        <small id={`${id}-hint`}>{busy ? 'Send when the tutor finishes' : 'Enter to send · Shift+Enter for a new line'}</small>
+        <button type="button" className="input-icon" aria-label="Hide typing" aria-expanded={true} aria-controls={id} title="Hide typing" onClick={() => onOpen(false)}>
+          <svg aria-hidden viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></svg>
+        </button>
+        <button type="submit" className="input-send input-icon" aria-label="Send message" title="Send message" disabled={!value.trim() || busy}>
+          <svg aria-hidden viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>
+        </button>
+      </div>
     </form>}
   </div>;
 }

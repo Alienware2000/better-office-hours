@@ -19,3 +19,5 @@ The three archived files preserve their pre-workflow bytes. Search with `rg -n '
 - [September 20 consolidation and transcript review](tasks/2026-09-20-consolidation.md): pinned candidate, offline gate, 33-session study; release checks remain open.
 
 - [September 20 hybrid voice/prose](tasks/2026-09-20-hybrid-voice.md): implemented local 3112 trial; human acoustic review still pending.
+
+- [September 20 typed input](tasks/2026-09-20-typed-input.md): optional composer and independent mute; behavior review pending.

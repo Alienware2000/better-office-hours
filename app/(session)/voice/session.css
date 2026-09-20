@@ -440,33 +440,68 @@
 .takeaway-dialog > article { box-shadow: none; }
 .takeaway-dialog > article > header { display: none; }
 
-.trial-status { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem 1.25rem; margin: .8rem auto 0; flex: 0 0 auto; padding: .7rem 1rem; width: min(92%, 70rem); border: 1px solid #ccd4ca; border-radius: .8rem; background: #f5f7f1; color: #283c32; font-size: .85rem; }
-.trial-status small { flex-basis: 100%; color: #63716a; font-size: .75rem; }
-
+/* Quiet diagnostic disclosure, separate from the student input surface. */
+.trial-status { position: relative; z-index: 3; flex: 0 0 auto; padding: 0 1.5rem; color: #77766e; font-size: .72rem; }
+.trial-status details { border-bottom: 1px solid #2926210c; }
+.trial-status summary { display: flex; align-items: center; gap: .65rem; min-height: 40px; cursor: pointer; list-style: none; }
+.trial-status summary::-webkit-details-marker { display: none; }
+.trial-indicator { width: 5px; height: 5px; border-radius: 50%; background: #89978a; }
+.trial-model { color: #929087; padding-left: .65rem; border-left: 1px solid #29262118; }
+.trial-latency { margin-left: auto; font-variant-numeric: tabular-nums; }
+.trial-status svg { width: 14px; height: 14px; stroke: currentColor; fill: none; transition: transform .18s ease; }
+.trial-status details[open] svg { transform: rotate(180deg); }
+.trial-details { max-width: 42rem; padding: .3rem 0 .8rem 1rem; line-height: 1.65; }
+.trial-details p { margin: .25rem 0; }
+.trial-status summary:focus-visible { outline: 2px solid #797b72; outline-offset: 2px; border-radius: 4px; }
 .session-desk:has(.trial-status) { display: flex; flex-direction: column; }
 .session-desk > .trial-status + .session-shell { flex: 1; height: auto; }
 
-/* Optional typing shares the same desk and tutor pipeline. */
-.tutor-input { width: min(100%, 32rem); margin: .7rem auto; pointer-events: auto; }
-.tutor-input-controls { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .5rem; }
-.tutor-input button { min-height: 44px; border: 1px solid #d8d2c8; border-radius: 999px; padding: .5rem .9rem; background: #fffcf6; color: #57534e; font: inherit; font-size: .8rem; cursor: pointer; }
-.tutor-input-controls span { font-size: .75rem; color: #78716c; }
-.tutor-input form { margin-top: .65rem; padding: .8rem; background: #fffcf6; border: 1px solid #d8d2c8; border-radius: 16px; }
-.tutor-input label { display: block; font-size: .8rem; margin-bottom: .4rem; color: #57534e; }
-.tutor-input textarea { display: block; box-sizing: border-box; width: 100%; resize: vertical; min-height: 64px; max-height: 180px; border: 0; background: transparent; color: #292621; font: inherit; font-size: 16px; line-height: 1.5; }
-.tutor-input-footer { display: flex; align-items: center; gap: .8rem; justify-content: space-between; margin-top: .5rem; }
-.tutor-input-footer small { color: #78716c; font-size: .7rem; line-height: 1.4; }
-.tutor-input button[type=submit] { background: #292621; color: #fffcf6; }
-.tutor-input button:disabled { opacity: .45; cursor: default; }
-.tutor-input button:focus-visible, .tutor-input textarea:focus-visible { outline: 2px solid #b95832; outline-offset: 3px; }
-.welcome-stage:has(.tutor-input form) { overflow-y: auto; justify-content: flex-start; padding-top: 2rem; }
+/* One input surface. Microphone mute never cancels tutor output. */
+.tutor-input { width: min(100%, 34rem); margin: .25rem auto 0; pointer-events: auto; }
+.tutor-input-controls { display: flex; align-items: center; justify-content: center; gap: .25rem; }
+.tutor-input button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; border: 0; border-radius: 10px; padding: .5rem .7rem; background: transparent; color: #66665f; font: inherit; font-size: .8rem; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.tutor-input button:hover:not(:disabled) { background: #25292308; color: #242822; }
+.tutor-input svg { width: 17px; height: 17px; flex-shrink: 0; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.input-divider { height: 16px; width: 1px; background: #29262116; margin: 0 .3rem; }
+.tutor-input form { padding: 1rem .6rem .5rem; background: #fffefa; border: 1px solid #deded7; border-radius: 20px; box-shadow: 0 4px 18px #29262104, 0 1px 3px #29262103; transition: border-color .18s ease, box-shadow .18s ease; }
+.tutor-input form:focus-within { border-color: #93988b; box-shadow: 0 0 0 3px #89947b0b, 0 5px 22px #29262105; }
+.tutor-input textarea { display: block; box-sizing: border-box; width: 100%; resize: none; min-height: 64px; max-height: 180px; padding: .15rem .65rem .5rem; border: 0; border-radius: 0; outline: none; background: transparent; color: #292c27; font: inherit; font-size: 16px; line-height: 1.6; }
+.tutor-input textarea::placeholder { color: #91938a; }
+.tutor-input-footer { display: flex; align-items: center; gap: .25rem; }
+.tutor-input-footer small { flex: 1; text-align: right; padding-right: .4rem; color: #878a80; font-size: .63rem; line-height: 1.4; }
+.tutor-input .input-icon { width: 44px; padding: 0; flex-shrink: 0; }
+.tutor-input .input-send { background: #292e27; color: #fffefa; border-radius: 50%; }
+.tutor-input .input-send:hover:not(:disabled) { background: #454d40; color: #fffefa; }
+.tutor-input .input-send:disabled { background: #eeeee8; color: #abada3; }
+.tutor-input button:disabled { opacity: .55; cursor: default; }
+.tutor-input button:focus-visible { outline: 2px solid #797f70; outline-offset: 2px; }
 .agent-stage > .tutor-input { flex-shrink: 0; }
+.agent-stage .tutor-input-footer small { font-size: .6rem; }
+.welcome-stage { overflow-y: auto; padding: 2rem 1.5rem; justify-content: safe center; background: #f5f4ee; }
+.welcome-intro { text-align: center; margin: 0 0 2.25rem; }
+.welcome-intro p { margin: 0 0 .75rem; font-size: .65rem; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; color: #818579; }
+.welcome-intro h1 { margin: 0; font-size: clamp(1.8rem, 3.2vw, 2.4rem); line-height: 1.2; letter-spacing: -.045em; font-weight: 400; color: #30352d; }
+.welcome-stage .response-activity:empty { height: .25rem; }
+.welcome-stage .chip-row { margin-top: 1.6rem; gap: .15rem; }
+.welcome-stage .chip { min-height: 44px; border: 0; background: transparent; color: #777b70; padding: .4rem .8rem; border-radius: 8px; font-size: .72rem; }
+.welcome-stage .chip:hover { background: #292e2707; color: #30352d; transform: none; }
+.session-app:has(.welcome-stage), .session-desk:has(.welcome-stage) { background: #f5f4ee; }
+.session-app:has(.welcome-stage) .session-header { background: #f5f4ee; border-bottom-color: #2926210b; }
+.session-app:has(.welcome-stage) .session-header button { background: transparent; border-color: transparent; border-radius: 8px; }
+.session-app:has(.welcome-stage) .session-header button:hover { background: #292e2707; }
 @media (max-width: 640px) {
+  .trial-status { padding: 0 1rem; font-size: .65rem; }
+  .welcome-stage { padding: 1.5rem 1rem; }
+  .welcome-intro { margin-bottom: 1.6rem; }
+  .tutor-input-footer small { font-size: .6rem; max-width: 7rem; margin-left: auto; }
   .workspace-layout { grid-template-rows: 13rem minmax(0, 1fr); }
   .workspace-layout:has(.tutor-input form) { grid-template-rows: minmax(0, 55%) minmax(0, 1fr); }
   .agent-stage { overflow-y: auto; justify-content: flex-start; }
   .agent-stage .orb-frame { flex-shrink: 0; }
   .agent-stage .tutor-input { margin: .25rem auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutor-input button, .tutor-input form, .trial-status svg { transition: none; }
 }
 
 /* Keep the orb unmarked; the quiet caption below is the start action. */

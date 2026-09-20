@@ -1,34 +1,34 @@
 # Active task
 
 Updated: 2026-09-20
-State: ready_for_review
+State: in_progress
 Branch: lane/post-hackathon-local
-Base: 27899cd31cf3b62a70080d2f011f6b568d797d83
+Base: 3b3dceb85eed13bb9a0668423f18ba962365927e
 
 ## Objective
 
-Add optional typing with the same tutor/whiteboard and independent microphone mute, explicitly requested by David. This supersedes the older voice-only input rule.
+Refine the voice/typing interface after David rejected its cluttered, piecemeal appearance. Keep the plain orb. References: ElevenLabs, Nube, Atalanta, and the supplied compact navigation example.
 
 ## Scope and constraints
 
-Local voice/workspace only. Preserve 3111/3112 and all saves/PDFs. Vercel paused. No provider, frozen prompt, or shared type changes. Groundtrack unavailable.
+Local voice UI only. Preserve all existing origins, saves, PDFs, provider/voice behavior, independent mute and draft retention. No deployment or frozen-contract changes. Groundtrack unavailable. Prior human acoustic/iPad review remains open.
 
 ## Progress
 
-Typed input bypasses permission/STT and uses the existing lesson, board, narration, guardrail, and transcript path. Opening typing mutes input; it does not stop output. Separate mic mute survives response completion without aborting inference or playback. Stop/Interrupt remains separate. David rejected text/icon inside the orb; restored its plain appearance with a clickable cue below.
+Unified typing/mic controls, compact composer with one focus treatment, quiet entry links, welcome hierarchy, and collapsed trial diagnostics implemented. Typecheck passed; lint and browser inspection underway.
 
 ## Decisions
 
-Drafting is allowed while responding; Send waits until done or explicitly stopped. Enter sends, Shift+Enter inserts a line, IME composition does not send. Unsent drafts stay in this desk only. Typed mode still produces spoken output/captions; no silent-output feature added. Prior automatic-listening/prose fixes remain.
+Interpret references through spacing, typography, hierarchy, and integrated controls. Keep paper-board identity and original orb. No scenic background, added dependencies, model changes, or decorative animation. Trial model and speech-to-audio timing remain accessible in a disclosure. Typed output still includes narration.
 
 ## Validation
 
-All 16 offline checks, typecheck/lint pass. Browser: composer, multiline entry, draft retention, clear/disabled Send verified; see [evidence](evaluations/2026-09-20-typed-input.md). Plain orb/caption visually verified; focused lint/typecheck pass. Hardware review pending.
+Pending desktop/mobile visual and draft interaction checks. Prior 16-check offline logic baseline remains in evaluations/2026-09-20-typed-input.md.
 
 ## Next action
 
-Retest http://localhost:3113 (0d21e65): Type instead, typed response/board, mute during thinking/speech, and Turn mic on. Preserve all earlier origins.
+Inspect isolated 3114 preview, refine layout, verify composer and diagnostics without provider calls, then checkpoint for David's review.
 
 ## Blockers
 
-No verified session backups; preserve existing origins. Prior acoustic/iPad review remains pending.
+Existing live sessions lack verified backups; do not reload/restart them. Real acoustic/iPad review remains pending.
