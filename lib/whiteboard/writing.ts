@@ -45,12 +45,12 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
   const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
-  const hasDiagram = [...groups, ...motion].some(g => g.id !== group.id && g.geometry?.length);
   if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color) ?? undefined }] };
   if (!note && !math && width(mark.text, .038, false) <= .91 && groups.some(group => group.geometry?.length)) return group;
-  const caption = note && !heading && !math && groups.some(group => group.geometry?.length);
-  const diagramEquation = math && hasDiagram && !note;
-  let fontSize = heading ? .048 : caption ? .038 : diagramEquation ? boardStyle.diagramEquation : mark.size === 'm' ? .085 : .068;
+  // Supporting prose should stay subordinate to the mathematical object,
+  // whether or not the page also contains geometry.
+  const caption = note && !heading && !math;
+  let fontSize = heading ? .048 : caption ? .038 : math ? boardStyle.equation : mark.size === 'm' ? .085 : .068;
   const available = 1 - margin * 2;
   const fullFormula = math && hasLatex(mark.text) ? typesetMath(mark.text, mark.color) : null;
   const latex = Boolean(fullFormula);
@@ -99,9 +99,9 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   }
   const half = Math.max(...lines.map(text => width(text, fontSize, math)), 0) / 2;
   const x = note ? margin + half : Math.max(margin + half, Math.min(1 - margin - half, mark.at.x));
-  // Try lateral space before abandoning a figure. Only new equation placement
+  // Try lateral space before continuing to a new page. Only new equation placement
   // changes: notes keep their left alignment and prior writing stays resolved.
-  const columns = diagramEquation ? [...new Set([x, .5, margin + half, 1 - margin - half])] : [x];
+  const columns = math && !note ? [...new Set([x, .5, margin + half, 1 - margin - half])] : [x];
   const formulas = lines.map(text => math ? typesetMath(text, mark.color) : null);
   const offsets = [0];
   for (let i = 1; i < lines.length; i++) offsets.push(offsets[i - 1] + Math.max(fontSize * 1.45, fontSize * ((formulas[i - 1]?.descent ?? .25) + (formulas[i]?.ascent ?? 1)) + gap));

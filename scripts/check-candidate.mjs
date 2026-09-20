@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { candidateManifest } from './candidate-manifest.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const checks=['candidate-profile','concept-lessons','concept-recovery','teaching-intent','teaching-panels','voice-lifecycle','request-deadlines','saved-sessions','workspace','board-refresh','board-writing','board-composition','diagrams','diagram-motion','math','ink','teaching-repairs'];
+const checks=['candidate-profile','concept-lessons','concept-recovery','teaching-intent','teaching-panels','voice-lifecycle','request-deadlines','saved-sessions','workspace','board-refresh','board-writing','board-composition','diagrams','diagram-motion','math','structured-math','ink','teaching-repairs'];
 const report={...candidateManifest(root),createdAt:new Date().toISOString(),kind:'offline-synthetic',checks:[],notTested:['human audio quality','real provider latency/cost','browser reload/PDF persistence','historical diagram playback']};
 for(const name of checks){
   const result=spawnSync(process.execPath,['--require','./scripts/offline-network.cjs',`scripts/check-${name}.mjs`],{

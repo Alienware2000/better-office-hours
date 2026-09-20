@@ -120,7 +120,8 @@ const nextLine = layoutWriting(writing('next','after fail: a = ? v_top = ?',.45,
 assert.ok(givens.drawables.length > 1,'Long writing wraps instead of shrinking');
 const all = [eq,givens,nextLine].flatMap(g=>g.drawables);
 for (const mark of all) {
-  assert.ok(mark.fontSize >= .068,'Standalone writing retains readable size');
+  if (mark.math) assert.equal(mark.fontSize,.052,'Full equations use the working scale even without a diagram');
+  else assert.ok(mark.fontSize >= .068,'Ordinary standalone prose retains its readable size');
   const a = writingBounds(mark);
   assert.ok(a.left >= .05 && a.right <= .95 && a.top >= .05 && a.bottom <= .95,'Writing stays on paper');
   for (const other of all.filter(m=>m!==mark)) {

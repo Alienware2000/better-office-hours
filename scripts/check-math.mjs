@@ -22,7 +22,10 @@ const groups=[];
 for(const [i,text] of [examples[1],examples[2],examples[5]].entries()){
  const group=layoutWriting(interpretCommand({op:'text',id:'eq-'+i,text,at:{x:.5,y:.24},size:'s'},i).group,groups,[]);assert.ok(group,'Math finds space without clipping');groups.push(group);
  const mark=group.drawables[0];assert.ok(mark.mathDrawing,'Math is resolved before rendering/capture: '+text);const box=writingBounds(mark);assert.ok(box.left>=.05&&box.right<=.95&&box.top>=.05&&box.bottom<=.95);
- for(const other of groups.slice(0,-1).flatMap(g=>g.drawables)){const b=writingBounds(other);assert.ok(box.bottom<=b.top||b.bottom<=box.top,'Tall formulas cannot overlap adjacent notes');}
+ for(const other of groups.slice(0,-1).flatMap(g=>g.drawables)){
+  const b=writingBounds(other),gap=.025,tolerance=1e-9;
+  assert.ok(box.right+gap<=b.left+tolerance||b.right+gap<=box.left+tolerance||box.bottom+gap<=b.top+tolerance||b.bottom+gap<=box.top+tolerance,'Tall formulas retain a clear gap from adjacent notes in either dimension');
+ }
 }
 for(const text of examples.slice(0,3)){const draw=`[DRAW ${JSON.stringify({op:'text',id:'eq',text,at:{x:.5,y:.3}})}]`;assert.equal(parseAgentTurn('[TEACH move=elicit visual=none]'+draw).board?.commands.length??0,0,'LaTeX cannot bypass elicitation');assert.equal(parseAgentTurn('[TEACH move=hint visual=notes]'+draw).board.commands[0].text,text);}
 console.log('PASS: real MathJax fractions, roots, indices, vectors, integrals, alignments, matrices, Unicode compatibility, safe fallback, measured math spacing, and LaTeX teaching boundaries.');
@@ -64,3 +67,26 @@ for (const color of [ink,'#b95832','#347ac5']) {
  for (const text of examples) assert.ok(typesetMath(text,color).paths.every(p=>p.color===color), 'Only authored equation color is used');
 }
 console.log('PASS: short prose retains spaces; neutral math and explicit emphasis use the authored color throughout.');
+
+// Array separators are SVG lines in MathJax, while both board renderers consume
+// filled paths. Check the visible rules themselves, not only non-null glyphs.
+for (const [source, vertical, horizontal] of [
+ [String.raw`\begin{array}{c|c}a&b\\c&d\end{array}`,1,0],
+ [String.raw`\begin{array}{c|c}a&b\\\hline c&d\end{array}`,1,1],
+ [String.raw`\begin{array}{c||c}a&b\\c&d\end{array}`,2,0],
+]) {
+ const formula=typesetMath(source,ink);assert.ok(formula?.paths.length,'Ruled arrays render as actual math');
+ const rules=formula.paths.flatMap(path=>{
+  const match=path.d.match(/^M(-?[\d.]+),(-?[\d.]+)h([\d.]+)v([\d.]+)h(-[\d.]+)Z$/);
+  if(!match)return [];
+  const [x,y,w,h,close]=match.slice(1).map(Number);
+  assert.ok([x,y,w,h,close,...path.matrix].every(Number.isFinite));
+  assert.equal(close,-w,'A table rule closes as a filled shape');
+  assert.equal(path.color,ink,'Table rules retain the equation color');
+  assert.ok(w>0&&h>0);
+  return [{w,h}];
+ });
+ assert.equal(rules.filter(rule=>rule.w===70).length,vertical,'Vertical rules preserve the MathJax 70-unit stroke');
+ assert.equal(rules.filter(rule=>rule.h===70).length,horizontal,'Horizontal rules preserve the MathJax 70-unit stroke');
+}
+console.log('PASS: augmented, horizontal and double array rules retain finite filled geometry and MathJax line thickness.');
