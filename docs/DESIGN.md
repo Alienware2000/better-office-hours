@@ -4,6 +4,8 @@ This is the source of truth for what we are building, why, and what we have deci
 
 ## Current implementation and sequencing
 
+September 20 STEM clarification: named topics are examples. Build an open-ended visual tutor across STEM using general representations and collaborative ink, with latency as a release condition. [Vision and coverage](STEM_WHITEBOARD.md).
+
 September 20 board correction: diagrams, meaningful color, nearby equations/labels and key ideas lead; avoid copying spoken paragraphs. Preserve ordered writing and optional longer notes. [Research and prototype](WHITEBOARD_EXPERIENCE_RESEARCH.md); live integration remains a separate review.
 
 September 20 UI direction: modern, warm, approachable, and voice-first. Keep the plain orb and typing closed by default. Use consistent surfaces, recognizable buttons/navigation, and explicit listening/thinking/speaking affordances across the desk. [UI foundation](UI_FOUNDATION.md) records the rules; [product checklist](PRODUCT_CHECKLIST.md) preserves latency, voice reliability, and whiteboard priorities.

@@ -3,34 +3,32 @@
 Updated: 2026-09-20
 State: ready_for_review
 Branch: lane/post-hackathon-local
-Base: 5f9647e3ec251db06b4ba14ae15e74d8cd072662
+Base: dd72d8ac4002e7a09a7fcd81c6eb520a9da970bd
 
 ## Objective
 
-Research and refine a visual, interactive board across subjects.
+Evaluate STEM visuals and an open-ended canvas vision. Named topics are examples, not scope limits.
 
 ## Scope and constraints
 
-Local prototype only. Preserve live sessions, frozen files, voice/model and public pause. Groundtrack unavailable.
+Local evaluation only; preserve live sessions, frozen files and public pause. Groundtrack unavailable.
 
 ## Progress
 
-[Research](WHITEBOARD_EXPERIENCE_RESEARCH.md): Sketchplanations, 3Blue1Brown/Manim, learning science, Opus and student ink.
-
-3116/board-system-v2.html: diagram/equation together, concept colors/links, concise takeaway, ordered replay and native selection. Nine synthetic pages. Original gallery retained; root tutor unchanged at 1770053. Generator: scripts/evaluation/board-gallery.mjs.
+[Vision](STEM_WHITEBOARD.md) and [evidence](evaluations/2026-09-20-stem-board.md). 3116/board-stem.html: eight authored pages. /board-stem-models.html: four real outputs. Root tutor remains 1770053.
 
 ## Decisions
 
-Explicit concept colors; one reveal clock; nearby representations. Ink context is turn-boundary, not continuous perception. No live integration or measured latency/learning gain.
+Separate renderer, model and live evidence. Prototype matrix/heading spacing fixed. Models still fail geometry, motion and composition. Preserve ink ownership.
 
 ## Validation
 
-Document/writing/math/diagram/motion checks, typecheck and lint pass. Browser: 18 layouts, ordered prefixes, pause/seek and linked selection. [Evidence/failed approaches](evaluations/2026-09-20-board-experience.md).
+Document/STEM checks, typecheck and lint pass. Browser: 16 layouts, motion seek and ordered replay. Four calls: 4.02–6.89 s to complete speech unit, excluding voice pipeline; $0.48855 returned cost. No latency improvement claim.
 
 ## Next action
 
-Review, then integrate one structured writing path and compare matched live turns. Review ink feedback and pen-down interruption separately.
+Review, then improve general composition/validation and compare held-out topics plus matched live turns. Never route topics to these fixtures.
 
 ## Blockers
 
-Provider/acoustic/iPad evaluation and verified live-session backup remain open.
+Broad STEM, image grounding, acoustic/iPad and ink-feedback evidence remain open. Verify live-session backup before live integration.

@@ -22,7 +22,7 @@ David requested frictionless reorientation across coding agents, fresh chats, an
 
 The shared paper desk supports homework/PDF and concepts, generated diagrams/LaTeX, narrated visuals, student ink, PDF cues, local sessions/export, optional scoped Canvas retrieval and recap. Histories remain browser-local; no cloud session sync or learner memory. Private Vercel Blob stores public-runtime PDFs; Supabase is optional.
 
-Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted baseline. #11 is a separate local reconciliation topic: its forced login and body-email/shared-bearer ingestion conflict with the optional/scoped-owner flow. No merge or remote change is authorized. OpenRouter/Opus is the current local candidate, not yet the default product configuration.
+Submitted integrations are included. #11 remains unreconciled because its identity/ingestion assumptions conflict with current scope; see DEVELOPMENT. No remote change authorized. OpenRouter/Opus remains a local candidate.
 
 ## Open issues
 
@@ -36,7 +36,7 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Next
 
-September 20: cross-subject board research and a second static study at 3116/board-system-v2.html now pair diagrams/equations, explicit concept colors and ordered writing. [Evidence](evaluations/2026-09-20-board-experience.md). The root tutor is unchanged. Review before structured writing integration and matched latency/quality evaluation; see TASK.
+September 20: [STEM vision](STEM_WHITEBOARD.md) is open-ended, not a topic catalog. Eight authored pages at 3116/board-stem.html and four real model outputs at /board-stem-models.html expose geometry, motion and composition failures. [Evidence](evaluations/2026-09-20-stem-board.md). Prototype matrix/heading spacing fixed; root tutor unchanged. Next: general composition/validation, then matched live quality/latency evaluation.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 

@@ -27,3 +27,5 @@ The three archived files preserve their pre-workflow bytes. Search with `rg -n '
 - [September 20 board text](tasks/2026-09-20-board-text.md): neutral math and short-prose fixes, isolated visual review.
 
 - [September 20 board system](tasks/2026-09-20-board-system.md): cross-subject document prototype and first gallery review.
+
+- [September 20 board experience](tasks/2026-09-20-board-experience.md): visual learning research, linked diagrams/equations and ordered replay.
