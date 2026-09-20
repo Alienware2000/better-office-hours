@@ -7,7 +7,7 @@ Updated September 20, 2026. David reports BOH won the hackathon. He requested co
 | Use | Current truth | How it advances |
 | --- | --- | --- |
 | Product baseline | GitHub `origin/main`, fetched at `1b8c7c2`. Default source uses Grok routing/reasoning. Public deployment is separately paused. | Reviewed integration and deliberate release. A merge is not evidence of a deployment. |
-| Development candidate | This checkout, `lane/post-hackathon-local`; current manual test is isolated localhost:3115 (10c0720). OpenRouter Opus-low and protected structured lessons are trial-gated. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
+| Development candidate | This checkout, `lane/post-hackathon-local`; current manual test is isolated localhost:3115 (9e0e00b). OpenRouter Opus-low and protected structured lessons are trial-gated. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
 | Evaluation | `scripts/bench-tutor-models.mjs`, `scripts/evaluation/`, `scripts/review-tutor-models.mjs`; dashboard conventionally 3106. | Synthetic comparisons and saved human judgments, independent of the default tutor configuration. |
 
 These are uses of the same codebase, not three products or separate permanent repositories. Evaluations should reuse the real parser/renderer. Evaluation fixtures must never select a student's runtime scene. Provider switching belongs in explicit configuration, not in duplicated app implementations.

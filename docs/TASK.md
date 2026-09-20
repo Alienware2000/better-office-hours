@@ -11,7 +11,7 @@ Warm, modern voice-first UI foundation and server cleanup. Preserve the broader 
 
 ## Scope and constraints
 
-Local voice/workspace UI only. Keep plain orb, voice logic, PDFs and saves. No deployment/frozen-contract change. Groundtrack unavailable. Preserve live 3114.
+Local voice/workspace UI only. Keep plain orb, voice logic, PDFs and saves. 3115 now has a saved homework conversation; do not treat it as an unused test draft. No deployment/frozen-contract change. Groundtrack unavailable. Preserve live 3114.
 
 ## Progress
 
@@ -23,11 +23,11 @@ No border/fill/icon on the welcome start cue; avoid boxing every action. Keep su
 
 ## Validation
 
-Final typecheck/lint pass. Browser verifies one Tap to speak button (the orb), a plain text caption, and typing closed. Active states inspected synthetically. No provider calls. Evidence: evaluations/2026-09-20-voice-foundation.md.
+Prior UI typecheck/lint pass; welcome-only copy change passes diff checks. Browser verifies one Tap to speak button (the orb), a plain text caption, and typing closed. Active states inspected synthetically. No provider calls. Evidence: evaluations/2026-09-20-voice-foundation.md.
 
 ## Next action
 
-David reviews 3115 (10c0720). Next proposed slice: board text, label collisions and meaningful color, with first-audio latency retained as a guardrail. Acoustic/iPad review stays open.
+David reviews 3115 (9e0e00b). Next proposed slice: board text, label collisions and meaningful color, with first-audio latency retained as a guardrail. Acoustic/iPad review stays open.
 
 ## Blockers
 
