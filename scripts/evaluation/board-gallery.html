@@ -10,6 +10,7 @@ __BOARD_STYLES__
 body { margin: 0; }
 button, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
+[hidden] { display: none !important; }
 button:disabled { opacity: .32; cursor: default; }
 button:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid #397b78; outline-offset: 5px; }
 header { max-width: 1240px; margin: auto; padding: 26px 30px 23px; display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid #dcd7cd; }
@@ -53,11 +54,18 @@ h2 { font-size: 16px; line-height: 1.5; font-weight: 550; margin: 0 0 10px; }
 #play { min-width: 45px; text-align: left; }
 #beat { min-width: 0; width: 100%; accent-color: #b95832; height: 3px; cursor: pointer; }
 .count { white-space: nowrap; font-size: 10px; color: #938b7d; font-variant-numeric: tabular-nums; }
+.experiment { border-top: 1px solid #ebe6dc; padding: 14px 16px; }
+.experiment-row { display:flex; gap:12px; align-items:center; font-size:11px; }
+.experiment button { border:1px solid #d8d1c5; background:transparent; border-radius:20px; padding:8px 12px; white-space:nowrap; }
+.experiment input { width:100%; min-width:40px; accent-color:#397b78; }
+.experiment p { font-size:10px; line-height:1.6; color:#817b70; margin:10px 0 0; }
+.experiment output { white-space:nowrap; font-variant-numeric:tabular-nums; }
 .navigation { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 18px auto 0; width: min(100%,640px); }
 .navigation button { background: transparent; border: 0; padding: 10px 0; font-size: 12px; }
 .focus { display: flex; gap: 7px; align-items: center; color: #80796d; font-size: 11px; }
 .focus select { max-width: 190px; border: 0; background: transparent; font-size: 11px; padding: 7px; }
 .footnote { text-align: center; color: #8b8376; font-size: 10px; margin-top: 20px; line-height: 1.6; }
+.footnote a { color:#397b78; text-underline-offset:3px; }
 @media(max-width: 850px) { main { gap: 30px; grid-template-columns: 230px minmax(0,1fr); padding: 30px 20px; } h1 { font-size: 29px; } }
 @media(max-width: 660px) { main { display: block; padding: 28px 18px; } aside { margin-bottom: 24px; } h1 { font-size: 30px; max-width: 330px; margin-bottom: 20px; } header { padding: 20px 18px; } .subjects { margin-bottom: 20px; } .description { margin-bottom: 16px; } .pages, .hint { display: none; } .focus select { max-width: 130px; } }
 @media(prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
@@ -78,6 +86,7 @@ h2 { font-size: 16px; line-height: 1.5; font-weight: 550; margin: 0 0 10px; }
       <div class="paper-title"><i aria-hidden="true">ƒ</i> Tutor notes</div>
       <div class="stage"></div>
       <div class="transport"><button id="play" aria-label="Replay page">Replay</button><input id="beat" aria-label="Reveal progress" type="range" min="0" step="1"><span class="count" id="beat-count"></span></div>
+      <div class="experiment" hidden><div class="experiment-row"><button id="motion-play">Play motion</button><input id="motion-time" type="range" min="0" step="0.05" aria-label="Flight time"><output id="motion-output"></output></div><p id="motion-note"></p></div>
     </div>
     <div class="navigation"><button id="previous" aria-label="Previous page">Previous</button><label class="focus">Focus <select id="focus" aria-label="Focus on a detail"></select></label><button id="next" aria-label="Next page">Next page</button></div>
     <p class="footnote">Synthetic examples · Real board renderer<br>Visual replay only. Tutor narration and student ink are not connected in this study.</p>
@@ -89,9 +98,20 @@ const gallery=JSON.parse(document.getElementById('board-data').textContent);
 const $=s=>document.querySelector(s);
 let subject=0, pageIndex=0, position=0, timer=null, selected='', started=false, lastTick=0;
 let nodes=[];
+let motionTime=0, motionTimer=null, motionTick=0;
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const current=()=>gallery[subject].pages[pageIndex];
 function stop() { cancelAnimationFrame(timer); timer=null; $('#play').textContent=started&&position<current().timeline.duration?'Continue':'Replay'; $('#play').setAttribute('aria-label',$('#play').textContent+' page'); }
+function stopMotion() { cancelAnimationFrame(motionTimer); motionTimer=null; $('#motion-play').textContent='Play motion'; }
+function paintMotion() {
+  const motion=current().motion,layer=$('[data-experiment]');
+  if(!motion||!layer)return;
+  const frame=motion.frames[Math.round(motionTime/motion.duration*(motion.frames.length-1))];
+  layer.innerHTML=frame.svg;
+  layer.style.opacity=position>=current().timeline.duration?'1':'0';
+  $('#motion-time').value=motionTime;
+  $('#motion-output').textContent=`${motionTime.toFixed(2)} s`;
+}
 function paint() {
   const related=new Set([selected,...(current().links[selected]||[])]);
   let completed=0;
@@ -109,14 +129,20 @@ function paint() {
   }
   $('#beat').value=position; $('#beat-count').textContent=`${completed} / ${current().steps.length}`;
   $('#beat').setAttribute('aria-valuetext',`${completed} of ${current().steps.length} details complete`);
+  const motionLayer=$('[data-experiment]');if(motionLayer)motionLayer.style.opacity=position>=current().timeline.duration?'1':'0';
 }
 function focus(id) { selected=selected===id?'':id; $('#focus').value=selected; paint(); }
 function render() {
-  stop(); started=false; selected=''; const example=gallery[subject],page=current(); position=page.timeline.duration; nodes=[];
-  $('#subtitle').textContent=example.subtitle; $('#description').textContent=example.description;
+  stop();stopMotion(); started=false; selected=''; const example=gallery[subject],page=current(); position=page.timeline.duration; nodes=[];
+  $('#subtitle').textContent=example.subtitle; $('#description').textContent=page.note||example.description;
   $('.subjects').replaceChildren(...gallery.map((entry,index)=>{const b=document.createElement('button');b.textContent=entry.subject;b.setAttribute('aria-pressed',String(subject===index));b.onclick=()=>{subject=index;pageIndex=0;render();};return b;}));
   $('.pages').replaceChildren(...example.pages.map((entry,index)=>{const b=document.createElement('button'),n=document.createElement('span'),title=document.createElement('span');n.textContent=String(index+1).padStart(2,'0');title.textContent=entry.title+(index&&entry.title===example.pages[index-1].title?' · continued':'');b.append(n,title);if(pageIndex===index)b.setAttribute('aria-current','page');b.onclick=()=>{pageIndex=index;render();};return b;}));
   $('.stage').innerHTML=page.svg;
+  $('.experiment').hidden=!page.motion;
+  if(page.motion) {
+    const layer=document.createElementNS('http://www.w3.org/2000/svg','g');layer.dataset.experiment='true';layer.style.pointerEvents='none';$('.stage svg').append(layer);
+    motionTime=page.motion.initial||0;$('#motion-time').max=page.motion.duration;$('#motion-time').setAttribute('aria-label',page.motion.label);$('#motion-note').textContent=page.motion.note;paintMotion();
+  }
   const hitLayer=document.createElement('div');hitLayer.className='hit-layer';$('.stage').append(hitLayer);
   for(const group of document.querySelectorAll('[data-board-group]')) {
     if(!page.steps.includes(group.dataset.boardGroup))continue;
@@ -134,6 +160,7 @@ function render() {
   $('#beat').max=page.timeline.duration;$('#play').textContent='Replay';$('#play').setAttribute('aria-label','Replay page');paint();
 }
 $('#play').onclick=()=>{
+  stopMotion();
   if(timer!==null){stop();return;}
   selected='';$('#focus').value='';
   if(!started||position>=current().timeline.duration)position=0;
@@ -146,13 +173,22 @@ $('#play').onclick=()=>{
   timer=requestAnimationFrame(tick);
 };
 $('#beat').oninput=()=>{stop();started=true;position=Number($('#beat').value);paint();stop();};
+$('#motion-time').oninput=()=>{stopMotion();position=current().timeline.duration;stop();motionTime=Number($('#motion-time').value);paint();paintMotion();};
+$('#motion-play').onclick=()=>{
+  if(motionTimer!==null){stopMotion();return;}
+  position=current().timeline.duration;stop();paint();
+  if(motionTime>=current().motion.duration)motionTime=0;
+  $('#motion-play').textContent='Pause motion';motionTick=performance.now();
+  const tick=now=>{motionTime=Math.min(current().motion.duration,motionTime+(now-motionTick)/1000);motionTick=now;paintMotion();if(motionTime>=current().motion.duration)stopMotion();else motionTimer=requestAnimationFrame(tick);};
+  motionTimer=requestAnimationFrame(tick);
+};
 $('#focus').onchange=()=>{selected=$('#focus').value;paint();};
 $('.stage').onclick=()=>{selected='';$('#focus').value='';paint();};
 $('#previous').onclick=()=>{if(pageIndex>0){pageIndex--;render();}};
 $('#next').onclick=()=>{if(pageIndex<gallery[subject].pages.length-1){pageIndex++;render();}};
 for(const button of document.querySelectorAll('[data-size]'))button.onclick=()=>{ $('.sheet').classList.toggle('compact',button.dataset.size==='compact');for(const other of document.querySelectorAll('[data-size]'))other.setAttribute('aria-pressed',String(other===button)); };
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){stop();selected='';$('#focus').value='';position=current().timeline.duration;paint();}});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){stop();stopMotion();selected='';$('#focus').value='';position=current().timeline.duration;paint();}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();stopMotion();}});
 reduced.addEventListener('change',()=>paint());
 render();
 </script>

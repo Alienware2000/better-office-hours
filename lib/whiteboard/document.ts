@@ -86,7 +86,7 @@ export function composeDocument(document: BoardDocument): DocumentPage[] {
       if (pages.length >= 64) throw new Error('Document exceeds 64 pages.');
       page = { id: `${document.id}/${section.id}/${++part}`, title: section.title, groups: [], regions: [], steps: [], links: {} };
       const header = [text(`${page.id}-eyebrow`, requireText(section.eyebrow, 48), S.margin, .075, .023, S.muted),
-        ...title.map((t,i)=>text(`${page.id}-title-${i}`,t,S.margin,.15+i*.059,S.title))];
+        ...title.map((t,i)=>text(`${page.id}-title-${i}`,t,S.margin,.15+i*.070,S.title))];
       page.groups.push(group(`${page.id}-header`,header));
       page.regions.push(textRegion(`${page.id}-header`,'heading',header));
       cursor = title.length === 2 ? .285 : S.start;
@@ -162,27 +162,7 @@ export function composeDocument(document: BoardDocument): DocumentPage[] {
           if(concept) { requireText(concept,80); concepts.set(concept,[...(concepts.get(concept) ?? []),id]); }
         };
         if(!block.commands.length || block.commands.length>80)throw new Error('A figure needs 1 to 80 primitives.');
-        const point=(p:{x:number;y:number})=>{if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.x>1||p.y<0||p.y>1)throw new Error('Figure coordinate outside its frame.');return {x:.23+p.x*.54,y:.24+p.y*.54};};
-        const figures=block.commands.map((cmd,index)=>{
-          if (cmd.label && (requireText(cmd.label,64).split(/\s+/).length > 6)) throw new Error('Use a shorter figure label.');
-          if (cmd.diagram && ['attach','contact','component'].some(key=>key in cmd.diagram!)) throw new Error('Resolve figure relationships before document layout.');
-          if (cmd.op==='circle' && (!Number.isFinite(cmd.r) || cmd.r * .54 < .006 || cmd.center.x-cmd.r<0 || cmd.center.x+cmd.r>1 || cmd.center.y-cmd.r<0 || cmd.center.y+cmd.r>1)) throw new Error('Circle extends outside its figure or is too small.');
-          if (cmd.op==='curve' && (cmd.points.length<2 || cmd.points.length>256)) throw new Error('A figure curve needs 2 to 256 points.');
-          const mapped = cmd.op==='circle'?{...cmd,center:point(cmd.center),r:cmd.r*.54}:
-            cmd.op==='curve'?{...cmd,points:cmd.points.map(point)}:{...cmd,from:point(cmd.from),to:point(cmd.to)};
-          const op=interpretCommand({...mapped,id:`${block.id}-${index}`},index);
-          if(!op||op.kind!=='draw')throw new Error('Unsupported figure primitive.');
-          if(cmd.colorRole)op.group.drawables=op.group.drawables.map(mark=>mark.kind==='fill'&&mark.opacity===undefined?mark:{...mark,color:S[cmd.colorRole!]});
-          if(cmd.insideLabel) {
-            const {text:label,at,math=false}=cmd.insideLabel;
-            const color=cmd.colorRole?S[cmd.colorRole]:S.ink;
-            const mark={...text(`${op.group.id}-inside`,requireText(label,32),0,0,.040,color,'middle'),at:point(at)} as Extract<Drawable,{kind:'text'}>;
-            if(math) { const drawing=typesetMath(label,color); if(!drawing)throw new Error('Invalid figure notation.'); mark.math=true;mark.mathDrawing=drawing; }
-            op.group.drawables.push(mark);op.group.fixedLayout=true;
-          }
-          connect(op.group.id,cmd.concept);
-          return op.group;
-        });
+        let figureScale=.54, equationBaseline=.812;
         const equations: ShapeGroup[]=[];
         if(block.equation) {
           if(!block.equation.length||block.equation.length>12)throw new Error('An adjacent equation needs 1 to 12 terms.');
@@ -195,13 +175,42 @@ export function composeDocument(document: BoardDocument): DocumentPage[] {
           const gap=.018, width=terms.reduce((sum,t)=>sum+t.drawing.width,0);
           const size=Math.min(.059,(.86-gap*(terms.length-1))/width);
           if(size<.040)throw new Error('Split a long adjacent equation.');
+          const ascent=Math.max(...terms.map(t=>t.drawing.ascent))*size;
+          const descent=Math.max(...terms.map(t=>t.drawing.descent))*size;
+          // Matrices and stacked fractions need measured vertical space too.
+          // Preserve their reading size and the figure's aspect ratio.
+          equationBaseline=Math.min(.812,.841-descent);
+          const available=equationBaseline-ascent-.035-.24;
+          if(ascent+descent>.09)figureScale=Math.min(.54,available);
+          if(figureScale<.32)throw new Error('Put this tall equation on its own page.');
           let x=(1-(width*size+gap*(terms.length-1)))/2;
           terms.forEach(({term,color,drawing},index)=>{
             const id=`${block.id}-term-${index}`;
-            equations.push(group(id,[{kind:'text',key:id,text:term.latex,at:{x,y:.812},size:'s',fontSize:size,math:true,mathDrawing:drawing,color,textAnchor:'start'}]));
+            equations.push(group(id,[{kind:'text',key:id,text:term.latex,at:{x,y:equationBaseline},size:'s',fontSize:size,math:true,mathDrawing:drawing,color,textAnchor:'start'}]));
             x+=drawing.width*size+gap;connect(id,term.concept);
           });
         }
+        const point=(p:{x:number;y:number})=>{if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.x>1||p.y<0||p.y>1)throw new Error('Figure coordinate outside its frame.');return {x:(1-figureScale)/2+p.x*figureScale,y:.24+p.y*figureScale};};
+        const figures=block.commands.map((cmd,index)=>{
+          if (cmd.label && (requireText(cmd.label,64).split(/\s+/).length > 6)) throw new Error('Use a shorter figure label.');
+          if (cmd.diagram && ['attach','contact','component'].some(key=>key in cmd.diagram!)) throw new Error('Resolve figure relationships before document layout.');
+          if (cmd.op==='circle' && (!Number.isFinite(cmd.r) || cmd.r * figureScale < .006 || cmd.center.x-cmd.r<0 || cmd.center.x+cmd.r>1 || cmd.center.y-cmd.r<0 || cmd.center.y+cmd.r>1)) throw new Error('Circle extends outside its figure or is too small.');
+          if (cmd.op==='curve' && (cmd.points.length<2 || cmd.points.length>256)) throw new Error('A figure curve needs 2 to 256 points.');
+          const mapped = cmd.op==='circle'?{...cmd,center:point(cmd.center),r:cmd.r*figureScale}:
+            cmd.op==='curve'?{...cmd,points:cmd.points.map(point)}:{...cmd,from:point(cmd.from),to:point(cmd.to)};
+          const op=interpretCommand({...mapped,id:`${block.id}-${index}`},index);
+          if(!op||op.kind!=='draw')throw new Error(`Unsupported figure primitive: ${cmd.id}`);
+          if(cmd.colorRole)op.group.drawables=op.group.drawables.map(mark=>mark.kind==='fill'&&mark.opacity===undefined?mark:{...mark,color:S[cmd.colorRole!]});
+          if(cmd.insideLabel) {
+            const {text:label,at,math=false}=cmd.insideLabel;
+            const color=cmd.colorRole?S[cmd.colorRole]:S.ink;
+            const mark={...text(`${op.group.id}-inside`,requireText(label,32),0,0,.040,color,'middle'),at:point(at)} as Extract<Drawable,{kind:'text'}>;
+            if(math) { const drawing=typesetMath(label,color); if(!drawing)throw new Error('Invalid figure notation.'); mark.math=true;mark.mathDrawing=drawing; }
+            op.group.drawables.push(mark);op.group.fixedLayout=true;
+          }
+          connect(op.group.id,cmd.concept);
+          return op.group;
+        });
         const caption=block.caption?documentLines(block.caption,.86,S.caption):[];
         if(caption.length>2)throw new Error('Use a separate prose block for a long figure caption.');
         if(block.equation&&caption.length>1)throw new Error('Use one short takeaway beside an equation.');
@@ -234,7 +243,7 @@ export function composeDocument(document: BoardDocument): DocumentPage[] {
       if (box.left < .04 || box.right > .975 || box.top < .04 || box.bottom > .98) throw new Error(`Text exceeds page bounds: ${marks[i].key}`);
       for (let j = i + 1; j < boxes.length; j++) {
         const other = boxes[j];
-        if (box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top) throw new Error('Split this content to give its labels more space.');
+        if (box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top) throw new Error(`Split this content to give its labels more space: ${marks[i].key} / ${marks[j].key}`);
       }
     }
   }
