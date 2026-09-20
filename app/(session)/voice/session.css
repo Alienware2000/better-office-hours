@@ -541,22 +541,14 @@
 .session-library li[aria-current=true] { background: #e8ecdf; border-color: #d3dbc8; }
 .session-library .session-resume:hover { background: #e8ecdf88; }
 .session-library-scrim { background: #252c2540; backdrop-filter: blur(3px); }
-.tutor-input-controls { gap: .5rem; }
-.tutor-input-controls > button { border: 1px solid var(--ui-line); border-radius: 12px; background: #fffefa80; padding: .55rem .85rem; }
-.tutor-input-controls > button:hover:not(:disabled) { background: var(--ui-surface); border-color: #aeb7a4; }
-.tutor-input-controls .input-divider { display: none; }
-.welcome-stage .chip-row { gap: .5rem; }
-.welcome-stage .chip { border: 1px solid var(--ui-line); background: #fffefa60; border-radius: 10px; color: #626b59; padding: .5rem .85rem; }
-.welcome-stage .chip::after { content: '→'; display: inline-block; margin-left: .65rem; color: #87917d; }
-.welcome-stage .chip:hover { border-color: #aeb7a4; background: var(--ui-surface); }
 .response-status { width: 100%; max-width: 28rem; margin-top: .8rem; }
 .response-status .orb-status { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 40px; margin: 0; font-size: .82rem; font-weight: 500; letter-spacing: 0; color: var(--ui-ink); }
-.response-status .orb-start { display: inline-flex; min-height: 44px; padding: .55rem .95rem; border: 1px solid #cbd5c0; background: #e8ecdf; border-radius: 12px; }
-.response-status .orb-start:hover { background: #dfe7d3; border-color: #a7b697; }
+.response-status .orb-start { display: inline-flex; min-height: 44px; padding: .55rem .95rem; border: 0; background: transparent; border-radius: 10px; font-weight: 400; color: #6d675f; }
+.response-status .orb-start:hover { background: #29262106; color: #30352d; }
 .orb-start svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
 .response-hint { margin: .3rem 0 0; font-size: .68rem; color: var(--ui-muted); line-height: 1.5; }
 .response-status .response-activity { height: 1.3rem; padding-top: .3rem; }
-.welcome-stage .response-status .response-activity:empty { height: 1.3rem; }
+.welcome-stage .response-status .response-activity:empty { height: .25rem; }
 .state-signal { display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 18px; height: 18px; color: #637d53; }
 .state-signal i { display: block; width: 3px; height: 4px; background: currentColor; border-radius: 2px; }
 .is-listening .state-signal i { animation: listening-signal 2s ease-in-out infinite; }
@@ -574,9 +566,6 @@
 @keyframes speaking-signal { to { height: 13px; } }
 @keyframes thinking-signal { to { transform: rotate(360deg); } }
 @media (max-width: 640px) {
-  .welcome-stage .chip-row { gap: .4rem; }
-  .welcome-stage .chip { font-size: .68rem; padding: .4rem .6rem; }
-  .welcome-stage .chip::after { margin-left: .35rem; }
   .agent-stage .response-status { margin-top: .35rem; }
   .response-hint { font-size: .65rem; }
 }
