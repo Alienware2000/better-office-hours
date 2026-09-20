@@ -232,7 +232,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                 onPause={micMuted || !inputReady ? pauseVoice : pauseOrInterrupt}
               />
             </motion.div>
-            <ResponseStatus {...presentation} onActivate={interrupt} />
+            <ResponseStatus {...presentation} />
 
             {inputControls}
             <div className="chip-row">
@@ -394,7 +394,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                     onPause={micMuted || !inputReady ? pauseVoice : pauseOrInterrupt}
                   />
                 </motion.div>
-                <ResponseStatus {...presentation} onActivate={interrupt} />
+                <ResponseStatus {...presentation} />
                 {inputControls}
                 <Captions turns={turns} recap={recap} onExport={onExport} />
                 {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
@@ -422,5 +422,5 @@ function statusPresentation(state: OrbState, paused: boolean, recording: boolean
   if (!paused && !micMuted && inputReady && (recording || state === 'listening')) return {
     tone: 'listening', label: 'Listening', hint: recording ? 'Tap the orb when you’re finished, or pause.' : 'Go ahead. Take your time.',
   };
-  return { tone: 'ready', label: 'Tap to speak', hint: 'Your microphone is off until you begin.', canStart: true };
+  return { tone: 'ready', label: 'Tap to speak', hint: 'Your microphone is off until you begin.' };
 }

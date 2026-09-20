@@ -502,10 +502,7 @@
   .tutor-input button, .tutor-input form, .trial-status svg { transition: none; }
 }
 
-/* Keep the orb unmarked; the quiet caption below is the start action. */
-.orb-start { pointer-events: auto; display: inline-block; border: 0; background: transparent; padding: .65rem .9rem; min-height: 44px; margin-top: .25rem; border-radius: 999px; color: #6d675f; font: inherit; font-size: .8rem; letter-spacing: .015em; cursor: pointer; transition: color .15s ease, background .15s ease; }
-.orb-start:hover { color: #292621; background: #29262106; }
-.orb-start:focus-visible { outline: 2px solid #b95832; outline-offset: 2px; }
+/* The orb is the sole start action; its caption is noninteractive. */
 
 /* Shared interaction foundation across the welcome and working desk. */
 .session-app {
@@ -543,9 +540,6 @@
 .session-library-scrim { background: #252c2540; backdrop-filter: blur(3px); }
 .response-status { width: 100%; max-width: 28rem; margin-top: .8rem; }
 .response-status .orb-status { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 40px; margin: 0; font-size: .82rem; font-weight: 500; letter-spacing: 0; color: var(--ui-ink); }
-.response-status .orb-start { display: inline-flex; min-height: 44px; padding: .55rem .95rem; border: 0; background: transparent; border-radius: 10px; font-weight: 400; color: #6d675f; }
-.response-status .orb-start:hover { background: #29262106; color: #30352d; }
-.orb-start svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
 .response-hint { margin: .3rem 0 0; font-size: .68rem; color: var(--ui-muted); line-height: 1.5; }
 .response-status .response-activity { height: 1.3rem; padding-top: .3rem; }
 .welcome-stage .response-status .response-activity:empty { height: .25rem; }
@@ -574,3 +568,5 @@
   .is-speaking .state-signal i { height: 8px; }
   .is-speaking .state-signal i:nth-child(2) { height: 13px; }
 }
+
+.response-status.is-ready .orb-status { font-weight: 400; color: #6d675f; }
