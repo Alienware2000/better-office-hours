@@ -7,11 +7,9 @@ Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
 
 ## Authority
 
-Development stays local under the publication freeze. September 19: David explicitly authorized pausing public Vercel access after his LinkedIn post. The project is now paused; all three production URLs returned 503 DEPLOYMENT_PAUSED. This exception permits no new deployment, push, PR, or other production change. Resume only at David's request. Submission results remain pending; contest rules are unverified.
+September 20: David reports the hackathon win and authorizes continued development/consolidation. The contest hold is retired. Vercel remains paused until explicitly reopened. Current work is local; no push, PR, deployment, or public reopening occurred. [DEVELOPMENT](DEVELOPMENT.md) defines baseline, trial, evaluation, and promotion.
 
 David requested frictionless reorientation across coding agents, fresh chats, and different checkouts. See [TASK](TASK.md) for the active slice and [WORKFLOW](WORKFLOW.md) for commands. Current instructions are in [AGENTS](../AGENTS.md). Historical build notes and completed tasks are [archived](archive/README.md), not current work orders.
-
-David's plain-language [memory walkthrough](MEMORY_GUIDE.md) explains everyday use; the [reproduction recipe](MEMORY_RECIPE.md) provides starter templates and setup instructions for other projects. These are on-demand references.
 
 ## Local runtime
 
@@ -25,7 +23,7 @@ David's plain-language [memory walkthrough](MEMORY_GUIDE.md) explains everyday u
 
 One adaptive paper desk serves homework/PDF and concepts/whiteboard. Generated diagrams, local LaTeX, audio-timed visual beats, scene continuity, student ink, PDF highlights, and browser-local session recovery/export are implemented. Optional scoped Canvas ingestion/retrieval and student-first spoken recap are integrated. Private Vercel Blob stores public-runtime course/PDF data; Supabase remains optional. Full conversation/board/recap histories are browser-local, not cloud session sync or cross-session learner memory.
 
-Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted baseline. #11 is a separate local reconciliation topic: its forced login and body-email/shared-bearer ingestion conflict with the optional/scoped-owner flow. No merge or remote change is authorized. OpenRouter is a possible benchmark option, not an agreed migration.
+Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted baseline. #11 is a separate local reconciliation topic: its forced login and body-email/shared-bearer ingestion conflict with the optional/scoped-owner flow. No merge or remote change is authorized. OpenRouter/Opus is the current local candidate, not yet the default product configuration.
 
 ## Open issues
 
@@ -41,4 +39,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-3110 human retest: David reports working well; diagrams remain inconsistent and crowded. [Feedback](evaluations/2026-09-20-board-feedback.md) sets the next pass: neutral prose/mixed math, then scene composition. Preserve live 3110 and older snapshots. Keep latency and speech completion checks. Jev deferred; public Vercel stays paused until requested.
+Consolidation precedes board changes. Latest origin/main README update is merged locally; remote main remains unchanged. 3110 is the preserved candidate, reported working well. [DEVELOPMENT](DEVELOPMENT.md) tracks promotion and [board feedback](evaluations/2026-09-20-board-feedback.md) the next product slice. Jev deferred; Vercel paused.

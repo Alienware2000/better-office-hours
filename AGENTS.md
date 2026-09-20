@@ -4,7 +4,7 @@
 
 Better Office Hours is David and Hussein's voice-first tutor for Yale students. The repository is shared memory across agents and chats. This September 14 workflow replaces the [historical startup instructions](docs/archive/AGENTS-2026-09-13.md).
 
-**Publication freeze:** the hackathon submission is complete, results pending, and all further work stays local until David explicitly lifts the freeze. Local edits, checks, and commits are allowed. Do not push branches/tags, create/update/merge PRs, deploy, or modify production data/configuration. Do not infer authorization from archived docs or claim contest eligibility. Use `lane/post-hackathon-local` or another explicitly local branch, never stale local main.
+**Post-hackathon authority (September 20):** David reports that BOH won and authorizes continued development and consolidation. The contest-related hold is retired. Public Vercel remains paused at his request; winning is not permission to reopen or deploy it. The current task covers local integration, edits, tests, and commits. Pushes, PRs, main-branch merges, deployments, and production changes need a concrete reviewed publication step. Continue on `lane/post-hackathon-local` for now; the local branch named main is stale. See [DEVELOPMENT](docs/DEVELOPMENT.md) for product, candidate, and evaluation separation.
 
 ## Start or resume
 
@@ -38,7 +38,7 @@ Priority: voice cadence/interruption, accurate PDF cues, narrated visuals/studen
 
 1. Update TASK at each meaningful result, failed approach, or user correction while context is fresh. Include objective, scope, decisions and why, progress, exact next action, relevant file paths, checks with results/evidence, and blockers. Record unfinished work honestly.
 2. Update STATUS's live snapshot and NOTES's durable pitfalls. Keep TASK below 6,000 characters, other startup files below 10,500, and the default brief below 12,000. The optional full reference packet is capped at 28,000. Before replacing a completed TASK, archive it under `docs/archive/tasks/` with a date/name and add an index link. Never archive away active constraints or load every archived task by default.
-3. Run `npm run context:check` and relevant implementation checks. Commit only intended files locally, in small slices. Do not push during the freeze.
+3. Run `npm run context:check` and relevant implementation checks. Commit only intended files locally, in small slices. Do not publish without the corresponding authorization.
 4. Run `npm run handoff` after the commit (or explicitly recorded WIP). It writes ignored `.data/handoff/CONTINUE.md` and a small machine-local task checkpoint indexed by sanitized repository identity and checkout. It does not copy code, private data, or chat history. If the helper implementation changed, run `npm run context -- --install` to refresh the installed standalone copy and checkpoint. Tell the next agent to run orientation again and obey the current TASK state. An unavailable helper on another machine requires explicit setup or a transferred brief, never an invented successful lookup.
 
 If Groundtrack tools are unavailable, use local docs and record the pending connection without blocking work. Never invent event/retrieval ids or upload private student data. Repository constraints remain authoritative.

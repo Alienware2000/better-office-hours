@@ -5,8 +5,8 @@ Updated: 2026-09-20. Keep this short and current. Search [archived notes](archiv
 ## Workflow and environment
 
 - AGENTS.md is shared authority; CLAUDE.md and Cursor point there. See MEMORY_GUIDE, MEMORY_RECIPE, and WORKFLOW for human instructions. Scripts validate/assemble memory; agents write it.
-- Archive completed TASKs before replacing them. Caps: TASK 6,000, default context 12,000, full context 28,000 characters. Strict writes validate branch/base/fields/links. This review again exceeded the full cap; compact duplicate detail into linked guides, never increase the cap.
-- Handoff indexes a brief, not code/data. Verify commits and dirty state; clone registration and cross-machine transfer are explicit. See WORKFLOW.
+- Archive completed TASKs before replacing them. Caps: TASK 6,000, default context 12,000, full context 28,000 characters. Strict writes validate branch/base/fields/links. Compact detail into linked guides; keep the caps.
+- DEVELOPMENT records product/candidate/evaluation separation and promotion. Hackathon won per David; public pause remains. Handoff indexes a brief, not code/data. Verify commits and dirty state; clone registration and cross-machine transfer are explicit. See WORKFLOW.
 - Standalone helper: ~/.local/bin/boh-context, not on PATH. Refresh with npm run context -- --install after changes. BOH_CONTEXT_HOME isolates fixtures; see MEMORY_RECIPE for reuse.
 - Groundtrack tools remain absent. Config and simulated enrichment passed; sign-in/hook approval and live verification are pending. Local continuation works without it. Never invent event IDs.
 - dev:local uses loopback 3105 and checkout-local .data; rejects occupied ports/data symlinks and disables cloud/Google settings. It is not a network sandbox. Preserve files, saves, and other servers. Raw dev/build lack these guards; see WORKFLOW.
@@ -46,4 +46,4 @@ Updated: 2026-09-20. Keep this short and current. Search [archived notes](archiv
 
 - #6/#8/#9 are integrated, alongside scoped-owner storage/ingestion and optional sign-in. Use current code and ARCHITECTURE's final integration sections, not LANES's early inventory.
 - Body email/userId is not ownership. Solutions are excluded from visible retrieval. Recap is optional, student-first, grounded in retrieved sources, and stored locally with the archive. No cloud session-memory adapter exists.
-- #11 needs local review/reconciliation; publication freeze forbids remote PR changes. Groundtrack engineering memory is distinct from student learning memory.
+- #11 needs review/reconciliation; no remote change is authorized by this consolidation. Groundtrack engineering memory is distinct from student learning memory.

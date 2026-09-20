@@ -167,7 +167,7 @@ try {
   const statusLines = current.status.split('\n').filter(Boolean);
   const brief = [
     '# Continue Better Office Hours',
-    'Read-only orientation, not authorization or file synchronization. Preserve uncommitted work. The publication freeze remains in force until David explicitly lifts it. Compare code and checkpoints before continuing. Do not automatically switch, merge, reset, delete worktrees, or copy secrets/data.',
+    'Read-only orientation, not authorization or file synchronization. Preserve uncommitted work. Read current authority below; a local checkpoint does not authorize publication. Compare code and checkpoints before continuing. Do not automatically switch, merge, reset, delete worktrees, or copy secrets/data.',
     `Generated: ${new Date().toISOString()}\nWorktree: ${JSON.stringify(root)}\nRepository: ${clean(key)}\nBranch: ${clean(current.branch || '(detached HEAD)')}\nHEAD: ${current.head}`,
     `## Working tree\n\n${current.dirty ? `Uncommitted work exists (${statusLines.length} status entries).\n${statusLines.slice(0, 12).map(line => clean(line)).join('\n')}${statusLines.length > 12 ? '\nMore paths omitted; inspect git status.' : ''}` : 'Clean.'}`,
     `## Readiness\n\n${errors.length ? errors.slice(0, 8).map(error => `- ${error}`).join('\n') + '\nOrientation is available, but checkpoint writes are blocked until these issues are reconciled.' : 'Task structure, branch, base ancestry, client bridges, and links pass. Check whether newer relevant work exists elsewhere before implementation.'}${ownWarning ? '\n'+ownWarning : ''}`,

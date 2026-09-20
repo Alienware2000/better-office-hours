@@ -7,32 +7,30 @@ Base: d68cd607a64bad917c9e001675a6677e4457056b
 
 ## Objective
 
-Complete speech reliably, then improve first-response latency and diagram presentation.
+Consolidate the development baseline before further board improvements. Clearly separate product defaults, the tested candidate, and evaluation tooling.
 
 ## Scope and constraints
 
-Local voice lane; frozen prompts/types and graded-work limits remain. Public Vercel is paused by explicit exception to the publication freeze; resume only on request. [Pause record](evaluations/2026-09-19-public-pause.md). Groundtrack unavailable.
+David reports the hackathon win and authorizes continued building. Contest hold retired; Vercel stays paused. Current consolidation is local, with no remote publication or release. Frozen contracts/prompts and graded-work boundaries remain. Groundtrack unavailable.
 
 ## Progress
 
-Jev deferred by David until core stability improves. [Research](JEV_RESEARCH.md) records his browser/computer-use motivation for later.
+[DEVELOPMENT](DEVELOPMENT.md) records the baseline audit, decisions, evidence, and promotion procedure. At b5cb137 there were 28 unpushed commits; fetched origin/main had one README change, now merged locally. Local main is stale. No product promotion yet.
 
-September 20 source fixes false stale_drawing for existing text (no source) and detailed geometry (shortened source JSON). Identity now uses the rendered inventory; topic comparison uses rendered text. [Evidence](evaluations/2026-09-20-drawing-focus.md). Historical 3109 rejection remains unattributed.
-
-1185aec drains accepted audio after generation errors. b1ccabd fixes numeric TeX rejection and permits one guarded continuation. [Evidence](evaluations/2026-09-18-guard-recovery.md).
+Speech fixes: 1185aec drains accepted audio, b1ccabd guards/retries once, 3584f41 fixes existing-board focus. 3110 human retest reports working well; diagram quality remains inconsistent. Evidence and limitations are linked in DEVELOPMENT.
 
 ## Decisions
 
-Preserve model, voice, disclosure limits, and first-beat streaming. Preserve 3107/3108/3109: JSON export produced no verified backup. New trial 3110 has independent storage.
+One codebase, explicit product/candidate/evaluation roles. Preserve 3110 and older origins: no verified session backup. No new trial port or model change during this audit. Jev and board redesign remain deferred. Typography/composition is the next product slice after consolidation.
 
 ## Validation
 
-Offline intent/recovery/lesson/panel checks, TypeScript and focused lint pass. Real store/serialization plus mocked provider reproduces old focus failures and completes with the fix in one request. Missing/removed/previous-page/unresolved/animation-only IDs remain rejected. No new provider calls. David now reports 3110 working well; no exhaustive acoustic verification.
+Fetched current origin/main; verified its sole new commit changes README. Local merge and offline workflow/checkout checks pass. No provider calls or runtime changes. Prior focused checks pass; a consolidated default/candidate regression pass is still outstanding.
 
 ## Next action
 
-Next: board consistency, starting with neutral prose and mixed text/math rendering. [Feedback and scope](evaluations/2026-09-20-board-feedback.md). Keep model and latency checks. Preserve live 3110 and older origins; no snapshot edits/restarts without verified recovery. Jev stays deferred.
+Review accumulated changes by tooling, general fixes, and experimental behavior using DEVELOPMENT. Prepare an explicit candidate/default configuration and regression checklist before promoting trial behavior. Shared type additions need integration review. Keep public access paused and live data intact.
 
 ## Blockers
 
-Exact historical rejected payload is unavailable. Remaining audio edge cases, scene transitions, and diagram quality need review. Groundtrack unavailable.
+Local commits are not yet a remote backup. Historical rejected payload is unavailable; remaining audio/diagram edge cases need review. Groundtrack unavailable.

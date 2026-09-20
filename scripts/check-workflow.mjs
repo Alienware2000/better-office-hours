@@ -23,7 +23,7 @@ function fail(result, text) { assert.notEqual(result.status, 0); assert.match(re
 let probe;
 try {
   for (const file of ['AGENTS.md','CLAUDE.md','.gitignore','.cursor/rules/handoff.mdc','scripts/context.mjs','scripts/dev-local.mjs']) copy(file);
-  for (const folder of ['docs', 'docs/archive', 'docs/archive/tasks']) for (const file of readdirSync(join(root,folder))) if (file.endsWith('.md')) copy(`${folder}/${file}`);
+  for (const folder of ['docs', 'docs/evaluations', 'docs/archive', 'docs/archive/tasks']) for (const file of readdirSync(join(root,folder))) if (file.endsWith('.md')) copy(`${folder}/${file}`);
   git('init', '-b', 'lane/post-hackathon-local');
   git('add','.');
   git('-c','user.name=Workflow test','-c','user.email=workflow@example.invalid','-c','commit.gpgsign=false','commit','-m','Synthetic workflow fixture');

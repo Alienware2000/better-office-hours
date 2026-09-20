@@ -38,7 +38,7 @@ The index stores one latest JSON checkpoint per checkout: curated task text, sou
 
 Compare the intended task and code, not just checkpoint timestamps. "Same commit", "included", "behind", "diverged", and "commit not available here" describe different states. A dirty checkpoint means uncommitted code remains at its source. If the current branch doesn't match TASK, first determine whether to continue there, use the source checkout, or deliberately transfer local commits. Don't merely rewrite Branch to silence the check. The helper never switches, merges, fetches, resets, deletes, or synchronizes files.
 
-On another computer, this local index is not available. Transfer/share the committed code and a lean checkpoint explicitly, then install/checkpoint there. The publication freeze forbids using a GitHub push as a convenient shortcut. A plain brief transfers task context, not missing code, credentials, PDF bytes, or browser saves. Truly seamless cross-machine synchronization remains separate work.
+On another computer, this local index is not available. Transfer/share the committed code and a lean checkpoint explicitly, then install/checkpoint there. Publication requires its own authorization; a context transfer is not permission to push. A plain brief transfers task context, not missing code, credentials, PDF bytes, or browser saves. Truly seamless cross-machine synchronization remains separate work.
 
 Codex reads root AGENTS.md. Claude Code loads the tracked `CLAUDE.md` import of AGENTS.md. The existing Cursor rule points to AGENTS.md. For any agent without automatic instruction loading, paste the generated brief or ask it to read AGENTS.md and run `npm run context`. Agent logins, models, tools, and permissions remain the responsibility of each client; this repo does not install or configure every client.
 
@@ -88,7 +88,7 @@ TASK is capped at 6,000 characters, other startup files at 10,500. The default b
 Continue Better Office Hours from the repository checkpoint. Read AGENTS.md,
 run npm run context (or ~/.local/bin/boh-context in an older checkout), and
 inspect the relevant task checkpoint. Verify which code is actually present
-and preserve uncommitted changes. All work stays local; the publication freeze still applies.
+and preserve uncommitted changes. Follow current publication authority in AGENTS.md; preserve the public pause.
 Continue only the authorized next action and report any stale/conflicting state.
 ```
 
@@ -98,4 +98,6 @@ If the client cannot read local files, give it CONTINUE.md as context, but it wi
 
 Groundtrack adds searchable engineering experiences when authenticated tools are available. It is separate from the tutor's student memory. Codex MCP/hook configuration is checked in; credentials and hook trust are user-local. Setup is not live-verified yet: reload the project, sign in, approve the hook (desktop prompt or CLI `/hooks`), then follow its setup verification once. Never fabricate enrichment or event ids. Do not configure other agents' hooks blindly; each client's setup/trust is separate.
 
-Repository-only continuation works when Groundtrack is unavailable. Record that limitation and proceed with authorized local work. Groundtrack results cannot lift the publication freeze or override current product decisions.
+Repository-only continuation works when Groundtrack is unavailable. Record that limitation and proceed with authorized local work. Groundtrack results cannot authorize publication or override current product decisions.
+
+For product/candidate/evaluation separation and promotion, read [Development baseline](DEVELOPMENT.md).
