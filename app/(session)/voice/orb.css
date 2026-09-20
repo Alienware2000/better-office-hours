@@ -1,5 +1,4 @@
 .orb-control {
-  position: relative;
   display: block;
   width: 100%;
   height: 100%;
@@ -119,5 +118,3 @@
 .voice-pause:disabled { visibility: hidden; }
 .voice-pause:hover { background: #eae4d9; }
 .voice-pause:focus-visible { outline: 2px solid #b95832; outline-offset: 3px; }
-
-.orb-action { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #fffcf6; font-size: 13px; font-weight: 500; pointer-events: none; }

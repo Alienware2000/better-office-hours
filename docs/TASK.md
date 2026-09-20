@@ -15,7 +15,7 @@ Local voice/workspace only. Preserve 3111/3112 and all saves/PDFs. Vercel paused
 
 ## Progress
 
-Typed input bypasses permission/STT and uses the existing lesson, board, narration, guardrail, and transcript path. Opening typing mutes input; it does not stop output. Separate mic mute survives response completion without aborting inference or playback. Stop/Interrupt remains separate.
+Typed input bypasses permission/STT and uses the existing lesson, board, narration, guardrail, and transcript path. Opening typing mutes input; it does not stop output. Separate mic mute survives response completion without aborting inference or playback. Stop/Interrupt remains separate. David rejected text/icon inside the orb; restored its plain appearance with a clickable cue below.
 
 ## Decisions
 

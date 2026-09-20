@@ -468,3 +468,8 @@
   .agent-stage .orb-frame { flex-shrink: 0; }
   .agent-stage .tutor-input { margin: .25rem auto; }
 }
+
+/* Keep the orb unmarked; the quiet caption below is the start action. */
+.orb-start { pointer-events: auto; display: inline-block; border: 0; background: transparent; padding: .65rem .9rem; min-height: 44px; margin-top: .25rem; border-radius: 999px; color: #6d675f; font: inherit; font-size: .8rem; letter-spacing: .015em; cursor: pointer; transition: color .15s ease, background .15s ease; }
+.orb-start:hover { color: #292621; background: #29262106; }
+.orb-start:focus-visible { outline: 2px solid #b95832; outline-offset: 2px; }

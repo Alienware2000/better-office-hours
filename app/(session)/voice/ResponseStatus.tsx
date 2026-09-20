@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 
-export function ResponseStatus({ label, busy }: { label: string; busy: boolean }) {
+export function ResponseStatus({ label, busy, onActivate }: { label: string; busy: boolean; onActivate?: () => void }) {
   return (
     <div className="response-status">
-      <p className="orb-status" role="status">{label}</p>
+      {onActivate && label === 'Tap to speak'
+        ? <button type="button" className="orb-status orb-start" onClick={onActivate}>Tap to speak</button>
+        : <p className="orb-status" role="status">{label}</p>}
       <div className="response-activity">
         {busy && <WaitingActivity />}
       </div>
