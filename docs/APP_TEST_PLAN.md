@@ -43,6 +43,8 @@ Begin with one complete session on an unfamiliar topic using the sequence below,
 
 Also run a synthetic graded-work/PDF case to check hints, grounding and answer protection. Check compact and expanded boards. Background noise, quiet speech, physical audio endings and iPad writing require real device/human evidence.
 
+The [Studdy study](evaluations/2026-09-20-studdy-study.md) adds three comparison criteria: keep related working/diagrams spatially stable, visibly identify where to continue on return, and distinguish lesson preparation from unexpected follow-up latency. Compare automatic endpointing with explicit submission separately; BOH currently allows about three seconds of quiet. Preserve thinking pauses while measuring that cost. Session restoration exists, but a completion-linked return highlight is not implemented.
+
 Record the app's end-of-speech-to-audio diagnostic alongside whether the first audible teaching was useful. Record first useful visual separately where observable, complete playback, errors/repairs and provider cost where available. Report sample counts and per-turn values before aggregates. A model's first token or complete speech-unit timing is not end-to-end latency. Do not invent a latency target or claim improvement without matched evidence.
 
 ## Keep engineering work and learner work safe

@@ -7,7 +7,7 @@ Base: dd72d8ac4002e7a09a7fcd81c6eb520a9da970bd
 
 ## Objective
 
-Evaluate STEM visuals and an open-ended canvas vision. Named topics are examples, not scope limits.
+Evaluate open-ended STEM visuals and Studdy inspiration. Named topics are examples, not limits.
 
 ## Scope and constraints
 
@@ -15,19 +15,19 @@ Local evaluation only; preserve live sessions, frozen files and public pause. Gr
 
 ## Progress
 
-[Vision](STEM_WHITEBOARD.md), [evidence](evaluations/2026-09-20-stem-board.md), and [actual-app test plan](APP_TEST_PLAN.md) saved. 3116 has eight authored pages and four model outputs. Root tutor remains 1770053; document composition is not integrated.
+[Vision](STEM_WHITEBOARD.md), [evidence](evaluations/2026-09-20-stem-board.md), [Studdy study](evaluations/2026-09-20-studdy-study.md) and [test plan](APP_TEST_PLAN.md) saved. 3116 root remains 1770053; document composition is not integrated.
 
 ## Decisions
 
 Separate renderer, model and live evidence. Prototype matrix/heading spacing fixed. Models still fail geometry, motion and composition. Preserve ink ownership.
 
-David reaffirmed uncluttered visuals and board use throughout teaching. Existing-object focus counts. Prioritize session usability over more aesthetic variants; see the vision.
+Keep uncluttered board use throughout teaching; existing-object focus counts. Studdy informs stable composition and a future completed-step return point. Its private stack/latency is unknown. BOH's three-second endpoint pause needs measurement.
 
 ## Validation
 
 Prior checks/browser/provider evidence: linked STEM reports. No end-to-end latency improvement claim.
 
-Checkpoint: fingerprints/cwds and HTTP 200 verified. No new session test or runtime change. Context/full packet and diff checks pass.
+Studdy: screenshots/public pages and BOH code inspected; no authenticated lesson or benchmark. No runtime changes. Context/full and diff checks pass.
 
 ## Next action
 
