@@ -1,7 +1,7 @@
 # Active task
 
 Updated: 2026-09-20
-State: in_progress
+State: ready_for_review
 Branch: lane/post-hackathon-local
 Base: 3b3dceb85eed13bb9a0668423f18ba962365927e
 
@@ -15,7 +15,7 @@ Local voice UI only. Preserve all existing origins, saves, PDFs, provider/voice 
 
 ## Progress
 
-Unified typing/mic controls, compact composer with one focus treatment, quiet entry links, welcome hierarchy, and collapsed trial diagnostics implemented. Typecheck passed; lint and browser inspection underway.
+Unified typing/mic controls, compact composer with one focus treatment, quiet entry links, welcome hierarchy, and collapsed trial diagnostics implemented. Typecheck/lint pass. Desktop/mobile layout, disclosure, multiline input, and draft retention verified.
 
 ## Decisions
 
@@ -23,11 +23,11 @@ Interpret references through spacing, typography, hierarchy, and integrated cont
 
 ## Validation
 
-Pending desktop/mobile visual and draft interaction checks. Prior 16-check offline logic baseline remains in evaluations/2026-09-20-typed-input.md.
+See [input design evidence](evaluations/2026-09-20-input-design.md). Prior 16-check offline logic baseline remains in evaluations/2026-09-20-typed-input.md. No provider calls.
 
 ## Next action
 
-Inspect isolated 3114 preview, refine layout, verify composer and diagnostics without provider calls, then checkpoint for David's review.
+David reviews http://localhost:3114 (d618709), especially welcome, typing, and compact controls. Preserve 3113 and earlier sessions. Full board design and acoustic/iPad review remain separate.
 
 ## Blockers
 

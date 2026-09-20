@@ -15,7 +15,7 @@ Updated: 2026-09-20. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
-- September 20: optional typing bypasses mic/STT; input mute is independent of pause/abort and survives turn completion. Voice auto-listens unless muted. Orb stays plain; start cue belongs below. Preserve 3111/3112. Prose fix: evaluations/2026-09-20-hybrid-voice-prose.md. Real-device review pending.
+- September 20: optional typing bypasses mic/STT; input mute is independent of pause/abort and survives turn completion. Voice auto-listens unless muted. Orb stays plain; start cue belongs below. Keep typing/mic controls integrated; trial details collapsed (evaluations/2026-09-20-input-design.md). Preserve 3111/3112. Prose fix: evaluations/2026-09-20-hybrid-voice-prose.md. Real-device review pending.
 
 - Late SSE errors previously aborted accepted audio; 1185aec drains it while retaining cancellation. The 3108 retest instead logged beat-2 disclosure_boundary; exact rejected text is unavailable. Numeric TeX units/degrees caused a reproduced false positive. Source/3109 normalizes those narrowly and permits one continuation under the same guard/intent. Never attribute the historical rejection to a guessed label. See evaluations/2026-09-18-guard-recovery.md. 3109 later logged stale_drawing at beat 3 after one recovery. September 20 source uses rendered inventory, because text has no source and geometry source is shortened; see evaluations/2026-09-20-drawing-focus.md. Historical attribution and acoustic completion remain unknown. User confirmed 3108 export failed; preserve data.
 
