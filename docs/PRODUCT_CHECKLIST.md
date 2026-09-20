@@ -1,0 +1,17 @@
+# Product checklist
+
+Updated September 20, 2026. This is the ordered product-work index, not permission to implement every item simultaneously. TASK identifies the active slice; DEVELOPMENT tracks promotion. Vercel remains paused.
+
+1. **Voice-first interaction foundation: review candidate.** Plain orb, optional typing closed by default, independent mute, recognizable buttons/navigation, shared surfaces, and explicit listening/thinking/speaking states. [Design rules](UI_FOUNDATION.md). Human desktop/iPad feedback remains open.
+2. **Voice reliability: validate in real rooms.** Complete speech endings, auto-listening only after playback drains, background noise while listening, quiet speech, interruption/resume, device/permission failures. Synthetic checks pass for prior logic; they are not acoustic proof. Track reports against actual transcript and audio boundaries.
+3. **Latency: still a primary requirement.** Measure end of student speech to first useful audible teaching, including endpointing, STT, routing, reasoning, synthesis, and buffering. Preserve teaching quality and cost visibility. Opus-low is a local candidate, not a permanent winner. No new speed improvement is claimed by a UI pass.
+4. **Whiteboard quality: next substantial product slice.** Prose versus math formatting, meaningful rather than arbitrary color, collision-free labels/equations, accurate physical geometry, narration/board agreement, and deliberate reveal timing. Preserve student ink and scene continuity. Reproduce failures from actual saved specs before changing model or renderer. [Board feedback](evaluations/2026-09-20-board-feedback.md), [research](WHITEBOARD_RESEARCH.md).
+5. **Teaching and session evidence.** Continue from the [33-transcript review](evaluations/2026-09-20-session-review.md): simple explanations, helpful responses to confusion, grounded recap, correct graded/ungraded behavior. Review timed visuals/audio as well as text; tutor notes are not evidence of student mastery.
+6. **Consolidation and recovery.** Keep local commits/checkpoints, source fingerprints, separate evaluations, and one current candidate. Preserve browser saves and PDF data. Verify backup/export and restore paths before updating live sessions. Integrate accumulated changes with shared-contract review, then complete the [promotion checklist](DEVELOPMENT.md).
+7. **Deferred exploration.** Jev, a larger animation/diagram architecture, silent-output mode, and a full design pass stay separate. Research and inspiration do not automatically authorize integration or public release.
+
+## Local server discipline
+
+After David's cleanup request, old listeners on 3107–3113 were stopped after cwd verification. Snapshot directories, per-port storage, and browser saves were retained. 3114 remains David's existing live session; 3115 is the new review candidate. Keep these two for the handoff, then retire the previous candidate once David has moved safely. Do not create a new permanent server for every small UI edit. Reuse an unused agent test snapshot during iteration; never hot-reload a live student session.
+
+A stopped port is not deleted data. Old sessions still belong to their original browser origin and corresponding storage. Recovery must restart the matching snapshot/storage at that port; do not serve a different checkout's data or clear browser storage.

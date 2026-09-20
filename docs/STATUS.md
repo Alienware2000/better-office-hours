@@ -15,7 +15,7 @@ David requested frictionless reorientation across coding agents, fresh chats, an
 
 - Checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`. Reorient in each checkout; cached state is not code/data synchronization.
 - Default: `npm ci`, then `npm run dev:local` on loopback 3105, with checkout-local .data. Cloud storage and Google auth are disabled. Local signing secrets are separate from production.
-- Preserved origins: 3107/3108/3109/3110; 3111/3112 retained; 3113 retains 0d21e65; 3114 previews d618709 refined input UI. Snapshots under .data/voice-trial*; see DEVELOPMENT/TUTOR_TRIAL. 3105 stopped. Source fixes are not automatically present in old snapshots. Preserve all browser saves.
+- Running: 3114 retains David’s current session; 3115 previews 10c0720 voice-first UI. Old listeners 3107–3113 stopped at David’s request; snapshots, storage, and browser saves retained. 3105 stopped. See [checklist](PRODUCT_CHECKLIST.md) for server discipline. Never swap another origin’s data.
 - Inspect a listener's cwd before stopping it. Preserve all origins' browser saves and PDF data. Keep live source stable; isolate browser regressions/builds. Configuration health is not proof of usable provider credits.
 
 ## Product baseline
@@ -38,4 +38,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-Local consolidation is ready for review: pinned candidate, source fingerprints, 16 passing offline checks, typecheck/lint, isolated build. [DEVELOPMENT](DEVELOPMENT.md) links evidence and release gaps. Remote main unchanged; 3110 preserved. Optional typing and independent mic mute added to the same tutor/board; see [input changes](evaluations/2026-09-20-typed-input.md). Jev deferred; Vercel paused.
+Local consolidation is ready for review: pinned candidate, source fingerprints, 16 passing offline checks, typecheck/lint, isolated build. [DEVELOPMENT](DEVELOPMENT.md) links evidence and release gaps. Remote main unchanged; old candidate data preserved. Optional typing and independent mic mute added to the same tutor/board; see [input changes](evaluations/2026-09-20-typed-input.md). Jev deferred; Vercel paused.

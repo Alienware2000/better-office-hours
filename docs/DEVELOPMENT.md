@@ -7,12 +7,12 @@ Updated September 20, 2026. David reports BOH won the hackathon. He requested co
 | Use | Current truth | How it advances |
 | --- | --- | --- |
 | Product baseline | GitHub `origin/main`, fetched at `1b8c7c2`. Default source uses Grok routing/reasoning. Public deployment is separately paused. | Reviewed integration and deliberate release. A merge is not evidence of a deployment. |
-| Development candidate | This checkout, `lane/post-hackathon-local`; current manual test is isolated localhost:3110. OpenRouter Opus-low and protected structured lessons are trial-gated. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
+| Development candidate | This checkout, `lane/post-hackathon-local`; current manual test is isolated localhost:3115 (10c0720). OpenRouter Opus-low and protected structured lessons are trial-gated. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
 | Evaluation | `scripts/bench-tutor-models.mjs`, `scripts/evaluation/`, `scripts/review-tutor-models.mjs`; dashboard conventionally 3106. | Synthetic comparisons and saved human judgments, independent of the default tutor configuration. |
 
 These are uses of the same codebase, not three products or separate permanent repositories. Evaluations should reuse the real parser/renderer. Evaluation fixtures must never select a student's runtime scene. Provider switching belongs in explicit configuration, not in duplicated app implementations.
 
-`npm run dev:local` starts the normal configuration on 3105. `npm run trial:tutor -- --port 3110` created the current candidate snapshot; do not rerun against an occupied port. `npm run review:tutor` starts the separate evaluation dashboard. Commands are documented in WORKFLOW, TUTOR_TRIAL, and TUTOR_REVIEW. A port is an address, not a version: record the source revision, configuration, and snapshot path.
+`npm run dev:local` starts the normal configuration on 3105. `npm run trial:tutor -- --port 3115` created the current UI candidate snapshot; do not rerun against an occupied port. `npm run review:tutor` starts the separate evaluation dashboard. Commands are documented in WORKFLOW, TUTOR_TRIAL, and TUTOR_REVIEW. A port is an address, not a version: record the source revision, configuration, and snapshot path.
 
 ## Audit at the start of consolidation
 
@@ -56,3 +56,5 @@ The [saved-session review](evaluations/2026-09-20-session-review.md) covers all 
 - `.data/handoff/CONTINUE.md` and the machine-local index: fresh-chat reorientation, not code/session synchronization.
 
 Update this register when a candidate is promoted or a decision changes. Keep detailed evidence in linked reports. Groundtrack remains unavailable; local docs are the current engineering memory. Credentials, private transcripts, uploads, and student exports never belong in committed evaluation records.
+
+September 20 interaction foundation: voice stays primary, typing opens explicitly, controls share a visual system, and state cues are explicit. See [UI foundation](UI_FOUNDATION.md) and the ordered [product checklist](PRODUCT_CHECKLIST.md). Seven old trial listeners were stopped with their data retained; 3114 is retained for the active session and 3115 for review.

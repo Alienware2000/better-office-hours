@@ -1,7 +1,7 @@
 # Active task
 
 Updated: 2026-09-20
-State: in_progress
+State: ready_for_review
 Branch: lane/post-hackathon-local
 Base: 3b3dceb85eed13bb9a0668423f18ba962365927e
 
@@ -23,11 +23,11 @@ No border/fill/icon on the welcome start cue; avoid boxing every action. Keep su
 
 ## Validation
 
-Typecheck/lint and desktop/state checks passed before the final label correction. Rechecking final label semantics. No provider calls. Evidence: evaluations/2026-09-20-voice-foundation.md.
+Final typecheck/lint pass. Browser verifies one Tap to speak button (the orb), a plain text caption, and typing closed. Active states inspected synthetically. No provider calls. Evidence: evaluations/2026-09-20-voice-foundation.md.
 
 ## Next action
 
-Finish final 3115 review/checkpoint. Follow PRODUCT_CHECKLIST for voice reliability, latency and whiteboard work.
+David reviews 3115 (10c0720). Follow PRODUCT_CHECKLIST for voice reliability, latency and whiteboard work.
 
 ## Blockers
 
