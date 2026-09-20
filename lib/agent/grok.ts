@@ -1,4 +1,4 @@
-import { trialEnabled, TRIAL_GUIDANCE, TRIAL_MODEL } from './trial';
+import { trialEnabled, TRIAL_GUIDANCE, TRIAL_MODEL, TRIAL_PROFILE } from './trial';
 import { awaitingSummary, RECAP_FORMAT, RECAP_GUIDANCE } from './closing';
 import { validateRecap } from '@/lib/session/recap';
 import OpenAI from "openai";
@@ -48,7 +48,7 @@ function client(deep = false) {
   if (trialEnabled() && deep) {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error('The local trial needs OPENROUTER_API_KEY');
-    return new OpenAI({ apiKey, baseURL: 'https://openrouter.ai/api/v1', maxRetries: 0, timeout: 60000 });
+    return new OpenAI({ apiKey, baseURL: 'https://openrouter.ai/api/v1', maxRetries: TRIAL_PROFILE.maxRetries, timeout: TRIAL_PROFILE.requestTimeoutMs });
   }
   const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) {
@@ -218,15 +218,15 @@ export async function* streamGrok(
   if (trialRequest && visualRepair) messages.push({ role: 'system', content: 'For this silent repair only, override the JSON lesson envelope: return only [BOARD open][DRAW {...}] tags using any valid static drawing commands above, including text equations when the teaching move permits them. No speech or new teaching content. Preserve the existing teaching move and graded-work boundary.' });
   const createStream = (extra: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = []) => grok.chat.completions.create({
     model: trialRequest ? TRIAL_MODEL : deep ? GROK_DEEP_MODEL : GROK_MODEL,
-    ...(trialRequest ? { provider: { sort: 'latency', require_parameters: true, allow_fallbacks: false } } : { temperature: visualRepair ? 0.3 : deep ? 0.5 : 0.85 }),
+    ...(trialRequest ? { provider: TRIAL_PROFILE.provider } : { temperature: visualRepair ? 0.3 : deep ? 0.5 : 0.85 }),
     // Reasoning tokens count against this, so a tight cap on the deep lane
     // returns an empty message.
     // Board turns need room for a few DRAW tags plus a short spoken line.
     // 220 cut mid-tag and left the board empty.
-    max_tokens: trialRequest ? 8000 : conceptRouting ? 300 : deep ? 2400 : 1800,
+    max_tokens: trialRequest ? TRIAL_PROFILE.maxTokens : conceptRouting ? 300 : deep ? 2400 : 1800,
     stream: true,
     messages: [...messages, ...extra],
-    ...(trialRequest ? { reasoning: { effort: "low", exclude: true } } : deep ? { reasoning_effort: "low" as const } : {}),
+    ...(trialRequest ? { reasoning: { effort: TRIAL_PROFILE.effort, exclude: true } } : deep ? { reasoning_effort: "low" as const } : {}),
     ...(conceptTeaching ? { response_format: CONCEPT_RESPONSE_FORMAT } : {}),
     ...(conceptRouting ? { response_format: CONCEPT_ROUTING_FORMAT } : {}),
   }, { signal });

@@ -236,6 +236,13 @@ try {
   }
   assert.equal(firstBeatCalls,1,'The first accepted beat streams without waiting for recovery');
   assert.equal(requests.length-start,2,'Only one extra request on rejection');
+  const { TRIAL_PROFILE } = load('lib/agent/trial.ts');
+  for (const { request } of requests.slice(start)) {
+    assert.equal(request.model,TRIAL_PROFILE.model,'Initial and recovery requests use the pinned candidate');
+    assert.equal(request.max_tokens,TRIAL_PROFILE.maxTokens);
+    assert.equal(request.reasoning.effort,TRIAL_PROFILE.effort);
+    assert.deepEqual(request.provider,TRIAL_PROFILE.provider);
+  }
   assert.ok(!output.includes('frac'),'Rejected equation stays withheld');
   assert.equal(parseAgentTurn(output).speech,[failed.beats[0].speech,repaired.beats[0].speech,repaired.question].join(' '));
   const extra=requests.at(-1).request.messages.slice(-2);

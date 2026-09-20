@@ -1,4 +1,5 @@
 // Isolated, opt-in development snapshot. No production configuration is copied.
+import { candidateManifest } from './candidate-manifest.mjs';
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, copyFileSync, lstatSync, symlinkSync } from 'node:fs';
 import { dirname, resolve, join, relative } from 'node:path';
@@ -25,6 +26,7 @@ for (const dir of [join(root, '.data'), base]) {
 }
 const runtime = join(base, `run-${Date.now()}`);
 mkdirSync(runtime, { mode: 0o700 });
+const manifest = candidateManifest(root);
 const files = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
 for (const name of new Set(files)) {
   if (name.startsWith('.env') || name.startsWith('.data/') || name.startsWith('.git/')) continue;
@@ -52,7 +54,7 @@ try { writeFileSync(signing, randomBytes(32).toString('hex'), { flag: 'wx', mode
 if (!lstatSync(signing).isFile() || lstatSync(signing).isSymbolicLink()) throw new Error('Invalid local signing file.');
 env.INGEST_TOKEN = readFileSync(signing, 'utf8');
 env.NEXTAUTH_SECRET = env.INGEST_TOKEN;
-writeFileSync(join(base, 'latest.json'), JSON.stringify({ runtime: relative(root, runtime), port, createdAt: new Date().toISOString() }, null, 2), { mode: 0o600 });
+writeFileSync(join(base, 'latest.json'), JSON.stringify({ ...manifest, runtime: relative(root, runtime), port, createdAt: new Date().toISOString() }, null, 2), { mode: 0o600 });
 console.log(`Local Opus-low voice trial: http://localhost:${port}`);
 console.log('Separate sessions, storage, and build. Voice uses OpenRouter and ElevenLabs. Existing servers remain running.');
 console.log(`Snapshot: ${runtime}\nCtrl-C stops only this trial. Saved trial data is retained.`);

@@ -1,6 +1,17 @@
 // Activated only by the isolated local trial launcher, never a request flag.
 export const trialEnabled = () => process.env.BOH_VOICE_TRIAL === '1' && process.env.NODE_ENV === 'development' && !process.env.VERCEL;
-export const TRIAL_MODEL = 'anthropic/claude-opus-5';
+// One pinned candidate. Changing this profile is an explicit evaluation decision.
+// The production/default route is intentionally independent until promotion.
+export const TRIAL_PROFILE = {
+  id: 'opus-low-v1',
+  model: 'anthropic/claude-opus-5',
+  effort: 'low',
+  maxTokens: 8000,
+  requestTimeoutMs: 60000,
+  maxRetries: 0,
+  provider: { sort: 'latency', require_parameters: true, allow_fallbacks: false },
+} as const;
+export const TRIAL_MODEL = TRIAL_PROFILE.model;
 export const TRIAL_GUIDANCE = `Local teaching trial. These presentation instructions refine the earlier drawing defaults, while all graded-work protections remain in force.
 Speak to a novice in everyday language, about one idea at a time. Start with something they can see or imagine. Aim for 25 to 45 words total, not a compressed list of technical facts. Explain a necessary term before using it. Simplify the language without turning an analogy into a literal scientific claim. State any assumption needed for an equation. Do not introduce energy levels, symbolic formulas, or advanced mechanisms just to sound complete. When the learner asks for mathematics, explain the symbols and their connection to the picture. If they say they do not understand, shrink the step and use a more concrete representation; do not repeat the same explanation or quiz unexplained prerequisites. No filler acknowledgements. The first spoken sentence must help answer the question. Finish with a complete, plain-language takeaway and a full stop, not a trailing clause or an abrupt technical aside. Integrate necessary caveats naturally into the explanation; do not tack on a tiny standalone disclaimer at the end. Do not add filler or a forced question just to signal that you are finished.
 Use the existing concept_lesson JSON. Set introduction="" so useful speech begins with its actual visual. Use one to three beats, one short sentence per beat. Set question="" unless a question genuinely helps the learner. Every spoken beat must add, update, or highlight a relevant visual. Choose notes for written mathematics, diagram for geometry, or animation for meaningful motion. The full existing DRAW and ANIM schemas are available, including curves, axes, circles, arrows, and text containing LaTeX. If the learner asks for equations in ungraded concept teaching, write the actual relationship in this turn and explain its symbols simply. Do not offer to write it later and then answer only in words. Keep graded-work protections.
