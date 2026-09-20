@@ -32,3 +32,17 @@ Three seconds is a starting hypothesis, not a scientifically established endpoin
 - Actual Orb markup was rendered in isolated static control fixtures and inspected visually at 360px card width. Labels and 44px touch controls fit. This is layout inspection, not a real iPad or microphone test. Fixture: ignored `.data/evaluation/tap-to-speak/controls.html`.
 
 Human retest should cover a background conversation during thinking/speech and after completion, a normal spoken question, a two-second pause followed by more speech, Done speaking, and Escape/Interrupt. Verify audible endings and ensure the board does not continue changing after interruption. Compare first useful audio separately from the deliberate endpoint allowance. Do not claim noise suppression or real-device acoustic validation from synthetic tests.
+
+## Follow-up: conversational friction
+
+David questions mandatory tapping each turn. Treat tap-to-speak as a tested local candidate, not the final product default. 3111 runs commit bb74e32 in `.data/voice-trial-3111/run-1789889794550`; source fingerprint is in `.data/voice-trial-3111/latest.json`. Preserve the running preview. Its TrialStatus instruction still suggests natural interruption; correct that stale copy in the next snapshot.
+
+Recommendation, not implemented: tap once to begin, automatically reopen listening after actual playback completion, retain explicit Escape/Interrupt during thinking/speaking, and keep tap-to-speak as an optional noisy-room mode. This reduces per-turn effort but can still capture other speakers during listening. Fixed three-second endpointing is provisional and adds latency; semantic completion needs its own evaluation and streaming integration.
+
+Official documentation checked September 20:
+
+- [OpenAI Realtime VAD](https://developers.openai.com/api/docs/guides/realtime-vad): semantic VAD considers utterance completion, can wait longer after hesitation, and exposes response creation separately from interruption. This documents API controls, not ChatGPT's private implementation.
+- [ElevenLabs conversation flow](https://elevenlabs.io/docs/eleven-agents/customization/conversation-flow): separate interruption and turn-eagerness settings; educational guidance favors patient turns with interruptions. Silence prompting timeout is distinct from speech endpointing.
+- [LiveKit turn tuning](https://docs.livekit.io/agents/logic/turns/tuning/): adaptive interruption classification distinguishes genuine interjections from backchannels, supports false-interruption recovery, and separates competing-voice isolation from non-speech noise suppression.
+
+These managed-platform features are not automatically provided by BOH's use of ElevenLabs STT/TTS. No SDK/provider migration was made. Longer term, coordinate listening, narration, board animation, and cancellable work with a shared turn lifecycle. Measure false interruptions, missed real interruptions, premature endpoints, and speech-end-to-useful-audio separately. This proposal needs real acoustic comparison; no new provider or hardware tests were performed for the research follow-up.

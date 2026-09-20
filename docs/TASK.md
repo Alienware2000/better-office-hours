@@ -19,7 +19,7 @@ Implemented tap-to-speak, synchronous track/PCM gating, discarded busy pre-roll,
 
 ## Decisions
 
-Thinking/transcription/playback mute input; normal completion resumes listening. Busy control is Interrupt, Escape has the same action. While listening it remains Pause for full suspension. Background audio is discarded, never queued for later transcription. Preserve explicit writing/session/visibility cancellation and student ink.
+Current trial mutes input during/after responses. David now questions per-turn taps; hybrid automatic listening after playback is proposed, not implemented. Busy control is Interrupt, Escape has the same action. While listening it remains Pause for full suspension. Background audio is discarded, never queued for later transcription. Preserve explicit writing/session/visibility cancellation and student ink.
 
 ## Validation
 
@@ -27,7 +27,7 @@ All 16 offline checks, typecheck, and focused lint pass. Actual controls rendere
 
 ## Next action
 
-Human retest of tap-to-speak, three-second thinking pauses, manual finish, and deliberate interruption. Tune endpoint only from evidence. Keep 3110 untouched. Board typography remains next after voice review.
+Review the hybrid proposal in the evidence note before changing interaction. 3111 runs bb74e32 tap-to-speak; preserve it and 3110. TrialStatus still says Interrupt naturally and needs corrected copy in the next snapshot. Human acoustic/endpoint tests remain pending; typography follows voice review.
 
 ## Blockers
 
