@@ -38,6 +38,8 @@ Updated: 2026-09-20. Keep this short and current. Search [archived notes](archiv
 
 ## Whiteboard and workspace
 
+- Board use can focus existing content. Adding shapes every turn creates clutter.
+
 - STEM is open-ended; examples are diagnostic, never runtime scene presets. Four real model calls again exposed stationary Follow, wrong geometric proportions and fragmented pages. Static review must include actual board CSS. See evaluations/2026-09-20-stem-board.md.
 - Document composition remains local; 3116/board-system-v2.html is synthetic, with no narration/ink integration. Preserve opaque paper fills when recoloring tint. SVG hit rectangles failed pointer checks; native HTML hit buttons worked. See evaluations/2026-09-20-board-experience.md.
 - Follow uses the path's `drawn` progress, normalized 0..1. Constant drawn=1 intentionally fixes the object at the endpoint; a valid schema can still contradict narration. Do not silently invent motion from topic names.

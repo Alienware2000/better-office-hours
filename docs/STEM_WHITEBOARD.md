@@ -12,6 +12,12 @@ Choose the representation from the teaching relationship, independently of the s
 
 Use a shared visual language: readable prose, real LaTeX for notation, consistent quantity colors, nearby labels, generous working space and stable object identities. A diagram and its equation should remain together when they explain the same relationship. Color supplements labels and position. Reveal in reading order, then hold the completed idea. Start a new page for a new reasoning context or genuine overflow, preserving earlier pages and ink.
 
+David reaffirmed that teaching must always actively use the board. An explanation should draw, annotate, transform or visibly focus its relevant representation. Referring to an existing object can be enough; adding more content on every turn would create clutter. Diagrams, images, labels and LaTeX should have a clear teaching purpose and agree with the narration. This reinforces DESIGN's broader board-use requirement; it is not a claim that current coverage is complete.
+
+Treat clutter prevention as a composition requirement. Keep one clear focal idea, group related objects, leave space for student work, and check labels and equations at the actual display size. When a page is full, continue on a preserved new page or deliberately refocus the existing content. Do not squeeze everything into smaller lettering, pile new labels onto old ones, or erase student work to make room. A numeric object limit alone cannot establish clarity.
+
+The direction is defined enough to test. For the next iteration, prioritize failures that make an explanation wrong, hard to follow, slow or difficult to interact with. Test an unfamiliar topic and a learner follow-up in the complete experience, including whether the student can explain or apply the idea afterward. That is an observational learning check, not proof of lasting retention. Further aesthetic variation and broader canvas features should follow observed needs rather than extend this design study indefinitely.
+
 ## Capability families and coverage
 
 Evaluate general representation families across unfamiliar topics and follow-up questions. Use ungraded synthetic examples first. A graded variant must preserve unknown answers across speech, equations, labels and animation. A family is not certified because one example renders well.

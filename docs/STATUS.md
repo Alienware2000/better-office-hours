@@ -36,7 +36,7 @@ Submitted integrations are included. #11 remains unreconciled because its identi
 
 ## Next
 
-September 20: [STEM vision](STEM_WHITEBOARD.md) is open-ended, not a topic catalog. Eight authored pages at 3116/board-stem.html and four real model outputs at /board-stem-models.html expose geometry, motion and composition failures. [Evidence](evaluations/2026-09-20-stem-board.md). Prototype matrix/heading spacing fixed; root tutor unchanged. Next: general composition/validation, then matched live quality/latency evaluation.
+September 20: [STEM vision](STEM_WHITEBOARD.md) requires uncluttered board use throughout teaching across open-ended topics. Eight authored pages at 3116/board-stem.html and four outputs at /board-stem-models.html expose geometry, motion and composition failures. [Evidence](evaluations/2026-09-20-stem-board.md). Prototype spacing fixed; root tutor unchanged. Next: general composition/validation and matched learning sessions, keeping latency visible.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
