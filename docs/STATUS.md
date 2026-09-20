@@ -15,8 +15,7 @@ David requested frictionless reorientation across coding agents, fresh chats, an
 
 - Checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`. Reorient in each checkout; cached state is not code/data synchronization.
 - Default: `npm ci`, then `npm run dev:local` on loopback 3105, with checkout-local .data. Cloud storage and Google auth are disabled. Local signing secrets are separate from production.
-- Original trial 3107 remains untouched. Snapshot: .data/voice-trial/latest.json; log: server-2026-09-16.log in that directory.
-- Patched trial: `npm run trial:tutor -- --port 3109`, isolated under .data/voice-trial-3109. September 19: 3109 HTTP/UI and saved session load verified; 3105 stopped. Audio quality remains unverified; later beat-3 stale_drawing failure persists. 3108 remains intact.
+- Preserved origins: 3107/3108/3109 and current 3110. Snapshots under .data/voice-trial*; see DEVELOPMENT/TUTOR_TRIAL. 3105 stopped. Source fixes are not automatically present in old snapshots. Preserve all browser saves.
 - Inspect a listener's cwd before stopping it. Preserve all origins' browser saves and PDF data. Keep live source stable; isolate browser regressions/builds. Configuration health is not proof of usable provider credits.
 
 ## Product baseline
@@ -27,7 +26,7 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Open issues
 
-- September 14 priority: David reports severe latency, missing board use, and speech/visual disagreements across subjects. [TUTOR_EVALUATION](TUTOR_EVALUATION.md) records the requirements, source audit, synthetic comparison harness, and queued review of every saved Chrome session. The new every-spoken-turn board requirement is in DESIGN and is not yet implemented.
+- Latency, board use, and speech/visual agreement remain priorities. [Session review](evaluations/2026-09-20-session-review.md) covers 33 transcripts found in checked browser histories, not every historical origin or timed visual. Every-spoken-turn board use is not yet universal.
 
 - Cadence: historical deep-request-to-first-audio medians were roughly 9 to 13 seconds, excluding endpointing/STT/routing. Quick work checks still incur reasoning latency. No fresh latency benchmark in this task.
 - Visual correctness: a generated Follow object stayed stationary while its arrow changed. Renderer correctness does not guarantee model semantics. Replay actual specs/transcripts before choosing a fix.
@@ -39,4 +38,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-Consolidation precedes board changes. Latest origin/main README update is merged locally; remote main remains unchanged. 3110 is the preserved candidate, reported working well. [DEVELOPMENT](DEVELOPMENT.md) tracks promotion and [board feedback](evaluations/2026-09-20-board-feedback.md) the next product slice. Jev deferred; Vercel paused.
+Local consolidation is ready for review: pinned candidate, source fingerprints, 16 passing offline checks, typecheck/lint, isolated build. [DEVELOPMENT](DEVELOPMENT.md) links evidence and release gaps. Remote main unchanged; 3110 preserved. Typography/composition is next. Jev deferred; Vercel paused.

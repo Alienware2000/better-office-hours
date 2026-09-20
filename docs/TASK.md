@@ -1,36 +1,38 @@
 # Active task
 
 Updated: 2026-09-20
-State: in_progress
+State: ready_for_review
 Branch: lane/post-hackathon-local
 Base: d68cd607a64bad917c9e001675a6677e4457056b
 
 ## Objective
 
-Consolidate the development baseline before further board improvements. Clearly separate product defaults, the tested candidate, and evaluation tooling.
+Consolidate product/candidate/evaluation and study saved transcripts before board improvements.
 
 ## Scope and constraints
 
-David reports the hackathon win and authorizes continued building. Contest hold retired; Vercel stays paused. Current consolidation is local, with no remote publication or release. Frozen contracts/prompts and graded-work boundaries remain. Groundtrack unavailable.
+David authorized consolidation and session review after the hackathon win. Work local; Vercel paused. Preserve live origins/PDFs: no verified recovery backup. Frozen contracts/prompts and graded boundaries remain. Groundtrack unavailable.
 
 ## Progress
 
-[DEVELOPMENT](DEVELOPMENT.md) records the baseline audit, decisions, evidence, and promotion procedure. At b5cb137 there were 28 unpushed commits; fetched origin/main had one README change, now merged locally. Local main is stale. No product promotion yet.
+[DEVELOPMENT](DEVELOPMENT.md) indexes decisions; [integration packet](evaluations/2026-09-20-consolidation.md) classifies changes and release gaps. Origin/main's README update merged locally; local main stale.
 
-Speech fixes: 1185aec drains accepted audio, b1ccabd guards/retries once, 3584f41 fixes existing-board focus. 3110 human retest reports working well; diagram quality remains inconsistent. Evidence and limitations are linked in DEVELOPMENT.
+TRIAL_PROFILE pins existing Opus-low settings for initial/recovery requests. Future snapshots carry source/profile fingerprints. `node scripts/check-candidate.mjs` runs 16 offline checks with unmocked Node network calls blocked. No model promotion or live restart.
+
+[Review](evaluations/2026-09-20-session-review.md): read all 33 transcripts found in checked Chrome/IAB histories. Private study guide: `.data/session-review/2026-09-20-review.md`. Tab selections restored. Raw sessions remain browser-local; timed visual/audio review incomplete.
 
 ## Decisions
 
-One codebase, explicit product/candidate/evaluation roles. Preserve 3110 and older origins: no verified session backup. No new trial port or model change during this audit. Jev and board redesign remain deferred. Typography/composition is the next product slice after consolidation.
+Keep candidate fixed. Next product slice: prose/math and composition. Review found deferred equations, repeated questions, visibility disagreements, background speech, and successful misconception-focused animation. No model ranking from historical sessions. Jev deferred; 3110 unchanged.
 
 ## Validation
 
-Fetched current origin/main; verified its sole new commit changes README. Local merge and offline workflow/checkout checks pass. No provider calls or runtime changes. Prior focused checks pass; a consolidated default/candidate regression pass is still outstanding.
+16 offline checks, typecheck, targeted lint, isolated build pass; ONNX dependency warnings. Fixed stale session-test mock; excluded check-anim's live request. Evidence in integration packet. No live provider calls. Context/whitespace checks pass.
 
 ## Next action
 
-Review accumulated changes by tooling, general fixes, and experimental behavior using DEVELOPMENT. Prepare an explicit candidate/default configuration and regression checklist before promoting trial behavior. Shared type additions need integration review. Keep public access paused and live data intact.
+Review the study guide with David, then typography/composition per board-feedback while preserving latency and speech completion. Archive this TASK before replacing it. Release still needs browser save/reopen/PDF checks, human listening/timing, visual replay, and shared-contract review. Do not promote by flipping a dev flag.
 
 ## Blockers
 
-Local commits are not yet a remote backup. Historical rejected payload is unavailable; remaining audio/diagram edge cases need review. Groundtrack unavailable.
+Local commits are not remote backup. Historical audio/rejected payloads unavailable. Private guide is not a session export. Public reopening not authorized.

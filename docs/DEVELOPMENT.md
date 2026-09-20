@@ -42,7 +42,9 @@ These are uses of the same codebase, not three products or separate permanent re
 4. Produce a reviewable integration change against current origin/main, describing exactly which behavior becomes default and which remains experimental. Coordinate shared contracts with the other lane. No automatic promotion based on one good model response or one green unit test.
 5. After authorization, integrate the reviewed change and verify the resulting revision. Deployment and public reopening are separate actions. Preserve a rollback revision and student storage compatibility.
 
-Offline workflow and checkout tests pass. The workflow fixture initially omitted linked evaluation reports; it now includes docs/evaluations so link validation tests the current documentation. No product promotion, release, complete product regression run, or remote backup was performed by this documentation/consolidation step. The next implementation is the candidate/default configuration and regression review, before typography changes.
+September 20 consolidation: candidate settings now live in one pinned profile, future trial snapshots carry source/profile fingerprints, and `node scripts/check-candidate.mjs` runs 16 offline checks. All pass, along with TypeScript, targeted lint, and an isolated production build (ONNX dependency warnings). See the [integration packet](evaluations/2026-09-20-consolidation.md) for change groups and remaining browser/acoustic/shared-contract checks. No product promotion, release, or remote backup occurred.
+
+The [saved-session review](evaluations/2026-09-20-session-review.md) covers all 33 transcripts found across the checked histories. Private study notes are in `.data/session-review/2026-09-20-review.md`. Typography/composition remains the next product slice; no new model selection or broad board rewrite is needed to start it.
 
 ## Where progress lives
 
