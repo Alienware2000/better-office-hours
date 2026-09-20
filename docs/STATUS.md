@@ -36,7 +36,7 @@ Submitted integrations are included. #11 remains unreconciled because its identi
 
 ## Next
 
-September 20: [Live composition](evaluations/2026-09-20-live-composition.md) keeps saved matrix/projectile equations with their figures. Candidate 3117 uses the real tutor; document galleries remain separate. [Test plan](APP_TEST_PLAN.md): full sessions, accuracy, latency and recovery. Human acoustic evidence remains open.
+September 20: [Representation audit](evaluations/2026-09-20-representation.md) follows Gaussian-elimination feedback. General guidance selected matrices in one sample, exposing an augmented-divider rendering bug. Candidate timing/teaching remain mixed. Live 3117 stays on 19a3681; [test plan](APP_TEST_PLAN.md) and acoustic review remain open.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 

@@ -31,3 +31,5 @@ The three archived files preserve their pre-workflow bytes. Search with `rg -n '
 - [September 20 board experience](tasks/2026-09-20-board-experience.md): visual learning research, linked diagrams/equations and ordered replay.
 
 - [September 20 STEM and Studdy study](tasks/2026-09-20-stem-study.md): broad STEM evaluation, comparative research and live-test handoff.
+
+- [September 20 live composition](tasks/2026-09-20-live-composition.md): diagram equation layout, isolated 3117 and typed lesson recovery checks.

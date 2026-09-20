@@ -3,32 +3,32 @@
 Updated: 2026-09-20
 State: ready_for_review
 Branch: lane/post-hackathon-local
-Base: fd84303f7861e30f8103edf518b15a26b51c477f
+Base: 84a925948fc1a0b8a39338082a019293add83658
 
 ## Objective
 
-Improve live equation/diagram composition and prepare a testable app candidate.
+Improve representation choice after Gaussian-elimination feedback.
 
 ## Scope and constraints
 
-Local only. Preserve frozen contracts, graded boundaries, old sessions and public pause. Groundtrack unavailable.
+Local only; preserve live sessions, frozen files, graded boundaries and public pause. Groundtrack unavailable. No topic routing.
 
 ## Progress
 
-19a3681 runs on isolated http://localhost:3117/. [Evidence](evaluations/2026-09-20-live-composition.md) records fingerprints and checks. Old 3114/3115/3116 preserved.
+Guidance now favors appropriate structured objects. Fixed MathJax array dividers, equation/note scale. Four-call comparison and actual-renderer browser review complete: [evidence](evaluations/2026-09-20-representation.md).
 
 ## Decisions
 
-Stable .052 equation tier beside static/moving figures; lateral placement before paging. Existing writing and ink stay intact. No model, voice or topic-routing changes; document prototype separate.
+One meaningful operation with its explanation. Preserve matrices, student ink and disclosure bounds. New guidance remains a candidate: timing and teaching results are mixed.
 
 ## Validation
 
-Saved matrix/projectile cases: two pages to one. Composition/math/diagram/teaching checks, TypeScript and lint pass. Two real typed turns inspected at compact/wide sizes; nine groups and one ink stroke survive reload. JSON download unverified. Generated square proportions still wrong; no acoustic or latency improvement claim.
+Focused renderer, streaming, guard, profile, TypeScript and lint checks pass. Full gate/acoustics not claimed. Audit on 3116/board-representation.html.
 
 ## Next action
 
-Follow [APP_TEST_PLAN](APP_TEST_PLAN.md): full spoken lessons across unfamiliar STEM, correctness, confusion/changes, ink, interruption and recovery. Prioritize generated geometry accuracy and measured voice latency.
+Review sampled teaching and latency before app promotion. Restart deliberately only after the active session is finished and recovery is verified.
 
 ## Blockers
 
-Human audio/iPad, broad STEM correctness and PDF/export recovery remain open. No publication authorized.
+3117 still runs 19a3681; no hot reload. No broad STEM/learning claim; see evidence for remaining failures.

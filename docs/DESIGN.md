@@ -4,6 +4,8 @@ This is the source of truth for what we are building, why, and what we have deci
 
 ## Current implementation and sequencing
 
+September 20 live-lesson feedback: choose the standard representation proactively, including structured mathematics. Gaussian elimination exposed missing matrices, oversized scalar writing and a compressed explanation. Improve general teaching/composition, not a topic-specific scene.
+
 September 20 STEM clarification: named topics are examples. Build an open-ended visual tutor across STEM using general representations and collaborative ink, with latency as a release condition. [Vision and coverage](STEM_WHITEBOARD.md).
 
 September 20 board correction: always use the board while teaching through relevant diagrams, images, LaTeX, labels or focus on existing content. Prevent clutter through grouping, space and preserved page continuation. Keep key ideas visible without copying spoken paragraphs. Preserve ordered writing, meaningful color and optional notes. Prioritize usable learning sessions over further aesthetic variation. [Research](WHITEBOARD_EXPERIENCE_RESEARCH.md); live integration remains a separate review.
