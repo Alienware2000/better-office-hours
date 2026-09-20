@@ -10,7 +10,7 @@ Working on this project with a coding agent? Start with [the project memory walk
 
 [Open Better Office Hours](https://better-office-hours.vercel.app).
 
-The public demo video will be added after recording. The 90-second walkthrough is documented in [DEMO.md](docs/DEMO.md).
+The public demo video https://drive.google.com/drive/folders/1SP1pzAH1Z_SI48DH4mdquvBYgm6iXaX8.
 
 ## The problem
 
