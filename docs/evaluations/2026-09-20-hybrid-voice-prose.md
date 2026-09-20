@@ -18,3 +18,7 @@ The orb now carries a visible microphone icon and Tap to speak at start/resume. 
 - TypeScript and targeted ESLint pass.
 - Actual Orb and BoardText components rendered in isolated static fixtures, inspected in-browser: visible initial mic action, readable spaced question in one ink color, retained LaTeX equation. Fixture `.data/evaluation/hybrid-voice/review.html` is synthetic and ignored.
 - No provider calls or real-device microphone tests performed. All existing session origins retained. Human acoustic follow-up remains necessary.
+
+## Local preview
+
+http://localhost:3112 runs clean revision 131bfaf96d1f77fc0f18d97fff7a7e6b510d2191. Snapshot `.data/voice-trial-3112/run-1789890704827`; source/profile hashes are in `.data/voice-trial-3112/latest.json`. Its source hash matches the offline gate. HTTP and actual initial UI verified, including updated trial instructions and visible orb action. No microphone was opened by the browser check. 3111 remains unchanged.

@@ -29,7 +29,7 @@ Tap once to begin; completion automatically listens. Escape/Interrupt takes the 
 
 ## Next action
 
-Verify automatic follow-up, interruption, pause, and prose in an isolated new trial. Preserve 3111 and its PDFs/saves. Broader board consistency follows voice review.
+Retest http://localhost:3112 (131bfaf): automatic follow-up, interruption, pause, and prose. Preserve 3111 and its PDFs/saves. Broader board consistency follows voice review.
 
 ## Blockers
 
