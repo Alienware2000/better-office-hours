@@ -1,38 +1,34 @@
 # Active task
 
 Updated: 2026-09-20
-State: ready_for_review
+State: in_progress
 Branch: lane/post-hackathon-local
-Base: dd72d8ac4002e7a09a7fcd81c6eb520a9da970bd
+Base: fd84303f7861e30f8103edf518b15a26b51c477f
 
 ## Objective
 
-Evaluate open-ended STEM visuals and Studdy inspiration. Named topics are examples, not limits.
+Improve live diagram/equation composition, then prepare an isolated app candidate for a complete learning session.
 
 ## Scope and constraints
 
-Local evaluation only; preserve live sessions, frozen files and public pause. Groundtrack unavailable.
+Local edits/tests/commits; preserve existing runtimes, frozen contracts, graded boundaries and public pause. Groundtrack unavailable. No model, voice or provider changes; no fixture routing.
 
 ## Progress
 
-[Vision](STEM_WHITEBOARD.md), [evidence](evaluations/2026-09-20-stem-board.md), [Studdy study](evaluations/2026-09-20-studdy-study.md) and [test plan](APP_TEST_PLAN.md) saved. 3116 root remains 1770053; document composition is not integrated.
+Reproduced saved matrix and projectile equations splitting onto separate pages. New diagram-equation size and bounded lateral placement implemented in writing.ts/style.ts; composition, writing, math, diagram/motion and teaching checks pass, as do TypeScript and targeted lint. Saved matrix/projectile replays both change from two pages to one. Visual review pending.
 
 ## Decisions
 
-Separate renderer, model and live evidence. Prototype matrix/heading spacing fixed. Models still fail geometry, motion and composition. Preserve ink ownership.
-
-Keep uncluttered board use throughout teaching; existing-object focus counts. Studdy informs stable composition and a future completed-step return point. Its private stack/latency is unknown. BOH's three-second endpoint pause needs measurement.
+Use a stable equation tier beside geometry, including motion; preserve standalone writing and compact symbols. Existing writing and ink are not reflowed. Panel page boundaries remain. Document prototype stays separate. No scientific correctness or latency improvement claim.
 
 ## Validation
 
-Prior checks/browser/provider evidence: linked STEM reports. No end-to-end latency improvement claim.
-
-Studdy: screenshots/public pages and BOH code inspected; no authenticated lesson or benchmark. No runtime changes. Context/full and diff checks pass.
+Saved model specs replayed offline. Complete session and human acoustic evidence remain open. Follow [test plan](APP_TEST_PLAN.md).
 
 ## Next action
 
-Reproduce diagram/equation page separation from the saved model specs, select a general live-path correction, then follow APP_TEST_PLAN for matched sessions and latency. No fixture routing or frozen-contract expansion. Preserve current runtimes.
+Verify saved cases, tall math, genuinely full pages and ink preservation; inspect compact/expanded output. Commit candidate and launch fresh isolated origin without replacing David’s sessions. Record exact runtime and checks.
 
 ## Blockers
 
-Broad STEM, image grounding, acoustic/iPad and ink-feedback evidence remain open. Verify live-session backup before live integration.
+Broad STEM correctness, image grounding, acoustic/iPad and continuous ink feedback remain unverified. Preserve current 3114/3115/3116 sessions.

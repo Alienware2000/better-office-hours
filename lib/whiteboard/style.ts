@@ -13,6 +13,9 @@ export const boardStyle = {
   } satisfies Record<Color, string>,
   stroke: 2.25,
   label: { s: 0.054, m: 0.075 },
+  // Equations beside a figure should read as working, with room for a second
+  // relation. Compact symbol labels keep their separate .038 scale.
+  diagramEquation: 0.052,
   motion: {
     reveal: 0.52,
     hold: 0.65,

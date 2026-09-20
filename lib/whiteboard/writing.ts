@@ -45,10 +45,12 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
   const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
+  const hasDiagram = [...groups, ...motion].some(g => g.id !== group.id && g.geometry?.length);
   if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color) ?? undefined }] };
   if (!note && !math && width(mark.text, .038, false) <= .91 && groups.some(group => group.geometry?.length)) return group;
   const caption = note && !heading && !math && groups.some(group => group.geometry?.length);
-  let fontSize = heading ? .048 : caption ? .038 : mark.size === 'm' ? .085 : .068;
+  const diagramEquation = math && hasDiagram && !note;
+  let fontSize = heading ? .048 : caption ? .038 : diagramEquation ? boardStyle.diagramEquation : mark.size === 'm' ? .085 : .068;
   const available = 1 - margin * 2;
   const fullFormula = math && hasLatex(mark.text) ? typesetMath(mark.text, mark.color) : null;
   const latex = Boolean(fullFormula);
@@ -97,6 +99,9 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   }
   const half = Math.max(...lines.map(text => width(text, fontSize, math)), 0) / 2;
   const x = note ? margin + half : Math.max(margin + half, Math.min(1 - margin - half, mark.at.x));
+  // Try lateral space before abandoning a figure. Only new equation placement
+  // changes: notes keep their left alignment and prior writing stays resolved.
+  const columns = diagramEquation ? [...new Set([x, .5, margin + half, 1 - margin - half])] : [x];
   const formulas = lines.map(text => math ? typesetMath(text, mark.color) : null);
   const offsets = [0];
   for (let i = 1; i < lines.length; i++) offsets.push(offsets[i - 1] + Math.max(fontSize * 1.45, fontSize * ((formulas[i - 1]?.descent ?? .25) + (formulas[i]?.ascent ?? 1)) + gap));
@@ -108,9 +113,11 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   for (let y = firstY + .025; y + height + descent <= 1 - margin; y += .025) candidates.push(y);
   for (let y = margin + ascent; y < firstY; y += .025) candidates.push(y);
   for (const y of candidates) {
-    const bounds = { left: x - half, right: x + half, top: y - ascent, bottom: y + height + descent };
-    if (bounds.bottom > 1 - margin || occupied.some(box => intersects(bounds, box))) continue;
-    return { ...group, drawables: lines.map((text, i) => ({ ...mark, key: `${mark.key}-line-${i}`, text, fontSize, heading, math, mathDrawing: formulas[i] ?? undefined, color: heading ? boardStyle.colors.muted : mark.color, textAnchor: note ? 'start' as const : 'middle' as const, at: { x: note ? margin : x, y: y + offsets[i] } })) };
+    for (const column of columns) {
+      const bounds = { left: column - half, right: column + half, top: y - ascent, bottom: y + height + descent };
+      if (bounds.bottom > 1 - margin || occupied.some(box => intersects(bounds, box))) continue;
+      return { ...group, drawables: lines.map((text, i) => ({ ...mark, key: `${mark.key}-line-${i}`, text, fontSize, heading, math, mathDrawing: formulas[i] ?? undefined, color: heading ? boardStyle.colors.muted : mark.color, textAnchor: note ? 'start' as const : 'middle' as const, at: { x: note ? margin : column, y: y + offsets[i] } })) };
+    }
   }
   // Keep the existing board intact when full. The tutor can remove/replace its
   // earlier groups; never erase student work or squeeze writing to make it fit.

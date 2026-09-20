@@ -29,3 +29,5 @@ The three archived files preserve their pre-workflow bytes. Search with `rg -n '
 - [September 20 board system](tasks/2026-09-20-board-system.md): cross-subject document prototype and first gallery review.
 
 - [September 20 board experience](tasks/2026-09-20-board-experience.md): visual learning research, linked diagrams/equations and ordered replay.
+
+- [September 20 STEM and Studdy study](tasks/2026-09-20-stem-study.md): broad STEM evaluation, comparative research and live-test handoff.
