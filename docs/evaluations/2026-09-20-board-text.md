@@ -15,3 +15,7 @@ Pass: check-math, check-teaching-repairs, check-board-writing, check-diagrams, c
 Browser inspected a synthetic fixture rendered through the actual store and BoardDrawing at 360px and 640px. Neutral equation, spaced prose, compact subscript labels and deliberate rust emphasis are visible. This is renderer evidence, not a new model-generated lesson. Fixture: ignored .data/evaluation/2026-09-20-board-text/index.html. Initial fixture encoding lacked UTF-8 metadata; corrected before visual verification.
 
 No provider requests or human acoustic checks. No first-audio latency claim. Current collision fixtures pass; cumulative semantic clutter, missing mechanism geometry and narration mismatches still need a reproducible follow-up. Old saved prose already baked into mathematical paths is not migrated by this slice.
+
+## Review runtime
+
+3116 now runs clean source 1770053, snapshot `.data/voice-trial-3116/run-1789915952031`, launcher PID 93714. New origin and isolated storage; 3114/3115 untouched. Verified actual welcome loads, typing closed. `/board-text-check.html` is a synthetic review fixture copied into this ignored snapshot only, not a tutor runtime template or committed product route. It shows this renderer at both sizes. No lesson was requested.

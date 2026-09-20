@@ -27,7 +27,7 @@ Math, teaching-repairs, board-writing, diagrams, diagram-motion, typecheck/lint 
 
 ## Next action
 
-Prepare isolated review candidate, then reproduce cumulative annotation clutter before changing placement/lifecycle.
+Review 3116 (1770053), then reproduce cumulative annotation clutter before changing placement/lifecycle. 3114/3115 untouched.
 
 ## Blockers
 
