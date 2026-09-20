@@ -399,6 +399,6 @@ function statusText(state: OrbState, paused: boolean, recording: boolean, inputR
     if (phase === 'voice') return 'Preparing voice · mic muted';
     return 'Thinking · mic muted';
   }
-  if (state === "listening") return "Listening";
+  if (state === "listening") return "Listening · you can speak";
   return "Tap to speak · mic muted";
 }

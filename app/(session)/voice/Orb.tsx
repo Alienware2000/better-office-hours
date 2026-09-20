@@ -41,7 +41,7 @@ export function Orb({
         type="button"
         className="orb-control"
         aria-label={label}
-        title={recording ? 'Done speaking: tap to send now, or pause for three seconds' : canStart ? 'Open the microphone for your next turn' : label}
+        title={recording ? 'Done speaking: tap to send now, or pause for three seconds' : canStart ? 'Start listening. The microphone reopens after each response' : label}
         onClick={onInterrupt}
         disabled={inputStarting || inputError}
         aria-disabled={inputStarting || inputError || (inputReady && !canStart && !recording)}
@@ -57,6 +57,10 @@ export function Orb({
           ].filter(Boolean).join(" ")}
           style={state === "listening" ? { transform: `scale(${scale})` } : undefined}
         />
+        {canStart && !inputStarting && !inputError && <span className="orb-action" aria-hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v3M9 21h6"/></svg>
+          Tap to speak
+        </span>}
       </button>
       {inputError ? (
         <button type="button" className="voice-pause" onClick={onRetry}>

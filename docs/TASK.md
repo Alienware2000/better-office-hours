@@ -7,28 +7,30 @@ Base: 954c97d8b1015aedae6910094da78bf2ea26df73
 
 ## Objective
 
-Prevent background speech interrupting the tutor. David explicitly requests a muted microphone while thinking/speaking, with tap-to-speak for every turn and Escape or a touch control to interrupt and speak.
+David requests automatic listening after tutor playback, clearer microphone affordance, and readable board prose containing symbols. Tap-every-turn in 3111 felt cumbersome.
 
 ## Scope and constraints
 
-Voice/workspace local changes only. Public Vercel paused; preserve all live snapshots/session data. No model or frozen prompt/shared type changes. Groundtrack unavailable. This priority precedes board typography.
+Local voice/whiteboard only. Vercel paused. Preserve all live snapshots/saves, especially 3111. No model, frozen prompt, or shared type changes. Groundtrack unavailable.
 
 ## Progress
 
-Implemented tap-to-speak, synchronous track/PCM gating, discarded busy pre-roll, and Escape/Interrupt floor transfer. The first tap opens listening without a greeting. Normal completion stays muted. [Evidence](evaluations/2026-09-20-tap-to-speak.md) records research, behavior, tests, and limits.
+Completed turns rearm input after audio drains; busy input stays muted. Pause/cancellation/error safeguards remain. Start/resume shows a mic icon and Tap to speak. Trial guidance updated.
+
+Inline m_{2} in prose becomes m₂ in ordinary text; equations retain LaTeX. See [evidence](evaluations/2026-09-20-hybrid-voice-prose.md).
 
 ## Decisions
 
-Current trial mutes input during/after responses. David now questions per-turn taps; hybrid automatic listening after playback is proposed, not implemented. Busy control is Interrupt, Escape has the same action. While listening it remains Pause for full suspension. Background audio is discarded, never queued for later transcription. Preserve explicit writing/session/visibility cancellation and student ink.
+Tap once to begin; completion automatically listens. Escape/Interrupt takes the floor; Pause suspends listening. Three-second endpoint remains provisional. No provider migration or general rich-text redesign.
 
 ## Validation
 
-All 16 offline checks, typecheck, and focused lint pass. Actual controls rendered/inspected in isolated static fixtures; real-device validation pending. Synthetic audio checks are not real-device noise evidence.
+16 offline checks pass, including audio-drain/reopen and inline-prose regressions. Typecheck and targeted lint pass. Real components rendered and visually inspected with synthetic content; real acoustic/iPad validation pending.
 
 ## Next action
 
-Review the hybrid proposal in the evidence note before changing interaction. 3111 runs bb74e32 tap-to-speak; preserve it and 3110. TrialStatus still says Interrupt naturally and needs corrected copy in the next snapshot. Human acoustic/endpoint tests remain pending; typography follows voice review.
+Verify automatic follow-up, interruption, pause, and prose in an isolated new trial. Preserve 3111 and its PDFs/saves. Broader board consistency follows voice review.
 
 ## Blockers
 
-Actual iPad/headphone/speaker tests require human evidence. Existing session exports remain unverified. Consolidation/transcript review checkpoint archived; release gaps remain in DEVELOPMENT.
+Real-device speech/noise evidence pending; session exports remain unverified. Existing archived drawings are not migrated. Consolidation/release gaps remain in DEVELOPMENT.

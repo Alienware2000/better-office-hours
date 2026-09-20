@@ -38,4 +38,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-Local consolidation is ready for review: pinned candidate, source fingerprints, 16 passing offline checks, typecheck/lint, isolated build. [DEVELOPMENT](DEVELOPMENT.md) links evidence and release gaps. Remote main unchanged; 3110 preserved. David questions per-turn taps; hybrid listening is proposed, not implemented; see [voice interaction](evaluations/2026-09-20-tap-to-speak.md). Jev deferred; Vercel paused.
+Local consolidation is ready for review: pinned candidate, source fingerprints, 16 passing offline checks, typecheck/lint, isolated build. [DEVELOPMENT](DEVELOPMENT.md) links evidence and release gaps. Remote main unchanged; 3110 preserved. Source now reopens listening after playback and fixes inline-symbol prose; see [voice changes](evaluations/2026-09-20-hybrid-voice-prose.md). Jev deferred; Vercel paused.

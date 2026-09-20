@@ -192,7 +192,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
   assert.ok(JSON.parse(calls[1].body).messages.every(message => !message.content.includes('THINK')), 'Internal routing never enters spoken history');
   const speech = test.requests.filter(request => request.url.endsWith('/tts')).map(request => JSON.parse(request.body).text).join(' ');
   assert.equal(speech, 'Zero, from rest. Go ahead with your substitution.', 'Only the substantive response is synthesized');
-  assert.equal(test.states[0], 'idle');
+  assert.equal(test.states[0], 'listening');
   test.cleanup();
 }
 
@@ -313,7 +313,7 @@ for (const result of ['valid', 'noise', 'failure']) {
   else test.stt.resolve(Response.json({ text: result === 'valid' ? 'Help me understand recursion' : '[background noise]' }));
   await settle();
   assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, result === 'valid' ? 1 : 0);
-  assert.equal(test.states[0], 'idle', `${result} settles back to muted tap-to-speak`);
+  assert.equal(test.states[0], result === 'valid' ? 'listening' : 'idle', `${result}: completed turns reopen; rejected input waits for a tap`);
   assert.equal(test.states[13], null, `${result} clears the processing stage`);
   test.cleanup();
 }
@@ -555,7 +555,7 @@ for (const result of ['noise', 'failure', 'empty', 'timeout', 'misheard']) {
     const calls = test.requests.filter(r => r.url.endsWith('/llm'));
     assert.equal(calls.length, result === 'misheard' ? 2 : 1, `${result}: retry reaches the tutor once`);
     assert.equal(JSON.parse(calls.at(-1).body).messages.at(-1).content, 'Let me say that again');
-    assert.equal(test.states[0], 'idle');
+    assert.equal(test.states[0], 'listening');
   } finally { test.cleanup(); }
 }
 console.log('PASS: interrupted/closed/muted/ended/stalled input exposes recovery; transient faults and rejected transcripts accept the next utterance.');
@@ -627,12 +627,10 @@ console.log('PASS: busy STT stays muted, explicit interruption rejects late tran
   assert.equal(test.track.enabled,false,'Old completion cannot unmute a newer generation');
   assert.equal(test.states[0],'thinking');
   newResponse.resolve(new Response('data: [DONE]\n\n'));await newTurn;await settle();
-  assert.equal(test.track.enabled,false,'Natural completion stays muted');
-  assert.equal(test.states[0],'idle');
+  assert.equal(test.track.enabled,true,'Current natural completion reopens listening');
+  assert.equal(test.states[0],'listening');
   test.tick(true,1000);for(let i=0;i<20;i++)test.tick(true,20);
-  assert.equal(test.recordings.length,0,'Background speech after completion cannot start a turn');
-  test.hook.interrupt();
-  assert.equal(test.track.enabled,true,'Only another tap opens listening');
+  assert.equal(test.recordings.length,1,'A follow-up starts without another tap');
   test.hook.pauseOrInterrupt();
   assert.equal(test.track.enabled,false,'The listening control still fully pauses');
   assert.equal(test.states[4],true);
@@ -837,10 +835,12 @@ for (const ending of ['ended', 'interrupted', 'error']) {
   assert.equal(JSON.parse(test.requests.find(r => r.url.endsWith('/tts')).body).text, first);
   assert.equal(test.audio.length, 1, 'Complete first beat starts before the response ends');
   test.audio[0].currentTime = 4; test.audio[0].duration = 4; test.audio[0].onended();
+  assert.equal(test.track.enabled, false, 'Input stays closed between teaching beats');
   emit(last + '\n'); output.close(); await settle();
   const tts = test.requests.filter(r => r.url.endsWith('/tts'));
   assert.equal(tts.length, 2, 'Two teaching beats produce two clips, not four sentence clips');
   assert.equal(JSON.parse(tts[1].body).text, last);
+  assert.equal(test.track.enabled, false, 'Model completion cannot reopen input before audio drains');
   const audio = test.audio[1]; audio.duration = 3; audio.currentTime = ending === 'ended' ? 3 : 1.2;
   if (ending === 'ended') audio.onended();
   else if (ending === 'interrupted') test.hook.pauseVoice();
@@ -850,6 +850,10 @@ for (const ending of ['ended', 'interrupted', 'error']) {
     test.audio.slice(2).forEach(clip => clip.onended?.());
   }
   await speaking; await settle();
+  if (ending === 'ended') {
+    assert.equal(test.states[0], 'listening');
+    assert.equal(test.track.enabled, true, 'Final audio completion automatically reopens listening');
+  } else assert.equal(test.track.enabled, false, 'Paused or failed output cannot silently reopen input');
   const endings = test.diagnostics.filter(d => d.kind === 'playback_end');
   assert.equal(endings.length, 2);
   assert.equal(endings[1].message, ending);

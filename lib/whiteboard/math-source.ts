@@ -4,7 +4,14 @@ export const hasLatex = (text: string) => /\\[a-zA-Z]+|\\[([]|\$|[_^]\{/.test(te
 // ordinary TeX scripts too: v_x must render just like v_{x}.
 export const isCompactMath = (text: string) => /^(?:[a-zA-Zα-ωΑ-Ω]|\\(?:theta|alpha|beta|gamma|phi|omega|Delta|pi))(?:[_^](?:\{[^{}]+\}|[a-zA-Z0-9+-]+)|[²³₀-₉])*$/u.test(text.trim());
 export function isMathNotation(text: string): boolean {
-  if (isCompactMath(text) || hasLatex(text)) return true;
+  if (isCompactMath(text)) return true;
+  // A script or inline TeX symbol must not turn surrounding prose into a
+  // formula. Ignore explicit TeX text/unit payloads when inspecting equations.
+  const bare = text.replace(/\\(?:text|textrm|mathrm|operatorname|begin|end)\{[^{}]*\}/g, ' ')
+    .replace(/\\[a-zA-Z]+/g, ' ');
+  const prose = bare.match(/[\p{L}]{4,}/gu) ?? [];
+  if (prose.some(word => !/^(?:sin|cos|tan|log|sqrt|arcsin|arccos|arctan|sinh|cosh|tanh)$/u.test(word))) return false;
+  if (hasLatex(text)) return true;
   if (!/[=≈∝≤≥∫∑√]|[²³₀-₉]/.test(text)) return false;
   // A relation sign can join ordinary phrases. Only infer math for symbolic
   // notation; explicit LaTeX remains available for named variables and units.

@@ -43,3 +43,13 @@ for (const text of ['line pattern = element fingerprint', 'mass = density × vol
 }
 for(const text of ['F = ma','v² = v₀² + 2aΔy','x ≈ 3','sin(x) = 0',String.raw`E_{\text{photon}} = E_{\text{upper}} - E_{\text{lower}}`]) assert.ok(isMathNotation(text),'Symbolic equations still typeset: '+text);
 console.log('PASS: relation signs inside prose preserve ordinary text; symbolic equations and explicit LaTeX remain math.');
+
+for (const text of [String.raw`what else touches or pulls m_{2}?`, String.raw`What else touches or pulls $m_2$?`, 'what else touches or pulls m₂?', String.raw`Compare m_{1} and m_{2}`, String.raw`line pattern = element fingerprint`]) {
+ assert.equal(isMathNotation(text), false, 'Inline symbols do not turn prose into an equation');
+ const group = layoutWriting(interpretCommand({op:'text',id:'note-question',text,at:{x:.5,y:.7}},0).group,[],[]);
+ assert.ok(group.drawables.every(mark => !mark.math && !mark.mathDrawing), 'Questions use ordinary text');
+ const rendered = group.drawables.map(mark => mark.text).join(' ');
+ assert.ok(rendered.includes(' '), 'Prose retains word spaces');
+ if (text.includes('pulls')) assert.equal(rendered, text.startsWith('What') ? 'What else touches or pulls m₂?' : 'what else touches or pulls m₂?');
+}
+console.log('PASS: inline numeric TeX subscripts retain readable, spaced prose without mathematical word coloring.');

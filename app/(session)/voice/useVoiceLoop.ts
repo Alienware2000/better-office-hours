@@ -723,7 +723,12 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
       }
 
       if (turnAbortRef.current === turnController) turnAbortRef.current = null;
-      if (playbackEpoch === playbackEpochRef.current && !playingRef.current) setOrb(pausedRef.current ? "idle" : "listening");
+      if (playbackEpoch === playbackEpochRef.current && !playingRef.current) {
+        // Only the current, fully drained turn may reopen conversation input.
+        // Busy chunks, stale completions, pause and session switches cannot.
+        if (!pausedRef.current && !signal.aborted) listeningArmedRef.current = true;
+        setOrb(pausedRef.current ? "idle" : "listening");
+      }
     },
     [addTurn, adoptKind, health, putAwayPset, runPass, setLayout, setOrb, stopPlayback],
   );

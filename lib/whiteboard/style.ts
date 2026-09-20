@@ -1,5 +1,5 @@
 import type { Color } from "../types";
-import { hasLatex } from './math-source';
+import { hasLatex, isMathNotation } from './math-source';
 
 export const boardStyle = {
   paper: "#fffcf6",
@@ -22,8 +22,12 @@ export const boardStyle = {
 
 export function boardLabel(value: string) {
   // Never truncate a TeX command or normalize its braces into invalid source.
-  if (hasLatex(String(value))) return String(value).trim().slice(0, 800);
+  if (hasLatex(String(value)) && isMathNotation(String(value))) return String(value).trim().slice(0, 800);
   return String(value)
+    .replace(/\\(?:text|textrm|mathrm)\{([^{}]*)\}/g, '$1')
+    .replace(/\\[,;:! ]/g, ' ')
+    .replace(/\$|\\[()[\]]/g, '')
+    .replace(/_\{(\d+)\}/g, '_$1')
     .replace(/[\u2014\u2013]/g, ", ")
     .replace(/\^([23])/g, (_, digit: string) => digit === '2' ? '²' : '³')
     .replace(/\b([a-zA-Z])_?(\d+)\b/g, (_, symbol: string, digits: string) => symbol + [...digits].map(digit => '₀₁₂₃₄₅₆₇₈₉'[Number(digit)]).join(''))
