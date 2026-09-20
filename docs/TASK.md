@@ -1,34 +1,34 @@
 # Active task
 
 Updated: 2026-09-20
-State: in_progress
+State: ready_for_review
 Branch: lane/post-hackathon-local
 Base: fd84303f7861e30f8103edf518b15a26b51c477f
 
 ## Objective
 
-Improve live diagram/equation composition, then prepare an isolated app candidate for a complete learning session.
+Improve live equation/diagram composition and prepare a testable app candidate.
 
 ## Scope and constraints
 
-Local edits/tests/commits; preserve existing runtimes, frozen contracts, graded boundaries and public pause. Groundtrack unavailable. No model, voice or provider changes; no fixture routing.
+Local only. Preserve frozen contracts, graded boundaries, old sessions and public pause. Groundtrack unavailable.
 
 ## Progress
 
-Reproduced saved matrix and projectile equations splitting onto separate pages. New diagram-equation size and bounded lateral placement implemented in writing.ts/style.ts; composition, writing, math, diagram/motion and teaching checks pass, as do TypeScript and targeted lint. Saved matrix/projectile replays both change from two pages to one. Visual review pending.
+19a3681 runs on isolated http://localhost:3117/. [Evidence](evaluations/2026-09-20-live-composition.md) records fingerprints and checks. Old 3114/3115/3116 preserved.
 
 ## Decisions
 
-Use a stable equation tier beside geometry, including motion; preserve standalone writing and compact symbols. Existing writing and ink are not reflowed. Panel page boundaries remain. Document prototype stays separate. No scientific correctness or latency improvement claim.
+Stable .052 equation tier beside static/moving figures; lateral placement before paging. Existing writing and ink stay intact. No model, voice or topic-routing changes; document prototype separate.
 
 ## Validation
 
-Saved model specs replayed offline. Complete session and human acoustic evidence remain open. Follow [test plan](APP_TEST_PLAN.md).
+Saved matrix/projectile cases: two pages to one. Composition/math/diagram/teaching checks, TypeScript and lint pass. Two real typed turns inspected at compact/wide sizes; nine groups and one ink stroke survive reload. JSON download unverified. Generated square proportions still wrong; no acoustic or latency improvement claim.
 
 ## Next action
 
-Verify saved cases, tall math, genuinely full pages and ink preservation; inspect compact/expanded output. Commit candidate and launch fresh isolated origin without replacing David’s sessions. Record exact runtime and checks.
+Follow [APP_TEST_PLAN](APP_TEST_PLAN.md): full spoken lessons across unfamiliar STEM, correctness, confusion/changes, ink, interruption and recovery. Prioritize generated geometry accuracy and measured voice latency.
 
 ## Blockers
 
-Broad STEM correctness, image grounding, acoustic/iPad and continuous ink feedback remain unverified. Preserve current 3114/3115/3116 sessions.
+Human audio/iPad, broad STEM correctness and PDF/export recovery remain open. No publication authorized.

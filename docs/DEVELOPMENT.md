@@ -7,12 +7,12 @@ Updated September 20, 2026. David reports BOH won the hackathon. He requested co
 | Use | Current truth | How it advances |
 | --- | --- | --- |
 | Product baseline | GitHub `origin/main`, fetched at `1b8c7c2`. Default source uses Grok routing/reasoning. Public deployment is separately paused. | Reviewed integration and deliberate release. A merge is not evidence of a deployment. |
-| Development candidate | This checkout, `lane/post-hackathon-local`; latest running tutor is localhost:3116 (`1770053`). OpenRouter Opus-low and protected structured lessons are trial-gated. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
+| Development candidate | This checkout, `lane/post-hackathon-local`; latest isolated candidate is localhost:3117 (`19a3681`), with 3116 (`1770053`) retained. OpenRouter Opus-low and protected structured lessons are trial-gated. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
 | Evaluation | `scripts/bench-tutor-models.mjs`, `scripts/evaluation/`, `scripts/review-tutor-models.mjs`; dashboard conventionally 3106. | Synthetic comparisons and saved human judgments, independent of the default tutor configuration. |
 
 These are uses of the same codebase, not three products or separate permanent repositories. Evaluations should reuse the real parser/renderer. Evaluation fixtures must never select a student's runtime scene. Provider switching belongs in explicit configuration, not in duplicated app implementations.
 
-`npm run dev:local` starts the normal configuration on 3105. `npm run trial:tutor -- --port 3116` created the latest tutor snapshot; do not rerun against an occupied port. `npm run review:tutor` starts the separate evaluation dashboard. A port is an address, not a version: record source revision, configuration and snapshot path. The [actual-app test plan](APP_TEST_PLAN.md) distinguishes the running tutor from the newer, unintegrated board galleries and defines the next comparison.
+`npm run dev:local` starts the normal configuration on 3105. `npm run trial:tutor -- --port 3117` created the latest tutor snapshot; do not rerun against an occupied port. `npm run review:tutor` starts the separate evaluation dashboard. A port is an address, not a version: record source revision, configuration and snapshot path. The [actual-app test plan](APP_TEST_PLAN.md) distinguishes the running tutor from the newer, unintegrated board galleries and defines the next comparison.
 
 ## Audit at the start of consolidation
 
@@ -30,7 +30,7 @@ These are uses of the same codebase, not three products or separate permanent re
 | Numeric TeX guards and one bounded continuation | Implemented `b1ccabd`; [guard evidence](evaluations/2026-09-18-guard-recovery.md). Trial-specific continuation, not a blanket relaxation. |
 | Current-board focus validation | Implemented `3584f41`; [reproduction](evaluations/2026-09-20-drawing-focus.md). Historical cutoff cause remains unproven. |
 | Opus-low through OpenRouter | Candidate, not permanent model winner. 3110 human feedback is positive; cost, broader quality, and end-to-end latency remain evaluation criteria. |
-| Board typography/composition | Board-text fix runs on 3116. New document composition remains an evaluation prototype; [integration/test plan](APP_TEST_PLAN.md). |
+| Board typography/composition | Live equation composition runs on isolated 3117; [evidence](evaluations/2026-09-20-live-composition.md). Document composition remains a separate prototype. |
 | Jev and broader renderer redesign | Deferred; [Jev research](JEV_RESEARCH.md), [board research](WHITEBOARD_RESEARCH.md). Research is not an integration decision. |
 | Public reopening | Deferred until David requests it and a release candidate is ready. Hackathon win does not reopen access. |
 

@@ -4,17 +4,20 @@ Updated September 20, 2026. Local development only; Vercel stays paused.
 
 ## What is saved and what is running
 
-The STEM exploration is committed through `0dfb4c7` on `lane/post-hackathon-local`. TASK, STATUS, STEM_WHITEBOARD and the evaluation reports preserve decisions, limitations and the next step. `npm run handoff` refreshes the machine-local continuation record. Local Git and handoff files are not a remote backup; no push has occurred.
+The live composition candidate is committed at `19a3681` on `lane/post-hackathon-local`. TASK, STATUS, STEM_WHITEBOARD and the evaluation reports preserve decisions, limitations and the next step. `npm run handoff` refreshes the machine-local continuation record. Local Git and handoff files are not a remote backup; no push has occurred.
 
 | Surface | Purpose | Current state |
 | --- | --- | --- |
-| http://localhost:3116/ | Actual voice tutor baseline | Snapshot `1770053`, with the board-text fix and existing DRAW/ANIM pipeline |
+| http://localhost:3116/ | Retained voice tutor baseline | Snapshot `1770053`, board-text fix and existing DRAW/ANIM pipeline |
+| http://localhost:3117/ | Isolated live composition candidate | Snapshot `19a3681`, measured diagram equations and lateral placement; [evidence](evaluations/2026-09-20-live-composition.md) |
 | http://localhost:3116/board-stem.html | Authored renderer/design examples | Eight pages using the document composition prototype |
 | http://localhost:3116/board-stem-models.html | Inspection of real model output | Four saved synthetic requests, excluding the voice pipeline |
 
 The document composition prototype is not connected to the tutor. Starting another snapshot of current HEAD alone will not integrate it. Both the root and gallery returned HTTP 200 when preparing this plan; that is reachability evidence only.
 
 ## Next bounded product milestone
+
+The equation-layout slice below is implemented and checked in 3117. Next compare complete sessions, especially generated geometry accuracy and voice/visual timing. The broader document prototype is still separate.
 
 Make a general improvement to diagram/equation composition in the live path, then judge it during complete learning sessions. Start by replaying the saved model output that split a related diagram and equation across pages. Inspect `lib/whiteboard/store.ts`, the live lesson validator and their layout contracts against `lib/whiteboard/document.ts` before selecting the smallest compatible change. Keep readable text, labels, related content and student working space together where they fit. Preserve meaningful page breaks and prior ink when they do not fit.
 

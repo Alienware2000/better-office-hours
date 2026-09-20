@@ -15,7 +15,7 @@ David requested frictionless reorientation across coding agents, fresh chats, an
 
 - Checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`. Reorient in each checkout; cached state is not code/data synchronization.
 - Default: `npm ci`, then `npm run dev:local` on loopback 3105, with checkout-local .data. Cloud storage and Google auth are disabled. Local signing secrets are separate from production.
-- Running: 3114 retains David’s current session; 3115 retains f94112e; 3116 previews board-text fix 1770053. 3114/3115 sessions untouched by board work. Old listeners 3107–3113 stopped at David’s request; snapshots, storage, and browser saves retained. 3105 stopped. See [checklist](PRODUCT_CHECKLIST.md) for server discipline. Never swap another origin’s data.
+- Running: 3114 retains David’s current session; 3115 retains f94112e; 3116 retains board-text fix 1770053; isolated 3117 tests live composition 19a3681. 3114/3115 sessions untouched by board work. Old listeners 3107–3113 stopped at David’s request; snapshots, storage, and browser saves retained. 3105 stopped. See [checklist](PRODUCT_CHECKLIST.md) for server discipline. Never swap another origin’s data.
 - Inspect a listener's cwd before stopping it. Preserve all origins' browser saves and PDF data. Keep live source stable; isolate browser regressions/builds. Configuration health is not proof of usable provider credits.
 
 ## Product baseline
@@ -36,7 +36,7 @@ Submitted integrations are included. #11 remains unreconciled because its identi
 
 ## Next
 
-September 20: [STEM vision](STEM_WHITEBOARD.md), eight authored pages and four model outputs expose geometry, motion and composition failures. [Studdy study](evaluations/2026-09-20-studdy-study.md) adds stable layouts and meaningful return points. [Test plan](APP_TEST_PLAN.md): improve general live composition, then compare full sessions, latency and recovery. Prototype remains separate; no new human session test.
+September 20: [Live composition](evaluations/2026-09-20-live-composition.md) keeps saved matrix/projectile equations with their figures. Candidate 3117 uses the real tutor; document galleries remain separate. [Test plan](APP_TEST_PLAN.md): full sessions, accuracy, latency and recovery. Human acoustic evidence remains open.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
