@@ -9,7 +9,13 @@ export function TutorInput({ open, value, busy, micOff, canEnableMic, onOpen, on
 }) {
   const id = useId();
   const input = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => { if (open) input.current?.focus(); }, [open]);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(open);
+  useEffect(() => {
+    if (open) input.current?.focus();
+    else if (wasOpen.current) toggle.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
   const microphone = <button type="button" className="input-mic" aria-label={micOff ? 'Turn mic on' : 'Mute mic'}
     aria-pressed={micOff} disabled={micOff && !canEnableMic} onClick={onMic}
     title="Microphone only. Your tutor keeps responding.">
@@ -18,7 +24,7 @@ export function TutorInput({ open, value, busy, micOff, canEnableMic, onOpen, on
   </button>;
   return <div className={`tutor-input${open ? ' is-open' : ''}`}>
     {!open && <div className="tutor-input-controls">
-      <button type="button" aria-expanded={false} aria-controls={id} onClick={() => onOpen(true)}>
+      <button ref={toggle} type="button" aria-expanded={false} aria-controls={id} onClick={() => onOpen(true)}>
         <svg aria-hidden viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 9h.01M11 9h.01M15 9h2M7 12h.01M11 12h.01M15 12h2M7 15h10"/></svg>
         Type a message
       </button>

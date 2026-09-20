@@ -410,8 +410,8 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
 }
 
 function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean, phase: ReturnType<typeof useVoiceLoop>['responsePhase'], micMuted: boolean): string {
-  if (!inputReady && state !== "thinking" && state !== "speaking") return micMuted ? "Mic off" : inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to speak";
-  if (paused) return micMuted ? "Mic off" : "Tap to speak";
+  if (!inputReady && state !== "thinking" && state !== "speaking") return micMuted ? "Ready when you are" : inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to speak";
+  if (paused) return micMuted ? "Ready when you are" : "Tap to speak";
   if (recording) return "Listening · tap when finished";
   if (state === "speaking") return "Speaking · mic muted";
   if (state === "thinking") {
@@ -420,7 +420,7 @@ function statusText(state: OrbState, paused: boolean, recording: boolean, inputR
     if (phase === 'voice') return 'Preparing voice · mic muted';
     return 'Thinking · mic muted';
   }
-  if (micMuted) return "Mic off";
+  if (micMuted) return "Ready when you are";
   if (state === "listening") return "Listening · you can speak";
   return "Tap to speak";
 }
