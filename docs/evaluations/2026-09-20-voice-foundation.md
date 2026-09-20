@@ -21,3 +21,9 @@ Stopped only the verified BOH listeners on 3107–3113, using SIGTERM after insp
 Final browser check: exactly one Tap to speak button (the orb), plain text caption, and Type a message collapsed. Source `10c0720`; manifest marks dirty because documentation was in progress, while implementation was committed. Runtime `.data/voice-trial-3115/run-1789893786823`. Final typecheck/lint pass. Two listeners remain: 3114 and 3115.
 
 Welcome copy updated to “What do you want to work on?” in `9e0e00b`; 3115 runs that clean snapshot. On post-reload inspection, 3115 showed a saved homework conversation, so entry was not forced for a screenshot. Preserve this origin as live from now on. Copy change checked in source/diff; no additional provider calls or voice tests.
+
+## Back control preview correction
+
+David reported the source-only styling had not changed 3115. Updated the same origin to clean snapshot f94112e (`run-1789894935694`) after the page changed to empty New conversation. Verified saved homework entry before and after; reopened it paused and checked the new chevron, transparent control and original transcript on the actual app. Existing signing/storage and old snapshots retained. No model calls. Launcher PID 89546.
+
+JSON export produced no verified file; read-only browser evaluation cannot access IndexedDB in this tool. No recovery export is claimed. Do not repeat those methods as if verified. Restart was deferred until there was no active conversation; this does not authorize refresh during a future lesson.
