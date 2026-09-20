@@ -487,8 +487,6 @@
 .welcome-stage .chip:hover { background: #292e2707; color: #30352d; transform: none; }
 .session-app:has(.welcome-stage), .session-desk:has(.welcome-stage) { background: #f5f4ee; }
 .session-app:has(.welcome-stage) .session-header { background: #f5f4ee; border-bottom-color: #2926210b; }
-.session-app:has(.welcome-stage) .session-header button { background: transparent; border-color: transparent; border-radius: 8px; }
-.session-app:has(.welcome-stage) .session-header button:hover { background: #292e2707; }
 @media (max-width: 640px) {
   .trial-status { padding: 0 1rem; font-size: .65rem; }
   .welcome-stage { padding: 1.5rem 1rem; }
@@ -549,7 +547,7 @@
 .tutor-input-controls .input-divider { display: none; }
 .welcome-stage .chip-row { gap: .5rem; }
 .welcome-stage .chip { border: 1px solid var(--ui-line); background: #fffefa60; border-radius: 10px; color: #626b59; padding: .5rem .85rem; }
-.welcome-stage .chip::after { content: '↗'; display: inline-block; margin-left: .65rem; color: #87917d; }
+.welcome-stage .chip::after { content: '→'; display: inline-block; margin-left: .65rem; color: #87917d; }
 .welcome-stage .chip:hover { border-color: #aeb7a4; background: var(--ui-surface); }
 .response-status { width: 100%; max-width: 28rem; margin-top: .8rem; }
 .response-status .orb-status { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 40px; margin: 0; font-size: .82rem; font-weight: 500; letter-spacing: 0; color: var(--ui-ink); }

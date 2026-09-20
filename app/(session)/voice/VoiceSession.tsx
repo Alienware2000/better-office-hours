@@ -239,6 +239,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
               {chips.map((chip) => (
                 <button
                   key={chip}
+                  aria-label={chip}
                   type="button"
                   onClick={() => {
                     if (chip === "Homework" && pset) {
