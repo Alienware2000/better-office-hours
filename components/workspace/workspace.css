@@ -381,13 +381,40 @@
 }
 
 .desk-leave {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1.25;
   color: #44403c;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.desk-leave:hover {
+  background: rgba(255, 252, 246, 0.65);
+  color: #1c1917;
+}
+
+.desk-leave:active {
+  background: rgba(255, 252, 246, 0.9);
+}
+
+.desk-leave:focus-visible {
+  outline: 2px solid #7b8b70;
+  outline-offset: 3px;
 }
 
 .desk-leave-mark {
-  font-size: 0.78rem;
-  line-height: 1;
+  flex: 0 0 20px;
 }
 
 .pdf-pages {

@@ -7,28 +7,30 @@ Base: 3b3dceb85eed13bb9a0668423f18ba962365927e
 
 ## Objective
 
-Warm, modern voice-first UI foundation and server cleanup. Preserve the broader PRODUCT_CHECKLIST.
+Voice-first UI foundation; latest correction is Back to start styling.
 
 ## Scope and constraints
 
-Local voice/workspace UI only. Keep plain orb, voice logic, PDFs and saves. 3115 now has a saved homework conversation; do not treat it as an unused test draft. No deployment/frozen-contract change. Groundtrack unavailable. Preserve live 3114.
+Local voice/workspace UI. Preserve live 3114/3115 and saved data. No deployment, frozen-contract or voice-logic changes. Groundtrack unavailable.
 
 ## Progress
 
-Stopped verified BOH listeners 3107–3113, retaining all files/browser saves. Kept 3114 and isolated 3115. Shared surfaces/navigation and explicit active-state labels/motion implemented. David rejected boxed welcome controls; restored the restrained version. Latest correction: Tap to speak is a noninteractive label; only the orb starts voice. Typing defaults closed. Welcome now asks “What do you want to work on?” per David.
+Stopped verified listeners 3107–3113, retaining data. Restored restrained welcome after boxed controls were rejected. Orb alone starts voice; caption is plain text. Typing defaults closed. Welcome asks “What do you want to work on?”
+
+Back to start now has a 20px SVG chevron, transparent styling, a 44px target, hover and focus. Exit callback unchanged. Source-only; 3115 still runs 9e0e00b.
 
 ## Decisions
 
-No border/fill/icon on the welcome start cue; avoid boxing every action. Keep subtle hover/focus for secondary controls. State labels/motion do not change voice behavior. See UI_FOUNDATION.md.
+Follow UI_FOUNDATION.md. Avoid boxing every control. PRODUCT_CHECKLIST.md retains broader work.
 
 ## Validation
 
-Prior UI typecheck/lint pass; welcome-only copy change passes diff checks. Browser verifies one Tap to speak button (the orb), a plain text caption, and typing closed. Active states inspected synthetically. No provider calls. Evidence: evaluations/2026-09-20-voice-foundation.md.
+LeaveButton ESLint and diff checks pass. Isolated rendered component/CSS inspected with Tab focus; temporary server stopped. Prior UI validation: evaluations/2026-09-20-voice-foundation.md. No new provider calls or acoustic checks.
 
 ## Next action
 
-David reviews 3115 (9e0e00b). Next proposed slice: board text, label collisions and meaningful color, with first-audio latency retained as a guardrail. Acoustic/iPad review stays open.
+Safely refresh preview after preserving live session, then David reviews back control. Next proposed slice: board text, collisions and meaningful color with first-audio latency guardrail.
 
 ## Blockers
 
-Physical iPad/acoustic review remains pending. Preserve stopped-origin data and current sessions.
+Physical iPad/acoustic review pending. Live browser saves/PDFs have no verified backup.

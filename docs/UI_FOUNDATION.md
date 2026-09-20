@@ -17,6 +17,8 @@ Use the same paper, surface, ink, border, and focus tokens across welcome, activ
 
 Maintain the existing font and plain orb. Rounded rectangular controls use 10–12px corners; composer uses 20px; the send action remains circular. David rejected a boxed welcome pass: green start fill, repeated borders, arrow suffixes, and idle instructions made every control compete with the orb. Keep the earlier sparse composition; improve affordance subtly rather than boxing every action. No dependency or large animated background is needed for this foundation.
 
+Back to start is a quiet text control with a 20px SVG chevron, 44px tap target, transparent resting surface, and soft hover/focus treatment. Avoid a tiny font arrow inside an oversized box.
+
 ## State language
 
 | State | Visible cue | Interaction |

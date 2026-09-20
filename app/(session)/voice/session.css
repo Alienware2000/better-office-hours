@@ -519,12 +519,12 @@
 .session-app .welcome-stage, .session-app .session-library { background: var(--ui-paper); }
 .session-app .session-header { border-bottom-color: var(--ui-line); }
 .session-app .session-header button, .session-app .session-header .course-bar > button,
-.session-app .session-library header button, .session-app .desk-leave {
+.session-app .session-library header button {
   border: 1px solid var(--ui-line); border-radius: 12px; background: #fffefa99;
   color: var(--ui-ink); min-height: 44px; transition: background .15s ease, border-color .15s ease;
 }
 .session-app .session-header button:hover, .session-app .session-header .course-bar > button:hover,
-.session-app .session-library header button:hover, .session-app .desk-leave:hover { background: var(--ui-surface); border-color: #aeb7a4; }
+.session-app .session-library header button:hover { background: var(--ui-surface); border-color: #aeb7a4; }
 .session-app .session-history-button { gap: .55rem; }
 .session-app .session-header .session-new-button { background: #e8ecdf; border-color: #d3dbc8; }
 .session-app .session-header button:active, .tutor-input-controls button:active, .welcome-stage .chip:active { transform: translateY(1px); }

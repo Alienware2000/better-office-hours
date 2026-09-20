@@ -15,7 +15,7 @@ David requested frictionless reorientation across coding agents, fresh chats, an
 
 - Checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`. Reorient in each checkout; cached state is not code/data synchronization.
 - Default: `npm ci`, then `npm run dev:local` on loopback 3105, with checkout-local .data. Cloud storage and Google auth are disabled. Local signing secrets are separate from production.
-- Running: 3114 retains David’s current session; 3115 previews 9e0e00b voice-first UI. Old listeners 3107–3113 stopped at David’s request; snapshots, storage, and browser saves retained. 3105 stopped. See [checklist](PRODUCT_CHECKLIST.md) for server discipline. Never swap another origin’s data.
+- Running: 3114 retains David’s current session; 3115 retains live 9e0e00b; refined Back to start is source-only pending a safe preview refresh. Old listeners 3107–3113 stopped at David’s request; snapshots, storage, and browser saves retained. 3105 stopped. See [checklist](PRODUCT_CHECKLIST.md) for server discipline. Never swap another origin’s data.
 - Inspect a listener's cwd before stopping it. Preserve all origins' browser saves and PDF data. Keep live source stable; isolate browser regressions/builds. Configuration health is not proof of usable provider credits.
 
 ## Product baseline
