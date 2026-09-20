@@ -15,7 +15,7 @@ David requested frictionless reorientation across coding agents, fresh chats, an
 
 - Checkout: `/Users/davidantwi/.codex/worktrees/59de/boh`. Reorient in each checkout; cached state is not code/data synchronization.
 - Default: `npm ci`, then `npm run dev:local` on loopback 3105, with checkout-local .data. Cloud storage and Google auth are disabled. Local signing secrets are separate from production.
-- Preserved origins: 3107/3108/3109/3110; 3111/3112 retained; 3113 tests a31e1bc typing and independent mic mute. Snapshots under .data/voice-trial*; see DEVELOPMENT/TUTOR_TRIAL. 3105 stopped. Source fixes are not automatically present in old snapshots. Preserve all browser saves.
+- Preserved origins: 3107/3108/3109/3110; 3111/3112 retained; 3113 tests 0d21e65 typing, mic mute, and plain orb. Snapshots under .data/voice-trial*; see DEVELOPMENT/TUTOR_TRIAL. 3105 stopped. Source fixes are not automatically present in old snapshots. Preserve all browser saves.
 - Inspect a listener's cwd before stopping it. Preserve all origins' browser saves and PDF data. Keep live source stable; isolate browser regressions/builds. Configuration health is not proof of usable provider credits.
 
 ## Product baseline

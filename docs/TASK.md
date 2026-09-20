@@ -23,11 +23,11 @@ Drafting is allowed while responding; Send waits until done or explicitly stoppe
 
 ## Validation
 
-All 16 offline checks, typecheck/lint pass. Browser: composer, multiline entry, draft retention, clear/disabled Send verified; see [evidence](evaluations/2026-09-20-typed-input.md). Hardware review pending.
+All 16 offline checks, typecheck/lint pass. Browser: composer, multiline entry, draft retention, clear/disabled Send verified; see [evidence](evaluations/2026-09-20-typed-input.md). Plain orb/caption visually verified; focused lint/typecheck pass. Hardware review pending.
 
 ## Next action
 
-Retest http://localhost:3113 (a31e1bc): Type instead, typed response/board, mute during thinking/speech, and Turn mic on. Preserve all earlier origins.
+Retest http://localhost:3113 (0d21e65): Type instead, typed response/board, mute during thinking/speech, and Turn mic on. Preserve all earlier origins.
 
 ## Blockers
 
