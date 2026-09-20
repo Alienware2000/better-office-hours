@@ -1,35 +1,35 @@
 # Active task
 
 Updated: 2026-09-19
-State: ready_for_review
+State: in_progress
 Branch: lane/post-hackathon-local
 Base: d68cd607a64bad917c9e001675a6677e4457056b
 
 ## Objective
 
-Fix interrupted trial explanations while preserving fast first speech, graded-work limits, and existing sessions. Board redesign stays deferred.
+Pause public access first, then improve speech completion, first-response latency, and diagram presentation in that order. Preserve graded-work limits and existing sessions.
 
 ## Scope and constraints
 
-Local voice lane only. Preserve all existing origins and private data. Frozen prompts/shared types and publication freeze remain. Groundtrack unavailable.
+Local voice lane. David authorized only the public Vercel pause as an exception to the publication freeze. No general deployment permission. Preserve private data and origins; frozen prompts/shared types remain. Groundtrack unavailable.
 
 ## Progress
 
-The previous audio-drain fix is in 1185aec. David's 3108 retest finished its first sentence, then stopped: logs identify disclosure_boundary in beat 2, not demonstrated TTS truncation. Exact rejected text was not retained.
-
-Fixed a reproduced guard false positive for numeric givens formatted with TeX units/degrees. Added one bounded trial continuation request on visual rejection, preserving accepted output and teaching intent. Revalidates the combined lesson; no repeated opening or rejected narration. Successful requests need no extra call; a rejection can add one call and waiting. [Evidence and limits](evaluations/2026-09-18-guard-recovery.md).
+1185aec drains accepted audio after generation errors. b1ccabd fixes numeric TeX false positives and adds one guarded continuation, preserving accepted speech and teaching intent. Successful requests add no call; a rejection can add one. [Evidence](evaluations/2026-09-18-guard-recovery.md).
 
 ## Decisions
 
-Model, voice, disclosure restrictions, and first-beat streaming remain. User confirmed JSON export produced no download. Do not update/restart live 3107/3108 without verified recovery. New isolated 3109 has independent storage, signing, and build; .data/voice-trial-3109/latest.json and server-2026-09-18.log identify it.
+Model, voice, disclosure limits, and first-beat streaming remain. Preserve live 3107/3108/3109 and data: JSON export produced no backup. 3109 runtime/log are under .data/voice-trial-3109.
 
 ## Validation
 
-Teaching-intent, concept-recovery, concept-lessons/trial adapter, teaching-panels, TypeScript, focused lint, and diff checks passed. One synthetic provider request completed two visual steps and a question without recovery: first speech text 6.760s, total 10.897s, not audible latency. 3109 landing UI loaded; microphone unactivated. No human acoustic verification of this patch.
+Offline intent/recovery/lesson/panel checks, TypeScript, lint, and diff checks passed. One synthetic provider lesson completed: first speech text 6.760s, total 10.897s, not audible latency. David reports improved perceived latency; acoustic completion is unverified.
 
 ## Next action
 
-September 19 continuation: 3105 has no listener, but 3107/3108/3109 remain running. Verified 3109 listener cwd matches its saved snapshot, HTTP 200, and browser restored its saved session/PDF with Start the tutor available. No restart or data migration was needed. Logs show two completed lessons plus a later non-cancelled stale_drawing rejection at beat 3 after one recovery (two accepted beats). This is a remaining validation failure, not a server crash or proven audio truncation. Next inspect that failure without mutating the live snapshot, and get David's acoustic feedback. Preserve existing origins; JSON export is still unverified. Broader latency comparison and Chrome review remain queued.
+September 19: David reports somewhat improved perceived latency and authorizes speech, latency, and diagram work, with public access paused first. Vercel project better-office-hours (prj_IOWquvgWDDE06vwIxZn4scu6twV1) was paused successfully via API. Main URL, alternate alias, and production deployment URL verified HTTP 503 DEPLOYMENT_PAUSED. No deployment, data deletion, or local restart. Details/resume procedure: [pause record](evaluations/2026-09-19-public-pause.md).
+
+Next locally investigate 3109 stale_drawing at beat 3 after one recovery and two accepted beats. 3109 saved session/PDF loaded; keep live snapshot unchanged without recovery. Then compare useful-audio latency and complete board/narration before diagram work. 3105 is stopped; older trials preserved. JSON export still unverified. No claim of acoustic completion.
 
 ## Blockers
 

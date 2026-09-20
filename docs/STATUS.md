@@ -7,7 +7,7 @@ Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
 
 ## Authority
 
-All development stays local. No GitHub pushes, PR changes, deployments, or production data/configuration changes until David explicitly lifts the publication freeze. Submission is complete; results pending; the intended demo recording was not finished. Contest post-submission rules have not been verified.
+Development stays local under the publication freeze. September 19: David explicitly authorized pausing public Vercel access after his LinkedIn post. The project is now paused; all three production URLs returned 503 DEPLOYMENT_PAUSED. This exception permits no new deployment, push, PR, or other production change. Resume only at David's request. Submission results remain pending; contest rules are unverified.
 
 David requested frictionless reorientation across coding agents, fresh chats, and different checkouts. See [TASK](TASK.md) for the active slice and [WORKFLOW](WORKFLOW.md) for commands. Current instructions are in [AGENTS](../AGENTS.md). Historical build notes and completed tasks are [archived](archive/README.md), not current work orders.
 
