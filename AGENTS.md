@@ -17,7 +17,7 @@ Better Office Hours is David and Hussein's voice-first tutor for Yale students. 
 
 ## Product boundaries
 
-- Voice is the only tutor input. Keep the paper UI, compact toolbar, PDF desk, generated annotated diagrams, audio-timed animations, independent student ink authorship, and optional Canvas flow. No chat boxes or tutor-command menus.
+- Voice is primary. David authorized optional typed tutor input and independent mic mute on September 20. Both inputs share the paper desk, context, diagrams, narration, guardrails, and saved transcript. Keep compact controls, student ink, and optional Canvas flow; no tutor-command menus.
 - Never reveal final answers or complete solutions on graded work. Stop if a change could leak them. Ungraded concept teaching may give equations and worked examples; narrow clarifications need not become a quiz. Tutor notes are never evidence of a student's attempt or mastery.
 - Visuals are composed per turn from a general spec. No hardcoded topic scenes or fixture selection in tutor behavior. The projectile scene is a renderer test fixture/fallback only. Keep unknown outcomes hidden at the relevant teaching step.
 - Work within the assigned lane (ARCHITECTURE section 2). David owns voice, workspace, whiteboard; Hussein owns context, recap, shell. Stop and explain any required shared-contract change. Do not edit frozen `lib/types.ts`, human PROMPT, or PEDAGOGY. Coordinate shared integration changes; developer-workflow files are authorized by David's September 14 request.

@@ -180,6 +180,8 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
   const [responsePhase, setResponsePhase] = useState<'transcribing' | 'thinking' | 'explaining' | 'voice' | null>(null);
   const [recap, setRecap] = useState<Recap | null>(null);
   const recapRef = useRef<Recap | null>(null);
+  const [micMuted, setMicMutedState] = useState(false);
+  const micMutedRef = useRef(false);
   const discardRecordingRef = useRef<() => void>(() => {});
   const setInputEnabledRef = useRef<(enabled: boolean) => void>(() => {});
   const claimTabRef = useRef<() => void>(() => {});
@@ -189,7 +191,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
 
   const setOrb = useCallback((next: OrbState) => {
     if (next === 'thinking' || next === 'speaking') listeningArmedRef.current = false;
-    if (next === 'listening' && !listeningArmedRef.current) next = 'idle';
+    if (next === 'listening' && (!listeningArmedRef.current || micMutedRef.current || !inputReadyRef.current)) next = 'idle';
     stateRef.current = next;
     // Apply input ownership synchronously, before React paints or another
     // detector frame arrives. Busy audio is never a queued student turn.
@@ -646,7 +648,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
   );
 
   const runTurn = useCallback(
-    async ({ text, event }: { text?: string; event?: SessionEvent }) => {
+    async ({ text, event, typed = false }: { text?: string; event?: SessionEvent; typed?: boolean }) => {
       const said = text?.trim() ?? "";
       const studentEndedAt = said ? studentSpeechEndRef.current : null;
       studentSpeechEndRef.current = null;
@@ -654,7 +656,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
       if (trial && said && layoutRef.current === 'orb_only') { adoptKind('concept', false); setLayout('concept'); openBoard(); }
       if (said) pendingAttachmentRef.current = null;
       if (!said && !event) return;
-      if (said && isJunkSpeech(said)) return;
+      if (!typed && said && isJunkSpeech(said)) return;
 
       if (said && isPutAwayPsetPhrase(said) && layoutRef.current === "pset") {
         putAwayPset();
@@ -733,16 +735,36 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
     [addTurn, adoptKind, health, putAwayPset, runPass, setLayout, setOrb, stopPlayback],
   );
 
+  // Input mute is independent of output cancellation and survives turn endings.
+  const setMicMuted = useCallback((muted: boolean) => {
+    micMutedRef.current = muted;
+    setMicMutedState(muted);
+    if (muted) {
+      listeningArmedRef.current = false;
+      discardRecordingRef.current();
+      setInputEnabledRef.current(false);
+      if (stateRef.current === 'listening') setOrb('idle');
+    } else if (inputReadyRef.current && !pausedRef.current && stateRef.current === 'idle') {
+      listeningArmedRef.current = true;
+      setOrb('listening');
+    }
+  }, [setOrb]);
+
   const sendUtterance = useCallback(
-    async (text: string) => {
-      if (isJunkSpeech(text)) return;
+    async (text: string, typed = false) => {
+      if (!text.trim() || (!typed && isJunkSpeech(text))) return;
+      if (typed) {
+        if (turnAbortRef.current || transcriptionAbortRef.current || playingRef.current) return;
+        setMicMuted(true);
+        studentSpeechEndRef.current = null;
+      }
       try {
         setError(null);
         pausedRef.current = false;
         setPaused(false);
         setInputEnabledRef.current(true);
         claimTabRef.current();
-        if (!inputReadyRef.current) {
+        if (!typed && !inputReadyRef.current) {
           const intent = detectMode(text, layoutRef.current);
           const resumed = intent && kindRef.current !== intent && Boolean(parkedRef.current[intent]) &&
             (intent === 'pset' ? isResumePsetPhrase(text) : isResumeConceptPhrase(text));
@@ -751,7 +773,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
           startInputRef.current();
           return;
         }
-        await runTurn({ text });
+        await runTurn({ text, typed });
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         (turnAbortRef.current as AbortController | null)?.abort();
@@ -763,7 +785,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
         setOrb(pausedRef.current ? "idle" : "listening");
       }
     },
-    [adoptKind, runTurn, setLayout, setOrb, stopPlayback],
+    [adoptKind, runTurn, setLayout, setMicMuted, setOrb, stopPlayback],
   );
 
   // Ink changes update snapshots, not turn ownership. The next student utterance
@@ -825,6 +847,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
 
   const retryMicrophone = useCallback(() => {
     pauseVoice();
+    setMicMuted(false);
     inputReadyRef.current = false;
     setInputReady(false);
     setError(null);
@@ -833,7 +856,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
     listeningArmedRef.current = true;
     setPaused(false);
     startInputRef.current();
-  }, [pauseVoice]);
+  }, [pauseVoice, setMicMuted]);
 
   const captureSession = useCallback((): VoiceArchive => structuredClone({
     recap: recapRef.current,
@@ -870,6 +893,8 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
       setError(null);
       pendingAttachmentRef.current = null;
       pausedRef.current = false;
+      micMutedRef.current = false;
+      setMicMutedState(false);
       listeningArmedRef.current = true;
       setPaused(false);
       claimTabRef.current();
@@ -935,7 +960,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
         : new BroadcastChannel("better-office-hours-voice");
 
     const setInputEnabled = (enabled: boolean) => {
-      enabled = enabled && !pausedRef.current && stateRef.current === 'listening';
+      enabled = enabled && !micMutedRef.current && !pausedRef.current && stateRef.current === 'listening';
       if (enabled !== inputEnabled) {
         inputEnabled = enabled;
         audioCapture.discard();
@@ -1156,7 +1181,7 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
 
       const loop = () => {
         if (cancelled) return;
-        if (pausedRef.current || stateRef.current !== 'listening') {
+        if (micMutedRef.current || pausedRef.current || stateRef.current !== 'listening') {
           setInputEnabled(false);
           setLevel(0);
           raf = requestAnimationFrame(loop);
@@ -1342,6 +1367,8 @@ export function useVoiceLoop(courseId?: string, onCourse?: (id: string) => void,
     inputReady,
     inputStarting,
     retryMicrophone,
+    micMuted,
+    setMicMuted,
     health,
     error,
     paused,

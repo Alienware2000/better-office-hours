@@ -445,3 +445,26 @@
 
 .session-desk:has(.trial-status) { display: flex; flex-direction: column; }
 .session-desk > .trial-status + .session-shell { flex: 1; height: auto; }
+
+/* Optional typing shares the same desk and tutor pipeline. */
+.tutor-input { width: min(100%, 32rem); margin: .7rem auto; pointer-events: auto; }
+.tutor-input-controls { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .5rem; }
+.tutor-input button { min-height: 44px; border: 1px solid #d8d2c8; border-radius: 999px; padding: .5rem .9rem; background: #fffcf6; color: #57534e; font: inherit; font-size: .8rem; cursor: pointer; }
+.tutor-input-controls span { font-size: .75rem; color: #78716c; }
+.tutor-input form { margin-top: .65rem; padding: .8rem; background: #fffcf6; border: 1px solid #d8d2c8; border-radius: 16px; }
+.tutor-input label { display: block; font-size: .8rem; margin-bottom: .4rem; color: #57534e; }
+.tutor-input textarea { display: block; box-sizing: border-box; width: 100%; resize: vertical; min-height: 64px; max-height: 180px; border: 0; background: transparent; color: #292621; font: inherit; font-size: 16px; line-height: 1.5; }
+.tutor-input-footer { display: flex; align-items: center; gap: .8rem; justify-content: space-between; margin-top: .5rem; }
+.tutor-input-footer small { color: #78716c; font-size: .7rem; line-height: 1.4; }
+.tutor-input button[type=submit] { background: #292621; color: #fffcf6; }
+.tutor-input button:disabled { opacity: .45; cursor: default; }
+.tutor-input button:focus-visible, .tutor-input textarea:focus-visible { outline: 2px solid #b95832; outline-offset: 3px; }
+.welcome-stage:has(.tutor-input form) { overflow-y: auto; justify-content: flex-start; padding-top: 2rem; }
+.agent-stage > .tutor-input { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .workspace-layout { grid-template-rows: 13rem minmax(0, 1fr); }
+  .workspace-layout:has(.tutor-input form) { grid-template-rows: minmax(0, 55%) minmax(0, 1fr); }
+  .agent-stage { overflow-y: auto; justify-content: flex-start; }
+  .agent-stage .orb-frame { flex-shrink: 0; }
+  .agent-stage .tutor-input { margin: .25rem auto; }
+}

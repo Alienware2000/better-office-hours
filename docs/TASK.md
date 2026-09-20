@@ -1,36 +1,34 @@
 # Active task
 
 Updated: 2026-09-20
-State: ready_for_review
+State: in_progress
 Branch: lane/post-hackathon-local
-Base: 954c97d8b1015aedae6910094da78bf2ea26df73
+Base: 27899cd31cf3b62a70080d2f011f6b568d797d83
 
 ## Objective
 
-David requests automatic listening after tutor playback, clearer microphone affordance, and readable board prose containing symbols. Tap-every-turn in 3111 felt cumbersome.
+Add optional typing with the same tutor/whiteboard and independent microphone mute, explicitly requested by David. This supersedes the older voice-only input rule.
 
 ## Scope and constraints
 
-Local voice/whiteboard only. Vercel paused. Preserve all live snapshots/saves, especially 3111. No model, frozen prompt, or shared type changes. Groundtrack unavailable.
+Local voice/workspace only. Preserve 3111/3112 and all saves/PDFs. Vercel paused. No provider, frozen prompt, or shared type changes. Groundtrack unavailable.
 
 ## Progress
 
-Completed turns rearm input after audio drains; busy input stays muted. Pause/cancellation/error safeguards remain. Start/resume shows a mic icon and Tap to speak. Trial guidance updated.
-
-Inline m_{2} in prose becomes m₂ in ordinary text; equations retain LaTeX. See [evidence](evaluations/2026-09-20-hybrid-voice-prose.md).
+Typed input bypasses permission/STT and uses the existing lesson, board, narration, guardrail, and transcript path. Opening typing mutes input; it does not stop output. Separate mic mute survives response completion without aborting inference or playback. Stop/Interrupt remains separate.
 
 ## Decisions
 
-Tap once to begin; completion automatically listens. Escape/Interrupt takes the floor; Pause suspends listening. Three-second endpoint remains provisional. No provider migration or general rich-text redesign.
+Drafting is allowed while responding; Send waits until done or explicitly stopped. Enter sends, Shift+Enter inserts a line, IME composition does not send. Unsent drafts stay in this desk only. Typed mode still produces spoken output/captions; no silent-output feature added. Prior automatic-listening/prose fixes remain.
 
 ## Validation
 
-16 offline checks pass, including audio-drain/reopen and inline-prose regressions. Typecheck and targeted lint pass. Real components rendered and visually inspected with synthetic content; real acoustic/iPad validation pending.
+Focused lifecycle tests and typecheck/lint pass. Full offline gate/browser inspection underway; see [evidence](evaluations/2026-09-20-typed-input.md). Hardware speech/noise checks still need human evidence.
 
 ## Next action
 
-Retest http://localhost:3112 (131bfaf): automatic follow-up, interruption, pause, and prose. Preserve 3111 and its PDFs/saves. Broader board consistency follows voice review.
+Finish validation, launch isolated preview, inspect typing/mute controls, checkpoint.
 
 ## Blockers
 
-Real-device speech/noise evidence pending; session exports remain unverified. Existing archived drawings are not migrated. Consolidation/release gaps remain in DEVELOPMENT.
+No verified session backups; preserve existing origins. Prior acoustic/iPad review remains pending.

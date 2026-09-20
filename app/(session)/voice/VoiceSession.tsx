@@ -20,6 +20,7 @@ import type { PdfViewState } from '@/lib/pdf/view-state';
 import { resetBoard, subscribeBoard } from '@/lib/whiteboard/store';
 import "./session.css";
 import { TrialStatus } from "./TrialStatus";
+import { TutorInput } from "./TutorInput";
 
 export function VoiceSession(props: { ownerKey?: string; studentName?: string; accountName?: string; signInAvailable?: boolean }) {
   return <SessionLibrary {...props} Desk={SessionDesk} />;
@@ -35,6 +36,8 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
     inputReady,
     inputStarting,
     retryMicrophone,
+    micMuted,
+    setMicMuted,
     error,
     paused,
     sendUtterance,
@@ -55,6 +58,17 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
     pointer,
     highlight,
   } = useVoiceLoop(courseId, setCourseId, studentName);
+  const [typing, setTyping] = useState(false);
+  const [draft, setDraft] = useState('');
+  const responding = state === 'thinking' || state === 'speaking';
+  const inputControls = <TutorInput open={typing} value={draft} busy={responding || inputStarting}
+    micOff={micMuted || !inputReady || paused} canEnableMic={inputReady || (!responding && !inputStarting)}
+    onOpen={open => { setTyping(open); if (open) setMicMuted(true); }} onChange={setDraft}
+    onSend={() => { const text = draft.trim(); if (!text || responding || inputStarting) return; setDraft(''); void sendUtterance(text, true); }}
+    onMic={() => {
+      if (!inputReady || paused) { if (!responding) interrupt(); }
+      else setMicMuted(!micMuted);
+    }} />;
   const [pset, setPset] = useState<LoadedPset | null>(saved.pset);
   const [notes, setNotes] = useState<LoadedPset | null>(saved.notes);
   const [documentViews, setDocumentViews] = useState(saved.documentViews);
@@ -156,11 +170,11 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !event.repeat && !event.defaultPrevented) { event.preventDefault(); pauseOrInterrupt(); }
+      if (event.key === "Escape" && !event.repeat && !event.defaultPrevented) { event.preventDefault(); if (micMuted || !inputReady) pauseVoice(); else pauseOrInterrupt(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pauseOrInterrupt]);
+  }, [inputReady, micMuted, pauseOrInterrupt, pauseVoice]);
 
   useEffect(() => {
     if (
@@ -207,15 +221,18 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                 paused={paused}
                 recording={recording}
                 inputReady={inputReady}
+                responding={responding}
+                muted={micMuted}
                 inputStarting={inputStarting}
                 inputError={!inputReady && Boolean(error)}
                 onRetry={retryMicrophone}
                 onInterrupt={interrupt}
-                onPause={pauseOrInterrupt}
+                onPause={micMuted || !inputReady ? pauseVoice : pauseOrInterrupt}
               />
             </motion.div>
-            <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase)} busy={inputReady && !paused && !recording && state === 'thinking'} />
+            <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase, micMuted)} busy={!paused && !recording && state === 'thinking'} />
 
+            {inputControls}
             <div className="chip-row">
               {chips.map((chip) => (
                 <button
@@ -226,7 +243,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                       enterWorkspace();
                       return;
                     }
-                    void sendUtterance(chip);
+                    void sendUtterance(chip, typing || micMuted);
                   }}
                   className="chip"
                 >
@@ -365,14 +382,17 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                     paused={paused}
                     recording={recording}
                     inputReady={inputReady}
-                inputStarting={inputStarting}
+                    responding={responding}
+                    muted={micMuted}
+                    inputStarting={inputStarting}
                     inputError={!inputReady && Boolean(error)}
                     onRetry={retryMicrophone}
                     onInterrupt={interrupt}
-                    onPause={pauseOrInterrupt}
+                    onPause={micMuted || !inputReady ? pauseVoice : pauseOrInterrupt}
                   />
                 </motion.div>
-                <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase)} busy={inputReady && !paused && !recording && state === 'thinking'} />
+                <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase, micMuted)} busy={!paused && !recording && state === 'thinking'} />
+                {inputControls}
                 <Captions turns={turns} recap={recap} onExport={onExport} />
                 {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
                 {error ? (
@@ -388,9 +408,9 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
   );
 }
 
-function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean, phase: ReturnType<typeof useVoiceLoop>['responsePhase']): string {
-  if (!inputReady) return inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to speak · mic muted";
-  if (paused) return "Tap to speak · mic muted";
+function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean, phase: ReturnType<typeof useVoiceLoop>['responsePhase'], micMuted: boolean): string {
+  if (!inputReady && state !== "thinking" && state !== "speaking") return micMuted ? "Mic off · typing available" : inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to speak · mic muted";
+  if (paused) return micMuted ? "Mic off · typing available" : "Tap to speak · mic muted";
   if (recording) return "Listening · tap when finished";
   if (state === "speaking") return "Speaking · mic muted";
   if (state === "thinking") {
@@ -399,6 +419,7 @@ function statusText(state: OrbState, paused: boolean, recording: boolean, inputR
     if (phase === 'voice') return 'Preparing voice · mic muted';
     return 'Thinking · mic muted';
   }
+  if (micMuted) return "Mic off · typing available";
   if (state === "listening") return "Listening · you can speak";
   return "Tap to speak · mic muted";
 }

@@ -16,6 +16,6 @@ export function TrialStatus() {
   return <aside className="trial-status" aria-label="Local voice trial">
     <strong>Voice trial · Opus low</strong>
     <span>{latency === null ? 'Speak to measure your first response.' : `Last response: ${(latency / 1000).toFixed(1)}s from speech ending to audio.`}</span>
-    <small>Tap to begin. Listening reopens after each response. While the tutor responds, use Interrupt or Escape to speak. Tap Done speaking to send sooner; timing includes the silence wait.</small>
+    <small>Tap to speak or choose Type instead. Listening reopens after spoken turns unless you mute. Mute mic leaves the tutor running; Interrupt or Escape stops the response.</small>
   </aside>;
 }

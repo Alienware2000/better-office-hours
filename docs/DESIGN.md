@@ -14,7 +14,7 @@ September 14 review feedback: David finds Astra/Fable astronomy diagrams poor an
 
 September 16: [whiteboard research](WHITEBOARD_RESEARCH.md) covers composition, color, mathematics, motion, and learning evidence. David then reaffirmed latency as the immediate priority; the proposed board prototype is deferred. Measure first useful audio and pipeline stages, compare models with equivalent visual capabilities, and preserve teaching quality. Model changes are one latency lever, not a required migration.
 
-David also requested a local review surface to witness model tests, inspect their board/output/timings, and save his own judgments. This developer workshop is separate from the voice-only student experience; see [TUTOR_REVIEW](TUTOR_REVIEW.md).
+David also requested a local review surface to witness model tests, inspect their board/output/timings, and save his own judgments. This developer workshop is separate from the student experience; see [TUTOR_REVIEW](TUTOR_REVIEW.md).
 
 David now requests whiteboard involvement on every spoken turn, especially every explanation, description, equation, and number. The relevant content should be drawn, written, annotated, or visibly emphasized as it is discussed. Reusing and focusing existing items is valid; arbitrary decoration is not. Narration must agree with the actual visible page and objects, and the tutor must correct an absent or incorrect visual rather than insist it exists. This supersedes the older permission for some teaching turns to remain verbal-only. All-turn coverage, including social/topic-selection turns without an existing referent, still needs implementation/design; it is not a claim about current behavior. Preserve student ink, meaningful scene continuity, and the graded-work disclosure boundary across every surface. The human PROMPT/PEDAGOGY and shared contracts remain frozen.
 
@@ -93,7 +93,7 @@ Rules: an animation plays only when the tutor says what to watch for; it pauses 
 The shell is the same in every mode. Each desk has Whiteboard and PDF views, with the orb and captions alongside. Homework starts at PDF upload; concept and other requests start at the board. While viewing a PDF, the tutor can draw on a smaller board in the agent pane. The board is primarily for the tutor to explain, and the student can annotate or work through an idea on the same surface. iPad and Apple Pencil are an intended use of this shared desk, with device-specific feel to be tested.
 
 ### Interaction rules
-- Voice is the only way to address the agent. Mouse and trackpad are for pointing, drawing, paging, and leaving, never for talking to the tutor.
+- Voice remains primary. September 20: David requests optional typing with the same board/narration/context, without microphone permission. A separate mic mute must preserve tutor inference/playback and stay muted across turns until explicitly enabled.
 - The orb speaks first with an open question. It names the pset and due date in its reply once the student says what they want.
 - Barge-in works. If the student talks over the tutor, it stops.
 - The tutor points before it explains.
@@ -217,7 +217,7 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 
 - Product is office hours broadly, not psets only. Pset mode and concept mode share one shell.
 - The app opens on the orb alone with "What do you want to work on?" The student states the request; the layout transforms to match. Three optional chips mirror the choices for tapping.
-- Voice is the primary and only input to the agent.
+- Voice is primary; optional typed messages share the same tutor pipeline.
 - The pset is uploaded by the student; the Grok Bot collects everything around it.
 - Demo course is archived PHYS 180; the video shows the student flow only; README carries the honesty line.
 - Use what works for voice (ElevenLabs), keep Grok as the reasoning model so the sponsor stack is real.

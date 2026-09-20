@@ -904,3 +904,52 @@ for (const ending of ['finish', 'pause', 'new_turn']) {
   test.cleanup();
 }
 console.log('PASS: late generation failure preserves accepted playback, drops incomplete output, reports failure, and respects pause/new turns.');
+
+// Typed turns use the same lesson/board/output pipeline without input hardware.
+{
+  const test = await mount({ autoStart: false, trial: true, llmText: '[TEACH move=consolidate visual=notes]\n[DRAW {"op":"text","id":"note-typed","at":{"x":0.5,"y":0.5},"text":"A useful idea"}]\nHere is the idea.' });
+  await test.hook.sendUtterance('Explain this with a diagram', true);
+  assert.equal(test.resourceCounts().mediaRequests, 0, 'Typing never requests microphone permission');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/stt')).length, 0, 'Typing bypasses transcription');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, 1);
+  assert.ok(test.requests.some(r => r.url.endsWith('/tts')), 'Typed input retains narration');
+  assert.ok(test.marks.some(mark => mark.id === 'note-typed'), 'Typed input retains the board');
+  assert.equal(test.hook.captureSession().current.turns[0].text, 'Explain this with a diagram');
+  assert.equal(test.states[0], 'idle', 'Typing leaves input closed after response');
+  test.cleanup();
+}
+for (const phase of ['thinking', 'speaking']) {
+  const pending = deferred();
+  const test = await mount({ manualAudio: true, llmResponse: phase === 'thinking' ? pending.promise : undefined, llmText: 'Here is a complete response.' });
+  const turn = test.hook.sendUtterance('Explain this'); await settle();
+  const request = test.requests.find(r => r.url.endsWith('/llm'));
+  test.hook.setMicMuted(true);
+  assert.equal(request.signal.aborted, false, 'Mic mute must not abort inference');
+  if (phase === 'speaking') assert.equal(test.audio[0].paused, false, 'Mic mute must not stop playback');
+  if (phase === 'thinking') pending.resolve(new Response('data: [DONE]\n\n'));
+  else test.audio.forEach(clip => clip.onended());
+  await turn; await settle();
+  assert.equal(test.track.enabled, false, 'Mute remains in effect after response completion');
+  assert.equal(test.states[0], 'idle');
+  test.tick(true, 1000); for (let i=0; i<20; i++) test.tick(true,20);
+  assert.equal(test.recordings.length, 0, 'Muted input cannot capture background speech');
+  test.hook.setMicMuted(false);
+  assert.equal(test.track.enabled, true, 'Unmute returns to listening without restarting the lesson');
+  test.cleanup();
+}
+{
+  const test = await mount();
+  test.tick(true,1000); for(let i=0;i<20;i++)test.tick(true,20);
+  test.hook.setMicMuted(true); test.tick(false,4000); await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,0,'Mute discards an unfinished recording');
+  test.cleanup();
+}
+console.log('PASS: typed input shares tutor/board/narration without microphone permission; persistent mic mute preserves inference and playback.');
+
+{
+  const test = await mount({autoStart:false, trial:true});
+  await test.hook.sendUtterance('[1, 2, 3]', true);
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length, 1, 'Deliberately typed brackets are not STT noise markers');
+  assert.equal(test.resourceCounts().mediaRequests,0);
+  test.cleanup();
+}
