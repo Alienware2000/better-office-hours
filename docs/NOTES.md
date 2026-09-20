@@ -38,7 +38,7 @@ Updated: 2026-09-20. Keep this short and current. Search [archived notes](archiv
 
 ## Whiteboard and workspace
 
-- Document composition remains a local prototype. Gallery 3116/board-system.html uses synthetic fixtures, separate from live narration. No restart. See evaluations/2026-09-20-board-system.md for integration limits.
+- Document composition remains local; 3116/board-system-v2.html is synthetic, with no narration/ink integration. Preserve opaque paper fills when recoloring tint. SVG hit rectangles failed pointer checks; native HTML hit buttons worked. See evaluations/2026-09-20-board-experience.md.
 - Follow uses the path's `drawn` progress, normalized 0..1. Constant drawn=1 intentionally fixes the object at the endpoint; a valid schema can still contradict narration. Do not silently invent motion from topic names.
 - Declared vector attachments/projections enforce geometry, not physics. Signed relative endpoints must remain signed until composition. Static/animated shapes and snapshots share math and annotation layout. Keep scene IDs, current pages, background, and student ink across revisions.
 - Speech reliability and latency precede diagram improvements; public Vercel stays paused. Jev is deferred; JEV_RESEARCH.md records browser-use motivation for later. No integration or benchmark. Board text now uses authored mark color; no character-derived rainbow. Short connective prose stays prose. Old cached math colors are neutralized in SVG/snapshot; old baked prose geometry is not migrated. See evaluations/2026-09-20-board-feedback.md for the next consistency pass.

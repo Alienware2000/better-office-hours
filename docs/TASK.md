@@ -3,36 +3,34 @@
 Updated: 2026-09-20
 State: ready_for_review
 Branch: lane/post-hackathon-local
-Base: e2fee29d8b50f647b59572649381cf371ffece0a
+Base: 5f9647e3ec251db06b4ba14ae15e74d8cd072662
 
 ## Objective
 
-David approved the text preview and requested a structured board beyond physics.
+Research and refine a visual, interactive board across subjects.
 
 ## Scope and constraints
 
-Local prototype, existing SVG/MathJax renderer. Preserve live 3114/3115/3116, voice/model, ink, frozen contracts and public pause. No automatic tutor integration. Groundtrack unavailable.
+Local prototype only. Preserve live sessions, frozen files, voice/model and public pause. Groundtrack unavailable.
 
 ## Progress
 
-`lib/whiteboard/document.ts` composes prose, equations, figures, maps and ordered explanations with shared styles, pages and overflow checks.
+[Research](WHITEBOARD_EXPERIENCE_RESEARCH.md): Sketchplanations, 3Blue1Brown/Manim, learning science, Opus and student ink.
 
-Gallery: `http://localhost:3116/board-system.html`, 11 synthetic pages covering math, biology, humanities and notes. Replay/pause, focus, navigation and size controls. Generate with `node scripts/evaluation/board-gallery.mjs`. Static addition only; root 3116 remains 1770053.
-
-[Design/evidence](evaluations/2026-09-20-board-system.md). [Prior task](archive/tasks/2026-09-20-board-text.md).
+3116/board-system-v2.html: diagram/equation together, concept colors/links, concise takeaway, ordered replay and native selection. Nine synthetic pages. Original gallery retained; root tutor unchanged at 1770053. Generator: scripts/evaluation/board-gallery.mjs.
 
 ## Decisions
 
-Tutor chooses meaning; application owns layout. Examples are fixtures only. Overflow preserves prose size/content. No measured latency claim.
+Explicit concept colors; one reveal clock; nearby representations. Ink context is turn-boundary, not continuous perception. No live integration or measured latency/learning gain.
 
 ## Validation
 
-Document regression, board-writing/math/diagrams/diagram-motion, typecheck and lint passed. Browser: 22 page/size combinations, zero text overlaps/clipping; controls verified. No provider or acoustic evidence.
+Document/writing/math/diagram/motion checks, typecheck and lint pass. Browser: 18 layouts, ordered prefixes, pause/seek and linked selection. [Evidence/failed approaches](evaluations/2026-09-20-board-experience.md).
 
 ## Next action
 
-Review gallery, then isolate a structured writing integration. Preserve disclosure checks, page identity, ink and custom geometry; compare latency/quality. Rich inline math, general graphs and responsive reflow remain open.
+Review, then integrate one structured writing path and compare matched live turns. Review ink feedback and pen-down interruption separately.
 
 ## Blockers
 
-Acoustic/iPad validation and verified live-session backup remain open.
+Provider/acoustic/iPad evaluation and verified live-session backup remain open.

@@ -15,18 +15,21 @@ export const documentStyle = {
   line: .052, ink: boardStyle.colors.ink, muted: boardStyle.colors.muted,
   accent: boardStyle.colors.accent, relation: '#397b78', rule: '#d8d1c5',
 } as const;
-type FigureCommand = Extract<DrawCommand, { op: 'circle' | 'line' | 'arrow' | 'curve' }> & {
+type ConceptStyle = { colorRole?: 'ink' | 'accent' | 'relation'; concept?: string };
+type EquationTerm = ConceptStyle & { latex: string };
+type FigureCommand = Extract<DrawCommand, { op: 'circle' | 'line' | 'arrow' | 'curve' }> & ConceptStyle & {
   diagram?: Pick<DiagramOptions, 'interpolation' | 'fill' | 'weight' | 'surface' | 'labelSide'>;
+  insideLabel?: { text: string; at: { x: number; y: number }; math?: boolean };
 };
 export type DocumentBlock =
   | { kind: 'prose'; id: string; text: string }
   | { kind: 'equation'; id: string; latex: string; caption?: string; emphasis?: boolean }
   | { kind: 'mindmap'; id: string; root: string; branches: { id: string; label: string; detail?: string }[] }
   | { kind: 'sequence'; id: string; steps: { id: string; label: string; detail: string }[] }
-  | { kind: 'figure'; id: string; commands: FigureCommand[]; caption?: string };
+  | { kind: 'figure'; id: string; commands: FigureCommand[]; caption?: string; equation?: EquationTerm[] };
 export type BoardDocument = { id: string; sections: { id: string; title: string; eyebrow: string; blocks: DocumentBlock[] }[] };
 export type DocumentRegion = { id: string; role: string; left: number; right: number; top: number; bottom: number };
-export type DocumentPage = { id: string; title: string; groups: ShapeGroup[]; regions: DocumentRegion[]; steps: string[] };
+export type DocumentPage = { id: string; title: string; groups: ShapeGroup[]; regions: DocumentRegion[]; steps: string[]; links: Record<string, string[]> };
 
 const S = documentStyle;
 function requireText(value: string, limit = 5000) {
@@ -81,7 +84,7 @@ export function composeDocument(document: BoardDocument): DocumentPage[] {
     let part = 0;
     const start = () => {
       if (pages.length >= 64) throw new Error('Document exceeds 64 pages.');
-      page = { id: `${document.id}/${section.id}/${++part}`, title: section.title, groups: [], regions: [], steps: [] };
+      page = { id: `${document.id}/${section.id}/${++part}`, title: section.title, groups: [], regions: [], steps: [], links: {} };
       const header = [text(`${page.id}-eyebrow`, requireText(section.eyebrow, 48), S.margin, .075, .023, S.muted),
         ...title.map((t,i)=>text(`${page.id}-title-${i}`,t,S.margin,.15+i*.059,S.title))];
       page.groups.push(group(`${page.id}-header`,header));
@@ -154,6 +157,10 @@ export function composeDocument(document: BoardDocument): DocumentPage[] {
         }
       } else {
         if(page.steps.length)start();
+        const concepts = new Map<string,string[]>();
+        const connect = (id: string, concept?: string) => {
+          if(concept) { requireText(concept,80); concepts.set(concept,[...(concepts.get(concept) ?? []),id]); }
+        };
         if(!block.commands.length || block.commands.length>80)throw new Error('A figure needs 1 to 80 primitives.');
         const point=(p:{x:number;y:number})=>{if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.x>1||p.y<0||p.y>1)throw new Error('Figure coordinate outside its frame.');return {x:.23+p.x*.54,y:.24+p.y*.54};};
         const figures=block.commands.map((cmd,index)=>{
@@ -165,17 +172,48 @@ export function composeDocument(document: BoardDocument): DocumentPage[] {
             cmd.op==='curve'?{...cmd,points:cmd.points.map(point)}:{...cmd,from:point(cmd.from),to:point(cmd.to)};
           const op=interpretCommand({...mapped,id:`${block.id}-${index}`},index);
           if(!op||op.kind!=='draw')throw new Error('Unsupported figure primitive.');
+          if(cmd.colorRole)op.group.drawables=op.group.drawables.map(mark=>mark.kind==='fill'&&mark.opacity===undefined?mark:{...mark,color:S[cmd.colorRole!]});
+          if(cmd.insideLabel) {
+            const {text:label,at,math=false}=cmd.insideLabel;
+            const color=cmd.colorRole?S[cmd.colorRole]:S.ink;
+            const mark={...text(`${op.group.id}-inside`,requireText(label,32),0,0,.040,color,'middle'),at:point(at)} as Extract<Drawable,{kind:'text'}>;
+            if(math) { const drawing=typesetMath(label,color); if(!drawing)throw new Error('Invalid figure notation.'); mark.math=true;mark.mathDrawing=drawing; }
+            op.group.drawables.push(mark);op.group.fixedLayout=true;
+          }
+          connect(op.group.id,cmd.concept);
           return op.group;
         });
+        const equations: ShapeGroup[]=[];
+        if(block.equation) {
+          if(!block.equation.length||block.equation.length>12)throw new Error('An adjacent equation needs 1 to 12 terms.');
+          const terms=block.equation.map(term=>{
+            const color=term.colorRole?S[term.colorRole]:S.ink;
+            const drawing=typesetMath(requireText(term.latex,200),color);
+            if(!drawing)throw new Error('Invalid adjacent equation.');
+            return {term,color,drawing};
+          });
+          const gap=.018, width=terms.reduce((sum,t)=>sum+t.drawing.width,0);
+          const size=Math.min(.059,(.86-gap*(terms.length-1))/width);
+          if(size<.040)throw new Error('Split a long adjacent equation.');
+          let x=(1-(width*size+gap*(terms.length-1)))/2;
+          terms.forEach(({term,color,drawing},index)=>{
+            const id=`${block.id}-term-${index}`;
+            equations.push(group(id,[{kind:'text',key:id,text:term.latex,at:{x,y:.812},size:'s',fontSize:size,math:true,mathDrawing:drawing,color,textAnchor:'start'}]));
+            x+=drawing.width*size+gap;connect(id,term.concept);
+          });
+        }
         const caption=block.caption?documentLines(block.caption,.86,S.caption):[];
         if(caption.length>2)throw new Error('Use a separate prose block for a long figure caption.');
-        const captionMarks=caption.map((t,i)=>text(`${block.id}-caption-${i}`,t,.5,.845+i*.04,S.caption,S.muted,'middle'));
+        if(block.equation&&caption.length>1)throw new Error('Use one short takeaway beside an equation.');
+        const captionMarks=caption.map((t,i)=>text(`${block.id}-caption-${i}`,t,.5,(block.equation?.length ? .878 : .845)+i*.04,S.caption,S.muted,'middle'));
         // Header and caption are reservations in the ordinary annotation layout.
-        const resolved=layoutDiagram([...page.groups,...figures,group(`${block.id}-caption`,captionMarks)]);
+        const resolved=layoutDiagram([...page.groups,...figures,...equations,group(`${block.id}-caption`,captionMarks)]);
         for(const figure of resolved.slice(page.groups.length,page.groups.length+figures.length)) {
           page.groups.push(figure);page.steps.push(figure.id);
           if(figure.drawables.some(m=>m.kind==='text'))page.regions.push(textRegion(figure.id,'figure-label',figure.drawables));
         }
+        for(const equation of equations)add(equation.id,equation.drawables,'equation');
+        for(const linked of concepts.values())for(const id of linked)page.links[id]=linked.filter(other=>other!==id);
         if(captionMarks.length)add(`${block.id}-caption`,captionMarks,'caption');
         cursor=S.bottom;
       }

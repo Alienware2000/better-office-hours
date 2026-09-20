@@ -4,6 +4,8 @@ This is the source of truth for what we are building, why, and what we have deci
 
 ## Current implementation and sequencing
 
+September 20 board correction: diagrams, meaningful color, nearby equations/labels and key ideas lead; avoid copying spoken paragraphs. Preserve ordered writing and optional longer notes. [Research and prototype](WHITEBOARD_EXPERIENCE_RESEARCH.md); live integration remains a separate review.
+
 September 20 UI direction: modern, warm, approachable, and voice-first. Keep the plain orb and typing closed by default. Use consistent surfaces, recognizable buttons/navigation, and explicit listening/thinking/speaking affordances across the desk. [UI foundation](UI_FOUNDATION.md) records the rules; [product checklist](PRODUCT_CHECKLIST.md) preserves latency, voice reliability, and whiteboard priorities.
 
 September 20 interaction correction from David: tap once to begin listening; automatically reopen listening only after the complete tutor response finishes playing. Transcription, thinking, synthesis, and playback mute input and discard busy audio. Escape/Interrupt stops a busy tutor and opens listening; Pause while listening suspends input. Paused sessions stay paused. Keep the orb plain. The orb is the sole start action; Tap to speak is a plain label below it. No icon/text inside. Show an explicit listening state. The three-second silence endpoint remains provisional; Done speaking submits sooner. No automatic greeting or acoustic barge-in. Noise during listening still needs real-device validation. Ordinary board prose containing symbols keeps spaces and normal lettering; numeric inline TeX scripts use readable subscripts. Equations retain LaTeX.

@@ -36,7 +36,7 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Next
 
-September 20: David approved neutral board text. A cross-subject composition prototype and interactive gallery now cover text, equations, figures, maps and pagination; see [board study](evaluations/2026-09-20-board-system.md). Gallery on 3116 is separate from its unchanged tutor. Next: structured writing integration and measured comparison; see TASK.
+September 20: cross-subject board research and a second static study at 3116/board-system-v2.html now pair diagrams/equations, explicit concept colors and ordered writing. [Evidence](evaluations/2026-09-20-board-experience.md). The root tutor is unchanged. Review before structured writing integration and matched latency/quality evaluation; see TASK.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 

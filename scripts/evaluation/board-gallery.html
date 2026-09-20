@@ -40,12 +40,14 @@ h2 { font-size: 16px; line-height: 1.5; font-weight: 550; margin: 0 0 10px; }
 .paper-title i { font-family: Georgia,serif; font-size: 21px; color: #292621; }
 .stage { aspect-ratio: 1; position: relative; }
 .stage svg { width: 100%; height: 100%; display: block; }
-.stage .board-label, .stage .board-math { pointer-events: auto; }
-.stage [data-step] { cursor: pointer; transition: opacity .3s ease; }
+.stage .board-label, .stage .board-math, .stage .board-path, .stage .board-head { pointer-events: none; }
+.stage [data-step] { transition: opacity .3s ease; }
+.hit-layer { position: absolute; inset: 0; pointer-events: none; }
+.hit-layer button { position: absolute; padding: 0; border: 0; background: transparent; pointer-events: auto; }
 .stage .board-group:focus-visible { outline: none; filter: drop-shadow(0 0 .005px #397b78); }
-.stage [data-step].revealing .board-path:not(.is-dashed) { stroke-dasharray: 1; stroke-dashoffset: 1; animation: board-draw .65s ease forwards; }
-.stage [data-step].revealing .board-label, .stage [data-step].revealing .board-math, .stage [data-step].revealing .board-head, .stage [data-step].revealing .board-fill { animation: settle .45s ease both; }
-@keyframes settle { from { opacity: 0; } to { opacity: 1; } }
+.stage .is-entering { animation: none !important; }
+.stage .board-path.is-entering { stroke-dasharray: none; stroke-dashoffset: 0; }
+.stage .board-glyph, .stage .board-math-glyph { transition: none; }
 .transport { border-top: 1px solid #ebe6dc; display: flex; align-items: center; gap: 10px; padding: 12px 16px; min-height: 53px; }
 .transport button { border: 0; background: transparent; padding: 8px 2px; font-size: 11px; }
 #play { min-width: 45px; text-align: left; }
@@ -60,7 +62,7 @@ h2 { font-size: 16px; line-height: 1.5; font-weight: 550; margin: 0 0 10px; }
 @media(max-width: 660px) { main { display: block; padding: 28px 18px; } aside { margin-bottom: 24px; } h1 { font-size: 30px; max-width: 330px; margin-bottom: 20px; } header { padding: 20px 18px; } .subjects { margin-bottom: 20px; } .description { margin-bottom: 16px; } .pages, .hint { display: none; } .focus select { max-width: 130px; } }
 @media(prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
-<header><span class="brand">Better Office Hours</span><span class="badge">Board studies · 01</span></header>
+<header><span class="brand">Better Office Hours</span><span class="badge">Board studies · 02</span></header>
 <main>
   <aside>
     <p class="eyebrow">Space to think</p>
@@ -68,7 +70,7 @@ h2 { font-size: 16px; line-height: 1.5; font-weight: 550; margin: 0 0 10px; }
     <nav class="subjects" aria-label="Example subjects"></nav>
     <h2 id="subtitle"></h2><p class="description" id="description"></p>
     <nav class="pages" aria-label="Document pages"></nav>
-    <p class="hint">Replay the build, move between pages, or select a detail to give it your attention.</p>
+    <p class="hint">Watch the idea take shape, pause to think, or select a symbol to see its connections.</p>
   </aside>
   <section class="stage-area" aria-label="Interactive board preview">
     <div class="stage-tools"><span id="page-status" aria-live="polite"></span><div class="sizes"><button data-size="expanded" aria-pressed="true">Expanded</button><button data-size="compact" aria-pressed="false">Compact</button></div></div>
@@ -85,54 +87,73 @@ h2 { font-size: 16px; line-height: 1.5; font-weight: 550; margin: 0 0 10px; }
 <script>
 const gallery=JSON.parse(document.getElementById('board-data').textContent);
 const $=s=>document.querySelector(s);
-let subject=0, pageIndex=0, revealed=0, timer=null, selected='', started=false;
+let subject=0, pageIndex=0, position=0, timer=null, selected='', started=false, lastTick=0;
+let nodes=[];
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const current=()=>gallery[subject].pages[pageIndex];
-const groups=()=>[...document.querySelectorAll('[data-step]')];
-function stop() { clearInterval(timer); timer=null; $('#play').textContent=started&&revealed<current().steps.length?'Continue':'Replay'; $('#play').setAttribute('aria-label',$('#play').textContent+' page'); }
-function paint(animate=false) {
-  groups().forEach((group,index)=>{
-    const visible=index<revealed;
-    group.style.opacity=visible ? (selected && group.dataset.boardGroup!==selected ? .22 : 1) : 0;
-    group.style.pointerEvents=visible?'':'none';
-    group.setAttribute('aria-hidden',String(!visible)); group.setAttribute('tabindex',visible?'0':'-1');
-    group.classList.toggle('revealing',animate&&index===revealed-1);
-  });
-  $('#beat').value=revealed; $('#beat-count').textContent=`${revealed} / ${current().steps.length}`;
+function stop() { cancelAnimationFrame(timer); timer=null; $('#play').textContent=started&&position<current().timeline.duration?'Continue':'Replay'; $('#play').setAttribute('aria-label',$('#play').textContent+' page'); }
+function paint() {
+  const related=new Set([selected,...(current().links[selected]||[])]);
+  let completed=0;
+  for(const {group,hit,step,glyphs,paths,heads} of nodes) {
+    const elapsed=position-step.start, visible=elapsed>=0;
+    if(elapsed>=step.duration)completed++;
+    group.style.opacity=visible ? (selected && !related.has(step.id) ? .24 : 1) : 0;
+    group.setAttribute('aria-hidden',String(!visible)); hit.hidden=!visible;
+    for(const {element,delay} of glyphs) element.setAttribute('opacity',reduced.matches||elapsed>=delay?'1':'0');
+    for(const path of paths) {
+      path.style.strokeDasharray=reduced.matches||elapsed>=520?'':'1';
+      path.style.strokeDashoffset=reduced.matches||elapsed>=520?'':String(1-Math.max(0,elapsed)/520);
+    }
+    for(const head of heads)head.style.opacity=reduced.matches||elapsed>=520?'1':'0';
+  }
+  $('#beat').value=position; $('#beat-count').textContent=`${completed} / ${current().steps.length}`;
+  $('#beat').setAttribute('aria-valuetext',`${completed} of ${current().steps.length} details complete`);
 }
 function focus(id) { selected=selected===id?'':id; $('#focus').value=selected; paint(); }
 function render() {
-  stop(); started=false; selected=''; const example=gallery[subject],page=current(); revealed=page.steps.length;
+  stop(); started=false; selected=''; const example=gallery[subject],page=current(); position=page.timeline.duration; nodes=[];
   $('#subtitle').textContent=example.subtitle; $('#description').textContent=example.description;
   $('.subjects').replaceChildren(...gallery.map((entry,index)=>{const b=document.createElement('button');b.textContent=entry.subject;b.setAttribute('aria-pressed',String(subject===index));b.onclick=()=>{subject=index;pageIndex=0;render();};return b;}));
   $('.pages').replaceChildren(...example.pages.map((entry,index)=>{const b=document.createElement('button'),n=document.createElement('span'),title=document.createElement('span');n.textContent=String(index+1).padStart(2,'0');title.textContent=entry.title+(index&&entry.title===example.pages[index-1].title?' · continued':'');b.append(n,title);if(pageIndex===index)b.setAttribute('aria-current','page');b.onclick=()=>{pageIndex=index;render();};return b;}));
   $('.stage').innerHTML=page.svg;
+  const hitLayer=document.createElement('div');hitLayer.className='hit-layer';$('.stage').append(hitLayer);
   for(const group of document.querySelectorAll('[data-board-group]')) {
     if(!page.steps.includes(group.dataset.boardGroup))continue;
-    group.dataset.step='true';group.setAttribute('role','button');group.setAttribute('aria-label',`Focus: ${page.labels[group.dataset.boardGroup]}`);
-    group.onclick=event=>{event.stopPropagation();focus(group.dataset.boardGroup);};
-    group.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();focus(group.dataset.boardGroup);}};
+    const step=page.timeline.steps.find(step=>step.id===group.dataset.boardGroup);
+    const box=group.getBBox(),hit=document.createElement('button');
+    hit.type='button';hit.setAttribute('aria-label',`Focus: ${page.labels[group.dataset.boardGroup]}`);
+    Object.assign(hit.style,{left:`${(box.x-.004)*100}%`,top:`${(box.y-.004)*100}%`,width:`${(box.width+.008)*100}%`,height:`${(box.height+.008)*100}%`});
+    hit.onclick=event=>{event.stopPropagation();focus(group.dataset.boardGroup);};
+    hitLayer.append(hit);group.dataset.step='true';
+    nodes.push({group,hit,step,glyphs:[...group.querySelectorAll('.board-glyph,.board-math-glyph')].map(element=>({element,delay:parseFloat(element.style.animationDelay)||0})),paths:[...group.querySelectorAll('.board-path:not(.is-dashed)')],heads:[...group.querySelectorAll('.board-head')]});
   }
   $('#focus').replaceChildren(...['',...page.steps].map(id=>{const o=document.createElement('option');o.value=id;o.textContent=id?page.labels[id]:'Whole page';return o;}));
   $('#page-status').textContent=`${example.subject} / Page ${pageIndex+1} of ${example.pages.length}`;
   $('#previous').disabled=pageIndex===0;$('#next').disabled=pageIndex===example.pages.length-1;
-  $('#beat').max=page.steps.length;$('#play').textContent='Replay';$('#play').setAttribute('aria-label','Replay page');paint();
+  $('#beat').max=page.timeline.duration;$('#play').textContent='Replay';$('#play').setAttribute('aria-label','Replay page');paint();
 }
 $('#play').onclick=()=>{
-  if(timer){stop();return;}
+  if(timer!==null){stop();return;}
   selected='';$('#focus').value='';
-  if(!started||revealed===current().steps.length)revealed=0;
+  if(!started||position>=current().timeline.duration)position=0;
   started=true;paint();$('#play').textContent='Pause';$('#play').setAttribute('aria-label','Pause replay');
-  const step=()=>{revealed++;paint(true);if(revealed>=current().steps.length)stop();};
-  timer=setInterval(step,1100);step();
+  lastTick=performance.now();
+  const tick=now=>{
+    position=Math.min(current().timeline.duration,position+now-lastTick);lastTick=now;paint();
+    if(position>=current().timeline.duration)stop();else timer=requestAnimationFrame(tick);
+  };
+  timer=requestAnimationFrame(tick);
 };
-$('#beat').oninput=()=>{stop();started=true;revealed=Number($('#beat').value);paint();stop();};
+$('#beat').oninput=()=>{stop();started=true;position=Number($('#beat').value);paint();stop();};
 $('#focus').onchange=()=>{selected=$('#focus').value;paint();};
 $('.stage').onclick=()=>{selected='';$('#focus').value='';paint();};
 $('#previous').onclick=()=>{if(pageIndex>0){pageIndex--;render();}};
 $('#next').onclick=()=>{if(pageIndex<gallery[subject].pages.length-1){pageIndex++;render();}};
 for(const button of document.querySelectorAll('[data-size]'))button.onclick=()=>{ $('.sheet').classList.toggle('compact',button.dataset.size==='compact');for(const other of document.querySelectorAll('[data-size]'))other.setAttribute('aria-pressed',String(other===button)); };
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){stop();selected='';$('#focus').value='';revealed=current().steps.length;paint();}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){stop();selected='';$('#focus').value='';position=current().timeline.duration;paint();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+reduced.addEventListener('change',()=>paint());
 render();
 </script>
 </html>

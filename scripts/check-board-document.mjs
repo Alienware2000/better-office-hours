@@ -66,3 +66,38 @@ const circle=composeDocument(document([{kind:'figure',id:'circle',commands:[{op:
 const trace=circle.geometry.flat();
 assert.ok(Math.abs(Math.max(...trace.map(p=>p.x))-Math.min(...trace.map(p=>p.x))-(Math.max(...trace.map(p=>p.y))-Math.min(...trace.map(p=>p.y))))<.001,'Figure placement preserves geometry aspect ratio');
 console.log('PASS: maps continue with a repeated root, invalid/dense input fails explicitly, and figure proportions stay intact.');
+
+// Concept connections are explicit and scoped to this page, never inferred
+// from identical letters. Color preserves the opaque paper behind translucent tint.
+const mathPage=composeDocument(boardDocuments[0].document)[0];
+const middle=mathPage.groups.find(g=>g.drawables.some(m=>m.kind==='text'&&m.text==='2ab'));
+const linked=mathPage.links[middle.id].map(id=>mathPage.groups.find(g=>g.id===id));
+assert.equal(linked.length,2);
+assert.ok(linked.every(g=>g.drawables.some(m=>m.kind==='text'&&m.text==='ab')));
+for(const g of [middle,...linked]) {
+  assert.ok(g.drawables.filter(m=>m.kind==='text').every(m=>m.color==='#397b78'));
+  assert.ok((mathPage.links[g.id]||[]).every(id=>mathPage.groups.some(other=>other.id===id)));
+  for(const mark of g.drawables.filter(m=>m.kind==='fill'&&m.opacity===undefined))assert.equal(mark.color,'#fffcf6');
+}
+assert.throws(()=>composeDocument(document([{kind:'figure',id:'wide',commands:[{op:'circle',id:'c',center:{x:.5,y:.5},r:.1}],equation:[{latex:'x+'.repeat(80)+'x'}]}])),/Split a long adjacent/);
+const { documentTimeline }=repositoryModule('lib/whiteboard/document-replay');
+const { groupReveal, textReveal }=repositoryModule('lib/whiteboard/reveal');
+const { BoardText }=repositoryModule('components/whiteboard/BoardText');
+for(const {document:doc} of boardDocuments)for(const page of composeDocument(doc)) {
+  const timeline=documentTimeline(page);
+  for(const [i,step] of timeline.steps.entries()) {
+    const g=page.groups.find(g=>g.id===step.id),reveal=groupReveal(g);
+    assert.equal(step.duration,reveal.duration);
+    if(i)assert.ok(step.start>=timeline.steps[i-1].start+timeline.steps[i-1].duration);
+    g.drawables.forEach((mark,index)=>{
+      if(mark.kind!=='text')return;
+      const delays=mark.mathDrawing?mark.mathDrawing.paths.map((_,i)=>i*32):textReveal(mark.text).delays;
+      assert.ok(delays.every((delay,i)=>!i||delay>=delays[i-1]));
+      const svg=renderToStaticMarkup(React.createElement(BoardText,{mark,entering:true,delay:reveal.delays[index],elapsed:step.duration}));
+      assert.ok(!svg.includes('opacity="0"'),'The full step reveals every final glyph');
+      assert.ok(reveal.delays[index]+(delays.at(-1)||0)<step.duration);
+    });
+  }
+  assert.equal(timeline.duration,timeline.steps.at(-1).start+timeline.steps.at(-1).duration);
+}
+console.log('PASS: semantic links match labeled regions, paper fills remain readable, ordered glyph timelines complete without clipping final characters.');

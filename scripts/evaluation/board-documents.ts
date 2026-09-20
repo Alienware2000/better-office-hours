@@ -3,15 +3,21 @@ import type { BoardDocument, DocumentBlock } from '../../lib/whiteboard/document
 
 type Figure = Extract<DocumentBlock, { kind: 'figure' }>;
 const ellipse = (x: number, y: number, rx: number, ry: number) => Array.from({length: 33}, (_,i)=>({x:x+rx*Math.cos(i*Math.PI/16),y:y+ry*Math.sin(i*Math.PI/16)}));
+const region = (id: string, x: number, y: number, w: number, h: number, label: string, colorRole: 'ink'|'accent'|'relation', concept: string): Figure['commands'][number] => ({
+  op:'curve',id,points:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h},{x,y}],
+  diagram:{interpolation:'linear',fill:'tint',weight:'light'},colorRole,concept,
+  insideLabel:{text:label,at:{x:x+w/2,y:y+h/2+.015},math:true},
+});
 const square: Figure['commands'] = [
   {op:'curve',id:'boundary',points:[{x:.13,y:.12},{x:.88,y:.12},{x:.88,y:.87},{x:.13,y:.87},{x:.13,y:.12}],diagram:{interpolation:'linear',fill:'paper'}},
-  {op:'curve',id:'small-square',points:[{x:.62,y:.61},{x:.88,y:.61},{x:.88,y:.87},{x:.62,y:.87},{x:.62,y:.61}],color:'accent',diagram:{interpolation:'linear',fill:'tint'}},
-  {op:'line',id:'vertical',from:{x:.62,y:.12},to:{x:.62,y:.87},color:'muted'},
-  {op:'line',id:'horizontal',from:{x:.13,y:.61},to:{x:.88,y:.61},color:'muted'},
+  region('large-square',.13,.12,.49,.49,'a^2','ink','square-a'),
+  region('rectangle-one',.62,.12,.26,.49,'ab','relation','rectangles'),
+  region('rectangle-two',.13,.61,.49,.26,'ab','relation','rectangles'),
+  region('small-square',.62,.61,.26,.26,'b^2','accent','square-b'),
   {op:'line',id:'top-a',from:{x:.13,y:.04},to:{x:.62,y:.04},label:'a',color:'muted',diagram:{weight:'light',labelSide:'left'}},
-  {op:'line',id:'top-b',from:{x:.62,y:.04},to:{x:.88,y:.04},label:'b',color:'accent',diagram:{weight:'light',labelSide:'left'}},
+  {op:'line',id:'top-b',from:{x:.62,y:.04},to:{x:.88,y:.04},label:'b',color:'muted',diagram:{weight:'light',labelSide:'left'}},
   {op:'line',id:'side-a',from:{x:.04,y:.12},to:{x:.04,y:.61},label:'a',color:'muted',diagram:{weight:'light'}},
-  {op:'line',id:'side-b',from:{x:.04,y:.61},to:{x:.04,y:.87},label:'b',color:'accent',diagram:{weight:'light'}},
+  {op:'line',id:'side-b',from:{x:.04,y:.61},to:{x:.04,y:.87},label:'b',color:'muted',diagram:{weight:'light'}},
 ];
 const cell: Figure['commands'] = [
   {op:'curve',id:'membrane',points:ellipse(.5,.48,.44,.37),label:'Cell membrane',diagram:{fill:'paper'}},
@@ -26,21 +32,13 @@ const cell: Figure['commands'] = [
 ];
 
 export const boardDocuments: { subject: string; subtitle: string; description: string; document: BoardDocument }[] = [
-  {subject:'Mathematics',subtitle:'An idea, a diagram, a derivation',description:'Equations keep their notation. A geometric view sits on its own page, followed by a short argument.',document:{id:'mathematics',sections:[
+  {subject:'Mathematics',subtitle:'See where each term comes from',description:'One picture, one relationship. Select 2ab or either teal rectangle to connect the two. Replay to watch the drawing and writing unfold.',document:{id:'mathematics',sections:[
     {id:'identity',eyebrow:'01 / MATHEMATICS',title:'One square, four pieces',blocks:[
-      {kind:'prose',id:'area-intro',text:'Take a square with side length a + b. Split each side into lengths a and b. The total area stays the same when we describe it as smaller pieces.'},
-      {kind:'equation',id:'identity-equation',latex:'(a+b)^2 = a^2 + 2ab + b^2',caption:'One large square equals the sum of its four regions.'},
-      {kind:'prose',id:'area-notice',text:'There are two rectangles with area ab. That is where the middle term comes from.'},
-    ]},
-    {id:'area-view',eyebrow:'02 / SEE THE RELATIONSHIP',title:'Keep the whole in view',blocks:[
-      {kind:'figure',id:'area-figure',commands:square,caption:'The small shaded square has side b and area b².'},
-    ]},
-    {id:'argument',eyebrow:'03 / MAKE THE CONNECTION',title:'Two ways to count area',blocks:[
-      {kind:'sequence',id:'area-steps',steps:[
-        {id:'whole',label:'Start with the whole',detail:'The large square has side a + b, so its area is (a + b)².'},
-        {id:'pieces',label:'Name the pieces',detail:'A square of area a², two rectangles of area ab, and a square of area b².'},
-        {id:'compare',label:'Connect the descriptions',detail:'Adding the pieces gives the same area as the original square.'},
-      ]},
+      {kind:'figure',id:'area-figure',commands:square,equation:[
+        {latex:'(a+b)^2 ='},{latex:'a^2',concept:'square-a'},{latex:'+'},
+        {latex:'2ab',colorRole:'relation',concept:'rectangles'},{latex:'+'},
+        {latex:'b^2',colorRole:'accent',concept:'square-b'},
+      ],caption:'Two rectangles. One middle term.'},
     ]},
   ]}},
   {subject:'Biology',subtitle:'Detail with room to breathe',description:'Curves, nested structures, restrained emphasis, and attached labels. A schematic stays distinct from the explanatory notes.',document:{id:'biology',sections:[
