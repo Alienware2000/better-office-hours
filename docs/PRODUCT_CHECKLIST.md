@@ -12,6 +12,6 @@ Updated September 20, 2026. This is the ordered product-work index, not permissi
 
 ## Local server discipline
 
-After David's cleanup request, old listeners on 3107–3113 were stopped after cwd verification. Snapshot directories, per-port storage, and browser saves were retained. 3114 remains David's existing live session; 3115 is the new review candidate. Keep these two for the handoff, then retire the previous candidate once David has moved safely. Do not create a new permanent server for every small UI edit. Reuse an unused agent test snapshot during iteration; never hot-reload a live student session.
+Old listeners on 3107–3113 were stopped after cwd verification; snapshots, storage and browser saves remain. 3114 and 3115 preserve earlier sessions; 3116 is the latest running tutor baseline plus static board studies. See [the actual-app test plan](APP_TEST_PLAN.md) before integrating those studies. Retire an older listener only once David has moved safely. Do not create a permanent server for every edit. Reuse an unused agent test snapshot; never hot-reload a live student session.
 
 A stopped port is not deleted data. Old sessions still belong to their original browser origin and corresponding storage. Recovery must restart the matching snapshot/storage at that port; do not serve a different checkout's data or clear browser storage.

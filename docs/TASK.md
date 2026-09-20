@@ -15,7 +15,7 @@ Local evaluation only; preserve live sessions, frozen files and public pause. Gr
 
 ## Progress
 
-[Vision](STEM_WHITEBOARD.md) and [evidence](evaluations/2026-09-20-stem-board.md). 3116/board-stem.html: eight authored pages. /board-stem-models.html: four real outputs. Root tutor remains 1770053.
+[Vision](STEM_WHITEBOARD.md), [evidence](evaluations/2026-09-20-stem-board.md), and [actual-app test plan](APP_TEST_PLAN.md) saved. 3116 has eight authored pages and four model outputs. Root tutor remains 1770053; document composition is not integrated.
 
 ## Decisions
 
@@ -25,11 +25,13 @@ David reaffirmed uncluttered visuals and board use throughout teaching. Existing
 
 ## Validation
 
-Document/STEM checks, typecheck and lint pass. Browser: 16 layouts, motion seek and ordered replay. Four calls: 4.02–6.89 s to complete speech unit, excluding voice pipeline; $0.48855 returned cost. No latency improvement claim.
+Prior checks/browser/provider evidence: linked STEM reports. No end-to-end latency improvement claim.
+
+Checkpoint: fingerprints/cwds and HTTP 200 verified. No new session test or runtime change. Context/full packet and diff checks pass.
 
 ## Next action
 
-Improve general composition/validation, then compare unfamiliar topics and learner follow-ups in matched live turns. Never route topics to these fixtures.
+Reproduce diagram/equation page separation from the saved model specs, select a general live-path correction, then follow APP_TEST_PLAN for matched sessions and latency. No fixture routing or frozen-contract expansion. Preserve current runtimes.
 
 ## Blockers
 

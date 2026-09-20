@@ -36,7 +36,7 @@ Submitted integrations are included. #11 remains unreconciled because its identi
 
 ## Next
 
-September 20: [STEM vision](STEM_WHITEBOARD.md) requires uncluttered board use throughout teaching across open-ended topics. Eight authored pages at 3116/board-stem.html and four outputs at /board-stem-models.html expose geometry, motion and composition failures. [Evidence](evaluations/2026-09-20-stem-board.md). Prototype spacing fixed; root tutor unchanged. Next: general composition/validation and matched learning sessions, keeping latency visible.
+September 20: [STEM vision](STEM_WHITEBOARD.md) requires uncluttered visuals throughout teaching. Eight authored pages at 3116/board-stem.html and four model outputs expose geometry, motion and composition failures. Prototype spacing fixed; root tutor unchanged. [Actual-app test plan](APP_TEST_PLAN.md): reproduce related equations spilling across pages, improve general live composition, then compare full sessions with latency and recovery evidence. No new human session test yet.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
