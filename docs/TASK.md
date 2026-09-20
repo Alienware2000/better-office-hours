@@ -29,7 +29,7 @@ LeaveButton ESLint and diff checks pass. Isolated rendered component/CSS inspect
 
 ## Next action
 
-David reviews refreshed 3115 back control. Next proposed slice: board text, collisions and meaningful color with first-audio latency guardrail.
+David requested checkpoint and continued product improvement in a new chat. Reorient, then begin board text, collision and meaningful-color investigation using existing session evidence. Keep model fixed and first-audio latency as guardrail. Preserve live 3115; avoid another cosmetic welcome redesign.
 
 ## Blockers
 

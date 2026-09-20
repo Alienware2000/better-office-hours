@@ -36,6 +36,8 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Next
 
+September 20 handoff: continue board consistency from TASK; retain the approved restrained voice-first UI and current model.
+
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
 Local consolidation is ready for review: pinned candidate, source fingerprints, 16 passing offline checks, typecheck/lint, isolated build. [DEVELOPMENT](DEVELOPMENT.md) links evidence and release gaps. Remote main unchanged; old candidate data preserved. Optional typing and independent mic mute added to the same tutor/board; see [input changes](evaluations/2026-09-20-typed-input.md). Jev deferred; Vercel paused.
