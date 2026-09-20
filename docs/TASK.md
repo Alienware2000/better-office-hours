@@ -1,7 +1,7 @@
 # Active task
 
 Updated: 2026-09-20
-State: in_progress
+State: ready_for_review
 Branch: lane/post-hackathon-local
 Base: 27899cd31cf3b62a70080d2f011f6b568d797d83
 
@@ -23,11 +23,11 @@ Drafting is allowed while responding; Send waits until done or explicitly stoppe
 
 ## Validation
 
-Focused lifecycle tests and typecheck/lint pass. Full offline gate/browser inspection underway; see [evidence](evaluations/2026-09-20-typed-input.md). Hardware speech/noise checks still need human evidence.
+All 16 offline checks, typecheck/lint pass. Browser: composer, multiline entry, draft retention, clear/disabled Send verified; see [evidence](evaluations/2026-09-20-typed-input.md). Hardware review pending.
 
 ## Next action
 
-Finish validation, launch isolated preview, inspect typing/mute controls, checkpoint.
+Retest http://localhost:3113 (a31e1bc): Type instead, typed response/board, mute during thinking/speech, and Turn mic on. Preserve all earlier origins.
 
 ## Blockers
 

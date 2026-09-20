@@ -15,3 +15,10 @@ Mute mic only disables capture and discards an unfinished local recording. Submi
 Lifecycle regressions verify typed requests without getUserMedia/STT, shared board/narration/transcript, deliberate bracketed content, mute during generation and audio, persistence across turn completion, unmute, and discarded unfinished recordings. Existing voice/diagram/disclosure checks remain required. No provider or hardware calls are needed for these tests.
 
 Real acoustic/iPad review and silent-output controls are outside this slice. Existing 3111/3112 sessions and PDFs are preserved. No deployment or production change.
+
+## Verified local candidate
+
+- All 16 offline checks pass: `.data/evaluation/consolidation/offline-1789891150332.json`. TypeScript and focused ESLint pass.
+- http://localhost:3113 runs clean `a31e1bcaa690f22d4ad2642f47fc1418472655da` from `.data/voice-trial-3113/run-1789891176462`. Source fingerprint matches the offline gate.
+- Actual browser UI inspected: typing opens with Mic off and no permission prompt, blank Send disabled, Shift+Enter preserves a newline, and hiding/reopening retains the draft. Agent test draft cleared. No message sent to a real provider by this browser check.
+- Shared response/board behavior and inference-preserving mute are covered by synthetic lifecycle tests; human voice/mobile-keyboard validation remains pending. Existing user sessions untouched.
