@@ -1,6 +1,6 @@
 # Active task
 
-Updated: 2026-09-19
+Updated: 2026-09-20
 State: in_progress
 Branch: lane/post-hackathon-local
 Base: d68cd607a64bad917c9e001675a6677e4457056b
@@ -15,6 +15,8 @@ Local voice lane. David authorized only the public Vercel pause as an exception 
 
 ## Progress
 
+September 20 requested Jev research completed: [report](JEV_RESEARCH.md). Text-only decision model; plausible advisory semantic checks, not a renderer or tutor replacement. No integration or paid calls. Evaluation proposal preserves first audio and exact drawing validation.
+
 1185aec drains accepted audio after generation errors. b1ccabd fixes numeric TeX false positives and adds one guarded continuation, preserving accepted speech and teaching intent. Successful requests add no call; a rejection can add one. [Evidence](evaluations/2026-09-18-guard-recovery.md).
 
 ## Decisions
@@ -27,9 +29,7 @@ Offline intent/recovery/lesson/panel checks, TypeScript, lint, and diff checks p
 
 ## Next action
 
-September 19: David reports somewhat improved perceived latency and authorizes speech, latency, and diagram work, with public access paused first. Vercel project better-office-hours (prj_IOWquvgWDDE06vwIxZn4scu6twV1) was paused successfully via API. Main URL, alternate alias, and production deployment URL verified HTTP 503 DEPLOYMENT_PAUSED. No deployment, data deletion, or local restart. Details/resume procedure: [pause record](evaluations/2026-09-19-public-pause.md).
-
-Next locally investigate 3109 stale_drawing at beat 3 after one recovery and two accepted beats. 3109 saved session/PDF loaded; keep live snapshot unchanged without recovery. Then compare useful-audio latency and complete board/narration before diagram work. 3105 is stopped; older trials preserved. JSON export still unverified. No claim of acoustic completion.
+Public Vercel pause is verified and remains until David requests resumption; [record](evaluations/2026-09-19-public-pause.md). Jev research is complete; no implementation selected. Next investigate 3109 stale_drawing after one recovery/two accepted beats, then compare useful-audio latency and board/narration quality. Preserve live snapshots and private data; export remains unverified. Use JEV_RESEARCH.md for a later synthetic evaluator, not an immediate serial gate before speech.
 
 ## Blockers
 

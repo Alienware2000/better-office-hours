@@ -1,6 +1,6 @@
 # Current status
 
-Updated: 2026-09-19
+Updated: 2026-09-20
 By: Codex, David's local continuation
 Branch: lane/post-hackathon-local
 Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
@@ -41,4 +41,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-Latency remains the priority; board redesign is deferred. 1185aec fixed accepted audio aborting on late errors. The 3108 retest then identified a beat-2 disclosure rejection. Source/3109 fixes a numeric TeX false positive and permits one validated continuation without changing teaching intent. [Evidence](evaluations/2026-09-18-guard-recovery.md) separates that finding from the unknown rejected payload. Test a fresh 3109 session next. Existing sessions are preserved; export recovery failed. Model comparison and Chrome review remain queued.
+Latency and speech reliability remain first. 3109 still has a stale-drawing failure to investigate; preserve live sessions. [Jev research](JEV_RESEARCH.md) recommends a synthetic advisory-check experiment, not a model or renderer migration. No integration or paid Jev calls occurred. Diagram improvements follow reliable complete turns. Public Vercel remains paused; resume only on request.

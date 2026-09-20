@@ -1,6 +1,6 @@
 # Current engineering notes
 
-Updated: 2026-09-19. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
+Updated: 2026-09-20. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
 
 ## Workflow and environment
 
@@ -38,7 +38,7 @@ Updated: 2026-09-19. Keep this short and current. Search [archived notes](archiv
 
 - Follow uses the path's `drawn` progress, normalized 0..1. Constant drawn=1 intentionally fixes the object at the endpoint; a valid schema can still contradict narration. Do not silently invent motion from topic names.
 - Declared vector attachments/projections enforce geometry, not physics. Signed relative endpoints must remain signed until composition. Static/animated shapes and snapshots share math and annotation layout. Keep scene IDs, current pages, background, and student ink across revisions.
-- September 19: David authorizes speech reliability, latency tests, then diagram improvements. His requested Vercel pause is verified; resume only on request. See evaluations/2026-09-19-public-pause.md. Math colors still derive partly from symbols, not scene quantities.
+- Speech reliability and latency precede diagram improvements; public Vercel stays paused. JEV_RESEARCH.md records text-only decisions, numerical limitations, and a proposed advisory evaluator. Jev cannot validate pixels or replace exact ID/layout checks; no integration or benchmark yet. Math colors remain symbol-derived.
 - WHITEBOARD_LEARNING_RESEARCH.md separates attention, understanding, and retention. Instructor drawing effects do not prove a typewriter effect works; student-generated marks and tutor ink are different evidence.
 - Saved sessions are per browser origin and identity. New port 3105 does not inherit 3102's IndexedDB. PDF bytes are server references, not embedded in JSON exports. Never delete old data to fix a missing attachment; exports/old origin must be handled explicitly.
 
