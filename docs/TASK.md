@@ -7,30 +7,32 @@ Base: d68cd607a64bad917c9e001675a6677e4457056b
 
 ## Objective
 
-Pause public access first, then improve speech completion, first-response latency, and diagram presentation in that order. Preserve graded-work limits and existing sessions.
+Complete speech reliably, then improve first-response latency and diagram presentation.
 
 ## Scope and constraints
 
-Local voice lane. David authorized only the public Vercel pause as an exception to the publication freeze. No general deployment permission. Preserve private data and origins; frozen prompts/shared types remain. Groundtrack unavailable.
+Local voice lane; frozen prompts/types and graded-work limits remain. Public Vercel is paused by explicit exception to the publication freeze; resume only on request. [Pause record](evaluations/2026-09-19-public-pause.md). Groundtrack unavailable.
 
 ## Progress
 
-September 20 requested Jev research completed: [report](JEV_RESEARCH.md). Text-only decision model; plausible advisory semantic checks, not a renderer or tutor replacement. No integration or paid calls. Evaluation proposal preserves first audio and exact drawing validation.
+Jev deferred by David until core stability improves. [Research](JEV_RESEARCH.md) records his browser/computer-use motivation for later.
 
-1185aec drains accepted audio after generation errors. b1ccabd fixes numeric TeX false positives and adds one guarded continuation, preserving accepted speech and teaching intent. Successful requests add no call; a rejection can add one. [Evidence](evaluations/2026-09-18-guard-recovery.md).
+September 20 source fixes false stale_drawing for existing text (no source) and detailed geometry (shortened source JSON). Identity now uses the rendered inventory; topic comparison uses rendered text. [Evidence](evaluations/2026-09-20-drawing-focus.md). Historical 3109 rejection remains unattributed.
+
+1185aec drains accepted audio after generation errors. b1ccabd fixes numeric TeX rejection and permits one guarded continuation. [Evidence](evaluations/2026-09-18-guard-recovery.md).
 
 ## Decisions
 
-Model, voice, disclosure limits, and first-beat streaming remain. Preserve live 3107/3108/3109 and data: JSON export produced no backup. 3109 runtime/log are under .data/voice-trial-3109.
+Preserve model, voice, disclosure limits, and first-beat streaming. Preserve 3107/3108/3109: JSON export produced no verified backup. New trial 3110 has independent storage.
 
 ## Validation
 
-Offline intent/recovery/lesson/panel checks, TypeScript, lint, and diff checks passed. One synthetic provider lesson completed: first speech text 6.760s, total 10.897s, not audible latency. David reports improved perceived latency; acoustic completion is unverified.
+Offline intent/recovery/lesson/panel checks, TypeScript and focused lint pass. Real store/serialization plus mocked provider reproduces old focus failures and completes with the fix in one request. Missing/removed/previous-page/unresolved/animation-only IDs remain rejected. No new provider calls. Acoustic completion unverified; David reports perceived latency improvement.
 
 ## Next action
 
-Public Vercel pause is verified and remains until David requests resumption; [record](evaluations/2026-09-19-public-pause.md). Jev research is complete; no implementation selected. Next investigate 3109 stale_drawing after one recovery/two accepted beats, then compare useful-audio latency and board/narration quality. Preserve live snapshots and private data; export remains unverified. Use JEV_RESEARCH.md for a later synthetic evaluator, not an immediate serial gate before speech.
+Acoustically test http://localhost:3110, especially follow-ups focusing existing notes/curves. Compare first useful audio and full ending. Snapshot: .data/voice-trial-3110/run-1789879799663; HTTP 200. Do not change old snapshots or copy private data. Jev stays deferred.
 
 ## Blockers
 
-Exact rejected payload and acoustic/diagram quality remain unverified. Groundtrack unavailable. Older trials remain because their session recovery has not been verified.
+Exact historical rejected payload is unavailable. Acoustic completion, other scene transitions, and diagram quality still need review. Groundtrack unavailable.

@@ -40,7 +40,7 @@ function load(file) {
   cache.set(file, mod.exports);
   return mod.exports;
 }
-const { conceptProgress, conceptResponse } = load('lib/agent/concept-response.ts');
+const { conceptProgress, conceptResponse, lessonDrawings } = load('lib/agent/concept-response.ts');
 const { parseAgentTurn, visualBeats } = load('lib/agent/tags.ts');
 const { needsBoardRepair } = load('lib/agent/teaching-intent.ts');
 const circle = { op: 'circle', id: 'object', at: { x: .25, y: .45 }, r: .04, label: 'Object "A"' };
@@ -241,6 +241,45 @@ try {
   const extra=requests.at(-1).request.messages.slice(-2);
   assert.equal(JSON.parse(extra[0].content).beats.length,1);
   assert.ok(extra[1].content.includes('move=orient'));
+  // Round-trip real rendered inventory. Text has no source; a detailed curve's
+  // source exceeds the descriptive limit. Both are still highlightable.
+  boardStore.resetBoard();
+  const topic = { op: 'text', id: 'topic', at: { x: .1, y: .1 }, text: 'A simple picture' };
+  const note = { op: 'text', id: 'given', at: { x: .1, y: .8 }, text: 'Given object' };
+  const curve = { op: 'curve', id: 'long-curve', points: Array.from({ length: 80 }, (_, i) => ({ x: .1 + i / 100, y: .4 + .1 * Math.sin(i / 20) })) };
+  boardStore.applyDrawCommands([topic, curve, note]);
+  const inventory = asLiveBoard({ ...boardProvenance(boardStore.getBoardState()), open: true });
+  assert.equal(inventory.tutorItems.find(item => item.id === 'given').layout, undefined);
+  assert.equal(inventory.tutorItems.find(item => item.id === 'long-curve').layout.length, 1200);
+  assert.throws(() => JSON.parse(inventory.tutorItems.find(item => item.id === 'long-curve').layout));
+  setLiveBoard(inventory);
+  const focused = { ...lesson, introduction: '', question: 'Which part is given?', beats: ['given', 'long-curve'].map(id => ({ pdf: '', draw: [JSON.stringify({ op: 'highlight', id })], animation: '', speech: `Look at ${id}.` })) };
+  // This is the old adapter's input, confirming the reproduced rejection.
+  const { parseDrawCommand } = load('lib/whiteboard/parse-draw.ts');
+  const oldInventory = inventory.tutorItems.flatMap(item => { try { const command = parseDrawCommand(item.layout ?? ''); return command ? [command] : []; } catch { return []; } });
+  for (const beat of focused.beats) assert.throws(() => conceptResponse(JSON.stringify({ ...focused, beats: [beat] }), { requireVisuals: true, currentDraw: oldInventory }), error => error.code === 'stale_drawing');
+  const beforeFocus = requests.length;
+  responseQueue = [[...JSON.stringify(focused)]];
+  let focusedOutput = '';
+  for await (const delta of streamGrok(history, null, true)) focusedOutput += delta;
+  assert.equal(requests.length - beforeFocus, 1, 'Valid existing drawings need no recovery call');
+  assert.equal(parseAgentTurn(focusedOutput).speech, focused.beats.map(beat => beat.speech).concat(focused.question).join(' '));
+  const options = { requireVisuals: true, currentDrawings: lessonDrawings(inventory) };
+  const withCommands = commands => JSON.stringify({ ...focused, beats: [{ ...focused.beats[0], draw: commands.map(command => JSON.stringify(command)) }] });
+  const highlight = { op: 'highlight', id: 'given' };
+  assert.doesNotThrow(() => conceptResponse(withCommands([{ ...topic, text: ' A   simple picture ' }, highlight]), options));
+  for (const commands of [[{ op: 'clear' }, highlight], [{ op: 'remove', id: 'given' }, highlight], [{ ...topic, text: 'Another topic' }, highlight], [{ op: 'highlight', id: 'missing' }]]) {
+    assert.throws(() => conceptResponse(withCommands(commands), options), error => error.code === 'stale_drawing');
+  }
+  assert.deepEqual(lessonDrawings({ tutorItems: [
+    { id: 'unresolved', text: '', kinds: ['path'], status: 'unresolved' },
+    { id: 'animated', text: '', kinds: ['animation:dot'], status: 'visible' },
+  ] }), [], 'Unresolved and animation-only IDs cannot satisfy DRAW highlight');
+  const panel = { op: 'panel', id: 'panel', title: 'Setup', slot: 0, items: [{ label: 'Object', shape: 'circle' }] };
+  assert.throws(() => conceptResponse(withCommands([panel, highlight]), options), error => error.code === 'stale_drawing');
+  const panelOptions = { requireVisuals: true, currentDrawings: lessonDrawings({ tutorItems: [{ id: panel.id, text: 'Setup', kinds: ['path'], status: 'visible', layout: JSON.stringify(panel) }] }) };
+  assert.throws(() => conceptResponse(withCommands([{ ...panel, id: 'replacement' }, { op: 'highlight', id: 'panel' }]), panelOptions), error => error.code === 'stale_drawing');
+  console.log('PASS: rendered text/long geometry focus completes in one request; missing, removed, previous-page, unresolved, and animated IDs remain protected.');
 } finally {
   responseQueue=null;
   for(const [key,value] of Object.entries(trialEnvironment)) if(value===undefined)delete process.env[key];else process.env[key]=value;

@@ -1,11 +1,10 @@
-import { parseDrawCommand } from '@/lib/whiteboard/parse-draw';
 import { trialEnabled, TRIAL_GUIDANCE, TRIAL_MODEL } from './trial';
 import { awaitingSummary, RECAP_FORMAT, RECAP_GUIDANCE } from './closing';
 import { validateRecap } from '@/lib/session/recap';
 import OpenAI from "openai";
 import { TEACHING_GUIDANCE, teachingTag } from "./teaching-intent";
 import { DIAGRAM_GUIDANCE } from './diagram-guidance';
-import { CONCEPT_RESPONSE_FORMAT, CONCEPT_FORMAT_GUIDANCE, conceptProgress, conceptResponse } from './concept-response';
+import { CONCEPT_RESPONSE_FORMAT, CONCEPT_FORMAT_GUIDANCE, conceptProgress, conceptResponse, lessonDrawings } from './concept-response';
 import { streamValidatedLesson } from './concept-stream';
 import { CONCEPT_ROUTING_FORMAT, conceptRoutingMessages, conceptRoute, parseConceptRoute } from './concept-routing';
 import { parseAgentTurn } from "./tags";
@@ -233,9 +232,7 @@ export async function* streamGrok(
   }, { signal });
 
   const lessonOptions = trialRequest ? { requireVisuals: true, currentAnimation: board?.animation?.spec,
-    currentDraw: (board?.tutorItems ?? []).flatMap(item => {
-      try { const command = parseDrawCommand(item.layout ?? ''); return command ? [command] : []; } catch { return []; }
-    }),
+    currentDrawings: lessonDrawings(board),
   } : {};
   if (trialRequest && conceptTeaching) {
     yield* streamValidatedLesson(async recovery => {

@@ -41,4 +41,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-Latency and speech reliability remain first. 3109 still has a stale-drawing failure to investigate; preserve live sessions. [Jev research](JEV_RESEARCH.md) recommends a synthetic advisory-check experiment, not a model or renderer migration. No integration or paid Jev calls occurred. Diagram improvements follow reliable complete turns. Public Vercel remains paused; resume only on request.
+Fresh patched trial: http://localhost:3110, independent storage; 3109 untouched. Speech reliability and latency remain first. Source now fixes false stale_drawing for existing notes and shortened geometry descriptions; offline checks pass, acoustic retest pending. Preserve 3109 and its unresolved historical failure. [Jev](JEV_RESEARCH.md) is deferred by David, with browser-use examples noted for later. Diagram improvements follow complete turns. Public Vercel stays paused until requested.

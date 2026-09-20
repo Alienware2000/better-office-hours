@@ -8,6 +8,10 @@ Jev is worth evaluating as an inexpensive semantic checker alongside the tutor. 
 
 The immediate `stale_drawing` interruption still needs a code/state investigation. Another probabilistic model is not the right repair for an exact missing-ID check. This research does not replace that work.
 
+## Deferred follow-up
+
+September 20: David explicitly deferred Jev integration until speech completion, latency, and board reliability are stable. He added that browser/computer-use examples motivated the interest. Later inspect specific examples and separate Jev's decisions from the surrounding browser agent's perception and actions. Explore an advisory browser QA workflow using measured board state and narration; do not assume Jev itself reads screenshots or controls the browser. No examples were supplied or newly verified in this follow-up.
+
 ## What it actually is
 
 Jev is TypeSafe's first public System One model, announced September 15. TypeSafe describes a parallel sampler and reinforcement learning for calibrated decisions (RLCD). Those are vendor descriptions, not architecture independently reproduced in this research. [Launch announcement](https://typesafe.ai/blog/introducing-system-one-models-and-jev).

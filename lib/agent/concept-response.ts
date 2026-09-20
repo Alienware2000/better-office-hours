@@ -1,5 +1,6 @@
 import { teachingIntent, teachingTag, teachingDraw } from './teaching-intent';
 import type { AnimationSpec, DrawCommand } from '@/lib/types';
+import type { LiveBoard } from '@/lib/whiteboard/live-board';
 import { interpretCommand } from '@/lib/whiteboard/geometry';
 import { parseDrawCommand } from '@/lib/whiteboard/parse-draw';
 import { validateAnimation } from '@/lib/whiteboard/animation';
@@ -50,7 +51,31 @@ export function conceptHeader(raw: string): string {
   return `${teachingTag(intent)}\n${spoken(JSON.parse(match[4]))}\n`;
 }
 
-export type LessonOptions = { panelsOnly?: boolean; panelSlots?: Record<string, number>; requireVisuals?: boolean; currentDraw?: DrawCommand[]; currentAnimation?: AnimationSpec };
+type DrawingState = { id: string; panelSlot?: number; topic?: string };
+const topicWords = (text: string) => text.replace(/\s+/g, ' ').trim().toLowerCase();
+function drawingState(command: DrawCommand): DrawingState | null {
+  const op = interpretCommand(command, 0);
+  if (op?.kind !== 'draw') return null;
+  return { id: op.group.id,
+    panelSlot: command.op === 'panel' ? command.slot : undefined,
+    topic: op.group.id === 'topic' ? op.group.drawables.flatMap(mark => mark.kind === 'text' ? [mark.text] : []).join(' ') : undefined,
+  };
+}
+
+// Presence comes from the current page's rendered inventory, not the optional,
+// shortened source JSON. Text groups have no source; long geometry is clipped.
+// Animation shapes use ANIM focus, and unresolved geometry cannot be highlighted.
+export function lessonDrawings(board: LiveBoard | null): DrawingState[] {
+  return (board?.tutorItems ?? []).flatMap(item => {
+    if (item.status === 'unresolved' || item.kinds.some(kind => kind.startsWith('animation:'))) return [];
+    let source: DrawCommand | null = null;
+    try { source = parseDrawCommand(item.layout ?? ''); } catch { /* Descriptive source may be shortened. */ }
+    return [{ id: item.id, panelSlot: source?.op === 'panel' ? source.slot : undefined,
+      topic: item.id === 'topic' ? item.text : undefined }];
+  });
+}
+
+export type LessonOptions = { currentDrawings?: DrawingState[]; panelsOnly?: boolean; panelSlots?: Record<string, number>; requireVisuals?: boolean; currentDraw?: DrawCommand[]; currentAnimation?: AnimationSpec };
 // Codes and beat numbers are safe to log. Never log the rejected command or
 // provider response: those can contain private student/document content.
 export class LessonValidationError extends Error {
@@ -70,7 +95,8 @@ export function conceptResponse(raw: string, options: LessonOptions = {}): strin
   const header = `${teachingTag(intent)}\n${spoken(value.introduction)}\n`;
   const result: string[] = [header];
   const slots = new Map(Object.entries(options.panelSlots ?? {}));
-  const current = new Map<string, DrawCommand>((options.currentDraw ?? []).flatMap(command => 'id' in command ? [[command.id, command] as const] : []));
+  const initial = options.currentDrawings ?? (options.currentDraw ?? []).flatMap(command => { const item = drawingState(command); return item ? [item] : []; });
+  const current = new Map(initial.map(item => [item.id, item]));
   let scene = options.currentAnimation;
   let previousSpeech = spoken(value.introduction);
   for (const [index, item] of value.beats.slice(0, 3).entries()) {
@@ -108,12 +134,13 @@ export function conceptResponse(raw: string, options: LessonOptions = {}): strin
           if (!current.has(op.id)) invalid('stale_drawing');
           visible = true;
         } else {
-          const differentFormat = [...current.values()].some(item => (item.op === 'panel') !== (command.op === 'panel'));
-          const occupiedSlot = command.op === 'panel' && [...current.values()].some(item => item.op === 'panel' && item.id !== command.id && item.slot === command.slot);
+          const differentFormat = [...current.values()].some(item => (item.panelSlot !== undefined) !== (command.op === 'panel'));
+          const occupiedSlot = command.op === 'panel' && [...current.values()].some(item => item.panelSlot !== undefined && item.id !== command.id && item.panelSlot === command.slot);
           const oldTopic = current.get('topic');
-          const newTopic = command.op === 'text' && command.id === 'topic' && oldTopic?.op === 'text' && oldTopic.text.trim().toLowerCase() !== command.text.trim().toLowerCase();
+          const next = drawingState(command)!;
+          const newTopic = next.id === 'topic' && oldTopic && topicWords(oldTopic.topic ?? '') !== topicWords(next.topic ?? '');
           if (differentFormat || occupiedSlot || newTopic) { current.clear(); scene = undefined; }
-          current.set(op.group.id, command);
+          current.set(op.group.id, next);
           visible = true;
         }
       }
