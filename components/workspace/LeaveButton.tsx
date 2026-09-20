@@ -11,7 +11,7 @@ export function LeaveButton({ onLeave }: { onLeave: () => void }) {
       <span aria-hidden className="desk-leave-mark">
         ←
       </span>
-      Leave
+      Back to start
     </button>
   );
 }

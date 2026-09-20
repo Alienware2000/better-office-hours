@@ -11,7 +11,7 @@ import { Whiteboard } from "@/components/whiteboard/Whiteboard";
 import { CourseConnection } from "./CourseConnection";
 import { Captions } from "./Captions";
 import { Orb } from "./Orb";
-import { ResponseStatus } from './ResponseStatus';
+import { ResponseStatus, type ResponsePresentation } from './ResponseStatus';
 import type { OrbState } from "./constants";
 import { useVoiceLoop } from "./useVoiceLoop";
 import { SessionLibrary, type SessionPersistence } from './SessionLibrary';
@@ -61,6 +61,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState('');
   const responding = state === 'thinking' || state === 'speaking';
+  const presentation = statusPresentation(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase, micMuted);
   const inputControls = <TutorInput open={typing} value={draft} busy={responding || inputStarting}
     micOff={micMuted || !inputReady || paused} canEnableMic={inputReady || (!responding && !inputStarting)}
     onOpen={open => { setTyping(open); if (open) setMicMuted(true); }} onChange={setDraft}
@@ -231,7 +232,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                 onPause={micMuted || !inputReady ? pauseVoice : pauseOrInterrupt}
               />
             </motion.div>
-            <ResponseStatus onActivate={interrupt} label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase, micMuted)} busy={!paused && !recording && state === 'thinking'} />
+            <ResponseStatus {...presentation} onActivate={interrupt} />
 
             {inputControls}
             <div className="chip-row">
@@ -392,7 +393,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                     onPause={micMuted || !inputReady ? pauseVoice : pauseOrInterrupt}
                   />
                 </motion.div>
-                <ResponseStatus onActivate={interrupt} label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase, micMuted)} busy={!paused && !recording && state === 'thinking'} />
+                <ResponseStatus {...presentation} onActivate={interrupt} />
                 {inputControls}
                 <Captions turns={turns} recap={recap} onExport={onExport} />
                 {documentView && <Whiteboard active={split} onExpand={() => setDocumentView(false)} />}
@@ -409,18 +410,16 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
   );
 }
 
-function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean, phase: ReturnType<typeof useVoiceLoop>['responsePhase'], micMuted: boolean): string {
-  if (!inputReady && state !== "thinking" && state !== "speaking") return micMuted ? "Ready when you are" : inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to speak";
-  if (paused) return micMuted ? "Ready when you are" : "Tap to speak";
-  if (recording) return "Listening · tap when finished";
-  if (state === "speaking") return "Speaking · mic muted";
-  if (state === "thinking") {
-    if (phase === 'transcribing') return 'Transcribing · mic muted';
-    if (phase === 'explaining') return 'Working through your question · mic muted';
-    if (phase === 'voice') return 'Preparing voice · mic muted';
-    return 'Thinking · mic muted';
+function statusPresentation(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean, phase: ReturnType<typeof useVoiceLoop>['responsePhase'], micMuted: boolean): ResponsePresentation {
+  if (inputStarting) return { tone: 'connecting', label: 'Connecting microphone', hint: 'Getting ready to listen.' };
+  if (!inputReady && inputError && state !== 'thinking' && state !== 'speaking') return { tone: 'error', label: 'Microphone unavailable', hint: 'Retry the microphone or type a message.' };
+  if (!paused && state === 'speaking') return { tone: 'speaking', label: 'Speaking', hint: micMuted || !inputReady ? 'Stop the response whenever you need.' : 'Interrupt to add something.' };
+  if (!paused && state === 'thinking') {
+    const label = phase === 'transcribing' ? 'Understanding your words' : phase === 'voice' ? 'Getting ready to speak' : 'Thinking it through';
+    return { tone: 'thinking', label, hint: 'Your microphone is quiet while I respond.' };
   }
-  if (micMuted) return "Ready when you are";
-  if (state === "listening") return "Listening · you can speak";
-  return "Tap to speak";
+  if (!paused && !micMuted && inputReady && (recording || state === 'listening')) return {
+    tone: 'listening', label: 'Listening', hint: recording ? 'Tap the orb when you’re finished, or pause.' : 'Go ahead. Take your time.',
+  };
+  return { tone: 'ready', label: 'Tap to speak', hint: 'Your microphone is off until you begin.', canStart: true };
 }

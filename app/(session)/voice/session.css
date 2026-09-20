@@ -508,3 +508,82 @@
 .orb-start { pointer-events: auto; display: inline-block; border: 0; background: transparent; padding: .65rem .9rem; min-height: 44px; margin-top: .25rem; border-radius: 999px; color: #6d675f; font: inherit; font-size: .8rem; letter-spacing: .015em; cursor: pointer; transition: color .15s ease, background .15s ease; }
 .orb-start:hover { color: #292621; background: #29262106; }
 .orb-start:focus-visible { outline: 2px solid #b95832; outline-offset: 2px; }
+
+/* Shared interaction foundation across the welcome and working desk. */
+.session-app {
+  --ui-paper: #f5f4ee;
+  --ui-surface: #fffefa;
+  --ui-ink: #30352d;
+  --ui-muted: #6b7165;
+  --ui-line: #daddd2;
+  --ui-focus: #7b8b70;
+  background: var(--ui-paper);
+  color: var(--ui-ink);
+}
+.session-app .session-shell, .session-app .agent-stage, .session-app .session-header,
+.session-app .welcome-stage, .session-app .session-library { background: var(--ui-paper); }
+.session-app .session-header { border-bottom-color: var(--ui-line); }
+.session-app .session-header button, .session-app .session-header .course-bar > button,
+.session-app .session-library header button, .session-app .desk-leave {
+  border: 1px solid var(--ui-line); border-radius: 12px; background: #fffefa99;
+  color: var(--ui-ink); min-height: 44px; transition: background .15s ease, border-color .15s ease;
+}
+.session-app .session-header button:hover, .session-app .session-header .course-bar > button:hover,
+.session-app .session-library header button:hover, .session-app .desk-leave:hover { background: var(--ui-surface); border-color: #aeb7a4; }
+.session-app .session-history-button { gap: .55rem; }
+.session-app .session-header .session-new-button { background: #e8ecdf; border-color: #d3dbc8; }
+.session-app .session-header button:active, .tutor-input-controls button:active, .welcome-stage .chip:active { transform: translateY(1px); }
+.session-app .session-header button:focus-visible, .session-app .session-library button:focus-visible,
+.session-app .session-library input:focus-visible, .session-app .desk-leave:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+.session-library { border-right: 1px solid var(--ui-line); box-shadow: 12px 0 60px #242d2112; }
+.session-library header button { width: 44px; padding: 0; }
+.session-library .session-new { border-radius: 12px; background: var(--ui-ink); }
+.session-library input { border-radius: 12px; background: var(--ui-surface); border-color: var(--ui-line); min-height: 44px; }
+.session-library li { border: 1px solid transparent; }
+.session-library li[aria-current=true] { background: #e8ecdf; border-color: #d3dbc8; }
+.session-library .session-resume:hover { background: #e8ecdf88; }
+.session-library-scrim { background: #252c2540; backdrop-filter: blur(3px); }
+.tutor-input-controls { gap: .5rem; }
+.tutor-input-controls > button { border: 1px solid var(--ui-line); border-radius: 12px; background: #fffefa80; padding: .55rem .85rem; }
+.tutor-input-controls > button:hover:not(:disabled) { background: var(--ui-surface); border-color: #aeb7a4; }
+.tutor-input-controls .input-divider { display: none; }
+.welcome-stage .chip-row { gap: .5rem; }
+.welcome-stage .chip { border: 1px solid var(--ui-line); background: #fffefa60; border-radius: 10px; color: #626b59; padding: .5rem .85rem; }
+.welcome-stage .chip::after { content: '↗'; display: inline-block; margin-left: .65rem; color: #87917d; }
+.welcome-stage .chip:hover { border-color: #aeb7a4; background: var(--ui-surface); }
+.response-status { width: 100%; max-width: 28rem; margin-top: .8rem; }
+.response-status .orb-status { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 40px; margin: 0; font-size: .82rem; font-weight: 500; letter-spacing: 0; color: var(--ui-ink); }
+.response-status .orb-start { display: inline-flex; min-height: 44px; padding: .55rem .95rem; border: 1px solid #cbd5c0; background: #e8ecdf; border-radius: 12px; }
+.response-status .orb-start:hover { background: #dfe7d3; border-color: #a7b697; }
+.orb-start svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+.response-hint { margin: .3rem 0 0; font-size: .68rem; color: var(--ui-muted); line-height: 1.5; }
+.response-status .response-activity { height: 1.3rem; padding-top: .3rem; }
+.welcome-stage .response-status .response-activity:empty { height: 1.3rem; }
+.state-signal { display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 18px; height: 18px; color: #637d53; }
+.state-signal i { display: block; width: 3px; height: 4px; background: currentColor; border-radius: 2px; }
+.is-listening .state-signal i { animation: listening-signal 2s ease-in-out infinite; }
+.is-listening .state-signal i:not(:first-child) { display: none; }
+.is-listening .state-signal i:first-child { width: 7px; height: 7px; border-radius: 50%; }
+.is-speaking .state-signal i { animation: speaking-signal .9s ease-in-out infinite alternate; }
+.is-speaking .state-signal i:nth-child(2) { animation-delay: -.35s; }
+.is-speaking .state-signal i:nth-child(3) { animation-delay: -.6s; }
+.is-thinking .state-signal, .is-connecting .state-signal { width: 13px; height: 13px; border: 1.5px solid #9ca58f55; border-top-color: #788765; border-radius: 50%; animation: thinking-signal 1.4s linear infinite; }
+.is-thinking .state-signal i, .is-connecting .state-signal i { display: none; }
+.is-error .state-signal { color: #aa654b; }
+.is-error .state-signal i:not(:first-child) { display: none; }
+.is-error .state-signal i:first-child { width: 6px; height: 6px; border-radius: 50%; }
+@keyframes listening-signal { 50% { box-shadow: 0 0 0 4px #637d5312; } }
+@keyframes speaking-signal { to { height: 13px; } }
+@keyframes thinking-signal { to { transform: rotate(360deg); } }
+@media (max-width: 640px) {
+  .welcome-stage .chip-row { gap: .4rem; }
+  .welcome-stage .chip { font-size: .68rem; padding: .4rem .6rem; }
+  .welcome-stage .chip::after { margin-left: .35rem; }
+  .agent-stage .response-status { margin-top: .35rem; }
+  .response-hint { font-size: .65rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .state-signal, .state-signal i { animation: none !important; }
+  .is-speaking .state-signal i { height: 8px; }
+  .is-speaking .state-signal i:nth-child(2) { height: 13px; }
+}
