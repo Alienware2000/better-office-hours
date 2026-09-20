@@ -41,4 +41,4 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-Fresh patched trial: http://localhost:3110, independent storage; 3109 untouched. Speech reliability and latency remain first. Source now fixes false stale_drawing for existing notes and shortened geometry descriptions; offline checks pass, acoustic retest pending. Preserve 3109 and its unresolved historical failure. [Jev](JEV_RESEARCH.md) is deferred by David, with browser-use examples noted for later. Diagram improvements follow complete turns. Public Vercel stays paused until requested.
+3110 human retest: David reports working well; diagrams remain inconsistent and crowded. [Feedback](evaluations/2026-09-20-board-feedback.md) sets the next pass: neutral prose/mixed math, then scene composition. Preserve live 3110 and older snapshots. Keep latency and speech completion checks. Jev deferred; public Vercel stays paused until requested.

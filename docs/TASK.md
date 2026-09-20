@@ -27,12 +27,12 @@ Preserve model, voice, disclosure limits, and first-beat streaming. Preserve 310
 
 ## Validation
 
-Offline intent/recovery/lesson/panel checks, TypeScript and focused lint pass. Real store/serialization plus mocked provider reproduces old focus failures and completes with the fix in one request. Missing/removed/previous-page/unresolved/animation-only IDs remain rejected. No new provider calls. Acoustic completion unverified; David reports perceived latency improvement.
+Offline intent/recovery/lesson/panel checks, TypeScript and focused lint pass. Real store/serialization plus mocked provider reproduces old focus failures and completes with the fix in one request. Missing/removed/previous-page/unresolved/animation-only IDs remain rejected. No new provider calls. David now reports 3110 working well; no exhaustive acoustic verification.
 
 ## Next action
 
-Acoustically test http://localhost:3110, especially follow-ups focusing existing notes/curves. Compare first useful audio and full ending. Snapshot: .data/voice-trial-3110/run-1789879799663; HTTP 200. Do not change old snapshots or copy private data. Jev stays deferred.
+Next: board consistency, starting with neutral prose and mixed text/math rendering. [Feedback and scope](evaluations/2026-09-20-board-feedback.md). Keep model and latency checks. Preserve live 3110 and older origins; no snapshot edits/restarts without verified recovery. Jev stays deferred.
 
 ## Blockers
 
-Exact historical rejected payload is unavailable. Acoustic completion, other scene transitions, and diagram quality still need review. Groundtrack unavailable.
+Exact historical rejected payload is unavailable. Remaining audio edge cases, scene transitions, and diagram quality need review. Groundtrack unavailable.

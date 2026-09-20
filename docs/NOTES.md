@@ -38,7 +38,7 @@ Updated: 2026-09-20. Keep this short and current. Search [archived notes](archiv
 
 - Follow uses the path's `drawn` progress, normalized 0..1. Constant drawn=1 intentionally fixes the object at the endpoint; a valid schema can still contradict narration. Do not silently invent motion from topic names.
 - Declared vector attachments/projections enforce geometry, not physics. Signed relative endpoints must remain signed until composition. Static/animated shapes and snapshots share math and annotation layout. Keep scene IDs, current pages, background, and student ink across revisions.
-- Speech reliability and latency precede diagram improvements; public Vercel stays paused. Jev is deferred; JEV_RESEARCH.md records browser-use motivation for later. No integration or benchmark. Math colors remain symbol-derived.
+- Speech reliability and latency precede diagram improvements; public Vercel stays paused. Jev is deferred; JEV_RESEARCH.md records browser-use motivation for later. No integration or benchmark. Math colors are character-derived, not meaning-aware; mixed prose becomes colored italic math. See evaluations/2026-09-20-board-feedback.md for the next consistency pass.
 - WHITEBOARD_LEARNING_RESEARCH.md separates attention, understanding, and retention. Instructor drawing effects do not prove a typewriter effect works; student-generated marks and tutor ink are different evidence.
 - Saved sessions are per browser origin and identity. New port 3105 does not inherit 3102's IndexedDB. PDF bytes are server references, not embedded in JSON exports. Never delete old data to fix a missing attachment; exports/old origin must be handled explicitly.
 
