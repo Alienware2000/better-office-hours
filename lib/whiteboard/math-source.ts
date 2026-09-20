@@ -9,6 +9,8 @@ export function isMathNotation(text: string): boolean {
   // formula. Ignore explicit TeX text/unit payloads when inspecting equations.
   const bare = text.replace(/\\(?:text|textrm|mathrm|operatorname|begin|end)\{[^{}]*\}/g, ' ')
     .replace(/\\[a-zA-Z]+/g, ' ');
+  // Short connective words are prose too, even when every word is under four letters.
+  if (/\b(?:is|are|was|and|or|for|the|has)\b/i.test(bare)) return false;
   const prose = bare.match(/[\p{L}]{4,}/gu) ?? [];
   if (prose.some(word => !/^(?:sin|cos|tan|log|sqrt|arcsin|arccos|arctan|sinh|cosh|tanh)$/u.test(word))) return false;
   if (hasLatex(text)) return true;

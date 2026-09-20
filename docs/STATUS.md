@@ -36,7 +36,7 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Next
 
-September 20 handoff: continue board consistency from TASK; retain the approved restrained voice-first UI and current model.
+September 20: neutral board text and short-prose fix validated locally; see TASK. Retain restrained voice-first UI/model; cumulative clutter remains next.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 

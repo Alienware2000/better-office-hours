@@ -92,7 +92,7 @@ const { textRuns, isMathText } = load('lib/whiteboard/text.ts');
 const { boardStyle } = load('lib/whiteboard/style.ts');
 const eqRuns = textRuns('v₀ = u + a t', boardStyle.colors.ink);
 assert.equal(eqRuns.map(r => r.text).join(''), 'v₀ = u + a t');
-assert.equal(eqRuns.find(r => r.text === 'v₀').color, textRuns('v₀ = ?', boardStyle.colors.ink)[0].color);
+assert.ok(eqRuns.every(r => r.color === boardStyle.colors.ink), 'Default equations do not assign arbitrary colors to variables');
 assert.equal(textRuns('u = ?', boardStyle.colors.accent).length, 1, 'Explicit emphasis is preserved');
 assert.ok(isMathText('x² + y² = r²'));
 const { textRegions, detectQuestionRegions } = load('lib/pdf/questions.ts');
@@ -101,7 +101,7 @@ assert.equal(detectQuestionRegions([textItem])[0].label, '1');
 const scaled = Object.fromEntries(Object.entries(textItem).map(([k,v])=>[k,typeof v === 'number'?v*2:v]));
 assert.deepEqual(textRegions([textItem]), textRegions([scaled]), 'PDF anchors are invariant under rasterization scale');
 assert.equal(detectQuestionRegions([{...textItem,str:'600'}]).length,0,'A numeric given is not a question heading');
-console.log('PASS: colored symbolic runs preserve content, explicit emphasis, and measured PDF anchors stay scale invariant.');
+console.log('PASS: neutral symbolic runs preserve content, explicit emphasis, and measured PDF anchors stay scale invariant.');
 
 const { isPutAwayPsetPhrase } = load('app/(session)/voice/speech.ts');
 assert.equal(isPutAwayPsetPhrase('Do not remove the PDF'), false);

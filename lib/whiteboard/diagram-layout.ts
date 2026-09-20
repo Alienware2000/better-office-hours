@@ -58,7 +58,7 @@ export function layoutDiagram<T extends ShapeGroup>(groups: T[], ink: { points: 
     const half = textWidth(mark.text, size, isMathText(mark.text)) / 2;
     // Overlong labels keep their existing wrapping rather than becoming tiny.
     if (half > .455) { occupied.push(writingBounds(mark)); return mark; }
-    const base: TextMark = { ...mark, diagramLabel: true, preferredAt: preferred, fontSize: size, textAnchor: 'middle', math: isMathText(mark.text), mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color, false) ?? undefined : undefined };
+    const base: TextMark = { ...mark, diagramLabel: true, preferredAt: preferred, fontSize: size, textAnchor: 'middle', math: isMathText(mark.text), mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color) ?? undefined : undefined };
     const fit = (at: Pt) => ({ x: Math.max(margin + half, Math.min(1 - margin - half, at.x)), y: Math.max(margin + size, Math.min(1 - margin - size * .25, at.y)) });
     const candidates = [fit(preferred)];
     // Small concentric offsets retain association with the labeled object.

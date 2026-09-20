@@ -21,3 +21,5 @@ The three archived files preserve their pre-workflow bytes. Search with `rg -n '
 - [September 20 hybrid voice/prose](tasks/2026-09-20-hybrid-voice.md): implemented local 3112 trial; human acoustic review still pending.
 
 - [September 20 typed input](tasks/2026-09-20-typed-input.md): optional composer and independent mute; behavior review pending.
+
+- [September 20 UI foundation](tasks/2026-09-20-ui-foundation.md): voice-first design corrections and live preview verification.

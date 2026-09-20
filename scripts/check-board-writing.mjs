@@ -45,3 +45,27 @@ for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++)assert.ok(!lab
 store.applyDrawCommands([{op:'panel',id:'next',slot:0,title:'Next idea',items:[{shape:'circle',label:'Object'}]}]);
 const archived=store.getBoardState().earlierPages[0];assert.equal(archived.groups.length,scene.length);
 console.log('PASS: compact prose legends, typeset equations, non-overlapping labels, and preserved composed pages.');
+
+// A resumed board can contain cached MathJax paths from the old automatic
+// coloring scheme. Both the visible SVG and tutor snapshot honor its mark color.
+const { typesetMath } = repositoryModule('lib/whiteboard/math-layout');
+const { snapshotBoard } = repositoryModule('lib/whiteboard/snapshot');
+const legacy = { kind:'text', key:'legacy', text:'F = ma', at:{x:.5,y:.5}, size:'s', color:'#292621', math:true,
+ mathDrawing: { ...typesetMath('F = ma','#292621'), paths:typesetMath('F = ma','#292621').paths.map(p=>({...p,color:'#76649a'})) } };
+for (const color of ['#292621','#b95832']) {
+ const mark={...legacy,color};
+ const svg=renderToStaticMarkup(React.createElement(BoardText,{mark}));
+ assert.ok(!svg.includes('#76649a'),'Restored SVG never revives automatic variable colors');
+ assert.ok([...svg.matchAll(/fill="([^"]+)"/g)].every(m=>m[1]===color));
+ const fills=[];
+ const ctx={ save(){},restore(){},scale(){},translate(){},transform(){},fillRect(){},fill(){fills.push(this.fillStyle);} };
+ const oldDocument=globalThis.document,oldPath=globalThis.Path2D;
+ try {
+  globalThis.document={createElement:()=>({getContext:()=>ctx,toDataURL:()=> 'data:image/jpeg;base64,synthetic'})};
+  globalThis.Path2D=class {};
+  snapshotBoard([{id:'legacy',drawables:[mark]}],[],360,360);
+  assert.equal(fills.length,mark.mathDrawing.paths.length);
+  assert.ok(fills.every(fill=>fill===color),'Canvas snapshot agrees with SVG and explicit emphasis');
+ } finally { globalThis.document=oldDocument;globalThis.Path2D=oldPath; }
+}
+console.log('PASS: cached legacy math uses authored colors in visible SVG and canvas snapshot.');

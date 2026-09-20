@@ -14,7 +14,7 @@ export function BoardText({ mark, entering = false, delay = 0, elapsed = 0 }: { 
     return <g className="board-math" role="img" aria-label={mark.text} data-latex={mark.text}
       transform={`translate(${left} ${mark.at.y}) scale(${size / 1000})`}>
       <title>{mark.text}</title>
-      {formula.paths.map((path, i) => <path key={i} d={path.d} fill={path.color} stroke="none"
+      {formula.paths.map((path, i) => <path key={i} d={path.d} fill={mark.color} stroke="none"
         transform={`matrix(${path.matrix.join(' ')})`}
         opacity={entering && elapsed < delay + i * 32 ? 0 : 1}
         className={entering ? 'board-math-glyph' : undefined}

@@ -53,3 +53,14 @@ for (const text of [String.raw`what else touches or pulls m_{2}?`, String.raw`Wh
  if (text.includes('pulls')) assert.equal(rendered, text.startsWith('What') ? 'What else touches or pulls m₂?' : 'what else touches or pulls m₂?');
 }
 console.log('PASS: inline numeric TeX subscripts retain readable, spaced prose without mathematical word coloring.');
+
+for (const text of [String.raw`m_{2} is up`, String.raw`T for m_{2}`, String.raw`m_{1} and m_{2}`]) {
+ assert.equal(isMathNotation(text), false, 'Short prose stays prose: '+text);
+ const marks=layoutWriting(interpretCommand({op:'text',id:'note-short',text,at:{x:.5,y:.5}},0).group,[],[]).drawables;
+ assert.ok(marks.every(m=>!m.math&&!m.mathDrawing));
+ assert.ok(marks.map(m=>m.text).join(' ').includes(' '));
+}
+for (const color of [ink,'#b95832','#347ac5']) {
+ for (const text of examples) assert.ok(typesetMath(text,color).paths.every(p=>p.color===color), 'Only authored equation color is used');
+}
+console.log('PASS: short prose retains spaces; neutral math and explicit emphasis use the authored color throughout.');

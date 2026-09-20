@@ -336,7 +336,7 @@ function rawAnimationFrame(
       // Moving labels keep their model attachment and stable size. Avoid a
       // per-frame collision solver that would make them jump between sides.
       op.group.drawables = op.group.drawables.map(mark => mark.kind === 'text'
-        ? { ...mark, fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color, false) ?? undefined : undefined } : mark);
+        ? { ...mark, fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color) ?? undefined : undefined } : mark);
       groups.push({ ...op.group, opacity: clamp(Number(f.opacity ?? 1)) });
     }
   }
@@ -348,7 +348,7 @@ function rawAnimationFrame(
     const ends = resolved.geometry?.[0];
     const zero = ends?.length === 2 && Math.hypot(ends[1].x - ends[0].x, ends[1].y - ends[0].y) < .003;
     return { ...resolved, drawables: resolved.drawables.map(mark => mark.kind === 'text'
-      ? { ...mark, ...(zero ? { labelAnchor: undefined } : {}), fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color, false) ?? undefined : undefined } : mark) };
+      ? { ...mark, ...(zero ? { labelAnchor: undefined } : {}), fontSize: .038, diagramLabel: true, mathDrawing: isMathText(mark.text) ? typesetMath(mark.text, mark.color) ?? undefined : undefined } : mark) };
   });
   const camera = spec.camera
     ? sampleFrames(spec.camera.keyframes, t)

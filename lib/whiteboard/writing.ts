@@ -45,7 +45,7 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
   const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
-  if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color, false) ?? undefined }] };
+  if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color) ?? undefined }] };
   if (!note && !math && width(mark.text, .038, false) <= .91 && groups.some(group => group.geometry?.length)) return group;
   const caption = note && !heading && !math && groups.some(group => group.geometry?.length);
   let fontSize = heading ? .048 : caption ? .038 : mark.size === 'm' ? .085 : .068;
