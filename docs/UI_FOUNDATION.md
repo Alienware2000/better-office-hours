@@ -4,6 +4,8 @@ Updated September 20, 2026. David's direction: a modern AI interface with a ligh
 
 ## Defaults and hierarchy
 
+The welcome question is “What do you want to work on?” It invites a spoken request directly.
+
 - The plain orb is the visual anchor. Keep its original appearance and animations. No text or icons inside it.
 - New and resumed desks start with typing closed. Open it only by an explicit Type a message action. Handoff previews in voice mode, not in an agent's composer test state.
 - The orb is the sole voice-start button. Tap to speak beneath it is a noninteractive label, not a second button. Typing and mic mute are secondary. Homework, Explain a concept, and Something else are entry actions, not external navigation links.

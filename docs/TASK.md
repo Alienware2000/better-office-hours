@@ -15,7 +15,7 @@ Local voice/workspace UI only. Keep plain orb, voice logic, PDFs and saves. No d
 
 ## Progress
 
-Stopped verified BOH listeners 3107–3113, retaining all files/browser saves. Kept 3114 and isolated 3115. Shared surfaces/navigation and explicit active-state labels/motion implemented. David rejected boxed welcome controls; restored the restrained version. Latest correction: Tap to speak is a noninteractive label; only the orb starts voice. Typing defaults closed and must be closed at handoff.
+Stopped verified BOH listeners 3107–3113, retaining all files/browser saves. Kept 3114 and isolated 3115. Shared surfaces/navigation and explicit active-state labels/motion implemented. David rejected boxed welcome controls; restored the restrained version. Latest correction: Tap to speak is a noninteractive label; only the orb starts voice. Typing defaults closed. Welcome now asks “What do you want to work on?” per David.
 
 ## Decisions
 
@@ -27,7 +27,7 @@ Final typecheck/lint pass. Browser verifies one Tap to speak button (the orb), a
 
 ## Next action
 
-David reviews 3115 (10c0720). Follow PRODUCT_CHECKLIST for voice reliability, latency and whiteboard work.
+David reviews 3115 (10c0720). Next proposed slice: board text, label collisions and meaningful color, with first-audio latency retained as a guardrail. Acoustic/iPad review stays open.
 
 ## Blockers
 

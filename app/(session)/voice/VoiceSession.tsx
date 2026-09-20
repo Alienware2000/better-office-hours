@@ -211,7 +211,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
       <LayoutGroup id="session-layout">
         {!split ? (
           <motion.section key="welcome" className="welcome-stage">
-            <header className="welcome-intro"><p>Better Office Hours</p><h1>Let’s work it out.</h1></header>
+            <header className="welcome-intro"><p>Better Office Hours</p><h1>What do you want to work on?</h1></header>
             <motion.div
               layoutId="tutor-orb"
               className="orb-frame orb-frame-home"
