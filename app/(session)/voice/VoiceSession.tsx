@@ -41,6 +41,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
     sendEvent,
     interrupt,
     pauseVoice,
+    pauseOrInterrupt,
     enterWorkspace,
     putAwayPset,
     bindDiscardPset,
@@ -155,11 +156,11 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { event.preventDefault(); pauseVoice(); }
+      if (event.key === "Escape" && !event.repeat && !event.defaultPrevented) { event.preventDefault(); pauseOrInterrupt(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pauseVoice]);
+  }, [pauseOrInterrupt]);
 
   useEffect(() => {
     if (
@@ -210,7 +211,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                 inputError={!inputReady && Boolean(error)}
                 onRetry={retryMicrophone}
                 onInterrupt={interrupt}
-                onPause={pauseVoice}
+                onPause={pauseOrInterrupt}
               />
             </motion.div>
             <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase)} busy={inputReady && !paused && !recording && state === 'thinking'} />
@@ -368,7 +369,7 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
                     inputError={!inputReady && Boolean(error)}
                     onRetry={retryMicrophone}
                     onInterrupt={interrupt}
-                    onPause={pauseVoice}
+                    onPause={pauseOrInterrupt}
                   />
                 </motion.div>
                 <ResponseStatus label={statusText(state, paused, recording, inputReady, Boolean(error), inputStarting, responsePhase)} busy={inputReady && !paused && !recording && state === 'thinking'} />
@@ -388,16 +389,16 @@ function SessionDesk({ saved, onSave, bindCapture, bindSuspend, onNew, onExport,
 }
 
 function statusText(state: OrbState, paused: boolean, recording: boolean, inputReady: boolean, inputError: boolean, inputStarting: boolean, phase: ReturnType<typeof useVoiceLoop>['responsePhase']): string {
-  if (!inputReady) return inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to start";
-  if (paused) return "Tap to start";
+  if (!inputReady) return inputError ? "Microphone unavailable" : inputStarting ? "Preparing microphone" : "Tap to speak · mic muted";
+  if (paused) return "Tap to speak · mic muted";
   if (recording) return "Listening · tap when finished";
-  if (state === "speaking") return "Speaking";
+  if (state === "speaking") return "Speaking · mic muted";
   if (state === "thinking") {
-    if (phase === 'transcribing') return 'Transcribing';
-    if (phase === 'explaining') return 'Working through your question';
-    if (phase === 'voice') return 'Preparing voice';
-    return 'Thinking';
+    if (phase === 'transcribing') return 'Transcribing · mic muted';
+    if (phase === 'explaining') return 'Working through your question · mic muted';
+    if (phase === 'voice') return 'Preparing voice · mic muted';
+    return 'Thinking · mic muted';
   }
   if (state === "listening") return "Listening";
-  return "Ready";
+  return "Tap to speak · mic muted";
 }

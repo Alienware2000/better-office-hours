@@ -15,6 +15,8 @@ Updated: 2026-09-20. Keep this short and current. Search [archived notes](archiv
 
 ## Voice and pedagogy
 
+- September 20: tap-to-speak supersedes acoustic barge-in and automatic listening. Input stays muted through/after a response; Escape/Interrupt opens a new listening turn. Three-second silence endpoint, tap to send sooner. See evaluations/2026-09-20-tap-to-speak.md. Real-device noise/endpoint validation pending.
+
 - Late SSE errors previously aborted accepted audio; 1185aec drains it while retaining cancellation. The 3108 retest instead logged beat-2 disclosure_boundary; exact rejected text is unavailable. Numeric TeX units/degrees caused a reproduced false positive. Source/3109 normalizes those narrowly and permits one continuation under the same guard/intent. Never attribute the historical rejection to a guessed label. See evaluations/2026-09-18-guard-recovery.md. 3109 later logged stale_drawing at beat 3 after one recovery. September 20 source uses rendered inventory, because text has no source and geometry source is shortened; see evaluations/2026-09-20-drawing-focus.md. Historical attribution and acoustic completion remain unknown. User confirmed 3108 export failed; preserve data.
 
 - Opus trial 3107 now supports full DRAW/ANIM/math with per-beat validation and ordered glyphs. Prior panel restriction confounded evaluation. See TUTOR_TRIAL for evidence and failures; semantics remain experimental. Human prompts stay frozen. Groundtrack unavailable.
@@ -25,7 +27,7 @@ Updated: 2026-09-20. Keep this short and current. Search [archived notes](archiv
 - David requires board involvement on every spoken turn; visual=none/direct definitions do not always fulfill it. September 20 reviewed 33 transcripts across checked browser histories; see evaluations/2026-09-20-session-review.md. Visibility complaints, deferred equations, repeated questions, and background speech recur. Transcripts do not prove acoustic completion or actual rendered frames; no restorable backup verified.
 
 - Fast routing chooses logistics versus substantive reasoning; handoffs are silent. Rejected direct fast confirmations misclassified ambiguity, new equations, and misconceptions. Extra compact reasoning verification still took seconds and could add a request. Do not restore either without a controlled evaluation.
-- Completed structured beats stay in one TTS clip; sentence splitting stranded five-word closing caveats. Legacy streaming still releases sentences. Playback_end records ended/interrupted/error plus media position/duration, not acoustic completeness. No retained old audio. Keep audio-timed visuals, cancellation, barge-in, and ink ownership.
+- Completed structured beats stay in one TTS clip; sentence splitting stranded five-word closing caveats. Legacy streaming still releases sentences. Playback_end records ended/interrupted/error plus media position/duration, not acoustic completeness. No retained old audio. Keep audio-timed visuals, explicit interruption, and ink ownership.
 - Live mic tracks do not prove detector frames arrive. September 16 retry restored PCM; cause unconfirmed.
 - Topic headings can append to unrelated overflow notes when that page has no prior topic ID. See evaluations/2026-09-16-scene-direction.md; diagnosis recorded, not fixed.
 - Historical delays are evidence of model planning costs, not microphone latency. Health checks only report key presence. Synthetic Silero tests do not prove quiet-voice or echo reliability.

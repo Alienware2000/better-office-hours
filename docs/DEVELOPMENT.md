@@ -44,7 +44,7 @@ These are uses of the same codebase, not three products or separate permanent re
 
 September 20 consolidation: candidate settings now live in one pinned profile, future trial snapshots carry source/profile fingerprints, and `node scripts/check-candidate.mjs` runs 16 offline checks. All pass, along with TypeScript, targeted lint, and an isolated production build (ONNX dependency warnings). See the [integration packet](evaluations/2026-09-20-consolidation.md) for change groups and remaining browser/acoustic/shared-contract checks. No product promotion, release, or remote backup occurred.
 
-The [saved-session review](evaluations/2026-09-20-session-review.md) covers all 33 transcripts found across the checked histories. Private study notes are in `.data/session-review/2026-09-20-review.md`. Typography/composition remains the next product slice; no new model selection or broad board rewrite is needed to start it.
+The [saved-session review](evaluations/2026-09-20-session-review.md) covers all 33 transcripts found across the checked histories. Private study notes are in `.data/session-review/2026-09-20-review.md`. David then prioritized [tap-to-speak](evaluations/2026-09-20-tap-to-speak.md) to prevent background-noise turns before typography/composition. No model change is needed for either slice.
 
 ## Where progress lives
 
