@@ -20,7 +20,7 @@ David requested frictionless reorientation across coding agents, fresh chats, an
 
 ## Product baseline
 
-One adaptive paper desk serves homework/PDF and concepts/whiteboard. Generated diagrams, local LaTeX, audio-timed visual beats, scene continuity, student ink, PDF highlights, and browser-local session recovery/export are implemented. Optional scoped Canvas ingestion/retrieval and student-first spoken recap are integrated. Private Vercel Blob stores public-runtime course/PDF data; Supabase remains optional. Full conversation/board/recap histories are browser-local, not cloud session sync or cross-session learner memory.
+The shared paper desk supports homework/PDF and concepts, generated diagrams/LaTeX, narrated visuals, student ink, PDF cues, local sessions/export, optional scoped Canvas retrieval and recap. Histories remain browser-local; no cloud session sync or learner memory. Private Vercel Blob stores public-runtime PDFs; Supabase is optional.
 
 Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted baseline. #11 is a separate local reconciliation topic: its forced login and body-email/shared-bearer ingestion conflict with the optional/scoped-owner flow. No merge or remote change is authorized. OpenRouter/Opus is the current local candidate, not yet the default product configuration.
 
@@ -36,8 +36,8 @@ Hussein #6/#8/#9 and integration #10/#12/#13/#14 are included in the submitted b
 
 ## Next
 
-September 20: neutral board text and short-prose fix validated locally; see TASK. Retain restrained voice-first UI/model; cumulative clutter remains next.
+September 20: David approved neutral board text. A cross-subject composition prototype and interactive gallery now cover text, equations, figures, maps and pagination; see [board study](evaluations/2026-09-20-board-system.md). Gallery on 3116 is separate from its unchanged tutor. Next: structured writing integration and measured comparison; see TASK.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-Local consolidation is ready for review: pinned candidate, source fingerprints, 16 passing offline checks, typecheck/lint, isolated build. [DEVELOPMENT](DEVELOPMENT.md) links evidence and release gaps. Remote main unchanged; old candidate data preserved. Optional typing and independent mic mute added to the same tutor/board; see [input changes](evaluations/2026-09-20-typed-input.md). Jev deferred; Vercel paused.
+[DEVELOPMENT](DEVELOPMENT.md) records consolidation evidence and release gaps. [Optional typing and mic mute](evaluations/2026-09-20-typed-input.md) share the tutor/board. Remote main unchanged, candidate data retained, Jev deferred and Vercel paused.
