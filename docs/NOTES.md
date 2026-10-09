@@ -4,6 +4,8 @@ Updated: 2026-10-09. Keep this short and current. Search [archived notes](archiv
 
 ## Workflow and environment
 
+- October 9: PR #15 published the candidate to main; #11 remains excluded. Compare fetched origin/main, not the stale local main. Public Vercel stays paused.
+
 - Fresh-clone TypeScript needs `next typegen` before `tsc` for LayoutProps. October 9 fixed six existing lint errors. ESLint now excludes generated voice assets and ignored .data snapshots. Turbopack cannot resolve a node_modules symlink outside an isolated clone; copy/install dependencies there.
 
 - AGENTS.md is shared authority; CLAUDE.md and Cursor point there. See MEMORY_GUIDE, MEMORY_RECIPE, and WORKFLOW for human instructions. Scripts validate/assemble memory; agents write it.

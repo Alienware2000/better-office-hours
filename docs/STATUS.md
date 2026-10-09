@@ -7,9 +7,9 @@ Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
 
 ## Authority
 
-October 9: David accepted the main-integration plan and selected Opus over slow Grok. Opus is now the normal local default with explicit Grok rollback; README refreshed and demo links retained. origin/main merged locally; no push, PR, main merge or deployment occurred. Concrete publication review is pending. Public pause remains. See [integration packet](evaluations/2026-10-09-main-integration.md).
+October 9: David explicitly authorized moving all reviewed work to main except PR #11. [PR #15](https://github.com/Alienware2000/better-office-hours/pull/15) merged at fe59fa6, including Opus default, product improvements, prototypes/tooling and README cleanup. PR #11 remains OPEN and excluded. Public Vercel remains paused; no deployment or reopening occurred. See [integration packet](evaluations/2026-10-09-main-integration.md).
 
-September 20: David reports the hackathon win and authorizes continued development/consolidation. The contest hold is retired. Vercel remains paused until explicitly reopened. Current work is local; no push, PR, deployment, or public reopening occurred. [DEVELOPMENT](DEVELOPMENT.md) defines baseline, trial, evaluation, and promotion.
+September 20: David reports the hackathon win and authorizes continued development/consolidation. The contest hold is retired. Vercel remains paused until explicitly reopened. That initial local-only scope was superseded by the October 9 publication approval; deployment/public reopening remain separate. [DEVELOPMENT](DEVELOPMENT.md) defines baseline, trial, evaluation, and promotion.
 
 David requested frictionless reorientation across coding agents, fresh chats, and different checkouts. See [TASK](TASK.md) for the active slice and [WORKFLOW](WORKFLOW.md) for commands. Current instructions are in [AGENTS](../AGENTS.md). Historical build notes and completed tasks are [archived](archive/README.md), not current work orders.
 
@@ -24,7 +24,7 @@ David requested frictionless reorientation across coding agents, fresh chats, an
 
 The shared paper desk supports homework/PDF and concepts, generated diagrams/LaTeX, narrated visuals, student ink, PDF cues, local sessions/export, optional scoped Canvas retrieval and recap. Histories remain browser-local; no cloud session sync or learner memory. Private Vercel Blob stores public-runtime PDFs; Supabase is optional.
 
-Submitted integrations are included. Fetched origin/main 3163d7f was merged locally at d0d4d31. Opus 5 through OpenRouter now handles normal routing/teaching/repair/recap; missing keys fail visibly and Grok rollback is explicit. #11 remains outside integration because identity/ingestion assumptions conflict with current scope. Public demo pause was verified October 8 with HTTP 503 / DEPLOYMENT_PAUSED; candidate disables git-triggered deployment.
+GitHub main now includes reviewed candidate db98c97 through PR #15 / fe59fa6. Opus 5 through OpenRouter handles normal routing/teaching/repair/recap; missing keys fail visibly and Grok rollback is explicit. #11 remains excluded because identity/ingestion assumptions require reconciliation. Public demo still returns HTTP 503 / DEPLOYMENT_PAUSED; main disables git-triggered deployment. The local branch named main is stale and is not the publication reference.
 
 ## Open issues
 
@@ -38,10 +38,10 @@ Submitted integrations are included. Fetched origin/main 3163d7f was merged loca
 
 ## Next
 
-October 9: committed integration candidate is ready for David's concrete publication review. All 18 offline checks, full lint, integration smoke and isolated production build pass. Browser matrix/PDF/ink/zoom/undo/reload checks and real synthetic TTS/STT pass. Human listening/interruption, broader STEM/graded safety and full latency remain release evidence. See TASK and the integration packet.
+October 9: integration complete and published through PR #15. All 18 offline checks, full lint, integration smoke and isolated production build pass. Browser matrix/PDF/ink/zoom/undo/reload checks and real synthetic TTS/STT pass. Human listening/interruption, broader STEM/graded safety and full latency remain release evidence. TASK is complete; define the next bounded slice only from a new user request.
 
 September 20: [Representation audit](evaluations/2026-09-20-representation.md) follows Gaussian-elimination feedback. General guidance selected matrices in one sample, exposing an augmented-divider rendering bug. Candidate timing/teaching remain mixed. Live 3117 stays on 19a3681; [test plan](APP_TEST_PLAN.md) and acoustic review remain open.
 
 Use `npm run context` to reorient and `npm run handoff` before switching chats. See WORKFLOW for older checkouts, independent clones, and cross-machine transfer.
 
-[DEVELOPMENT](DEVELOPMENT.md) records consolidation evidence and release gaps. [Optional typing and mic mute](evaluations/2026-09-20-typed-input.md) share the tutor/board. Remote main unchanged, candidate data retained, Jev deferred and Vercel paused.
+[DEVELOPMENT](DEVELOPMENT.md) records consolidation evidence and release gaps. [Optional typing and mic mute](evaluations/2026-09-20-typed-input.md) share the tutor/board. Main integration complete, synthetic evidence retained, Jev deferred and Vercel paused.

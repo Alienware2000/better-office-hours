@@ -6,7 +6,7 @@ Updated October 9, 2026. David reports BOH won the hackathon. He requested conso
 
 | Use | Current truth | How it advances |
 | --- | --- | --- |
-| Product baseline | GitHub `origin/main`, fetched at `3163d7f`. Remote source still uses Grok routing/reasoning. Public deployment is separately paused. | Reviewed integration and deliberate release. A merge is not evidence of a deployment. |
+| Product baseline | GitHub `origin/main` includes PR #15 at `fe59fa6`. Opus is the tutor default; Grok rollback is explicit. Public deployment is separately paused. | Reviewed integration and deliberate release. A merge is not evidence of a deployment. |
 | Development candidate | This checkout, `lane/post-hackathon-local`; October 9 candidate uses Opus by default. Isolated review app: localhost:3120. Older 3116 snapshot retained. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
 | Evaluation | `scripts/bench-tutor-models.mjs`, `scripts/evaluation/`, `scripts/review-tutor-models.mjs`; dashboard conventionally 3106. | Synthetic comparisons and saved human judgments, independent of the default tutor configuration. |
 
@@ -29,7 +29,7 @@ These are uses of the same codebase, not three products or separate permanent re
 | Preserve accepted speech after late errors | Implemented `1185aec`; offline lifecycle checks. Keep interruption/barge-in. |
 | Numeric TeX guards and one bounded continuation | Implemented `b1ccabd`; [guard evidence](evaluations/2026-09-18-guard-recovery.md). Trial-specific continuation, not a blanket relaxation. |
 | Current-board focus validation | Implemented `3584f41`; [reproduction](evaluations/2026-09-20-drawing-focus.md). Historical cutoff cause remains unproven. |
-| Opus-low through OpenRouter | Selected by David October 9 as the local default, with explicit Grok rollback. Main publication awaits review; acoustic quality, cost and broader teaching reliability remain open. |
+| Opus-low through OpenRouter | Selected by David October 9 as the local default, with explicit Grok rollback. Published through PR #15; acoustic quality, cost and broader teaching reliability remain open. |
 | Board typography/composition | Live equation composition runs on isolated 3117; [evidence](evaluations/2026-09-20-live-composition.md). Document composition remains a separate prototype. |
 | Jev and broader renderer redesign | Deferred; [Jev research](JEV_RESEARCH.md), [board research](WHITEBOARD_RESEARCH.md). Research is not an integration decision. |
 | Public reopening | Deferred until David requests it and a release candidate is ready. Hackathon win does not reopen access. |
@@ -59,10 +59,10 @@ Update this register when a candidate is promoted or a decision changes. Keep de
 
 ## October 9 return to building
 
-David accepted the integration plan and selected Opus over slow Grok. Fetched origin/main `3163d7ffea5ff820247403298546993295c70298` was merged locally at `d0d4d31`, preserving the LinkedIn demo link. Local main remains stale. No push, PR, main merge or deployment occurred. The concrete [integration packet](evaluations/2026-10-09-main-integration.md) records scope, contract review, tests and rollback.
+David accepted the integration plan and selected Opus over slow Grok. Fetched origin/main `3163d7ffea5ff820247403298546993295c70298` was merged locally at `d0d4d31`, preserving the LinkedIn demo link. Local main remains stale. David then explicitly approved publication excluding PR #11. PR #15 merged at fe59fa6; no deployment or public reopening occurred. The concrete [integration packet](evaluations/2026-10-09-main-integration.md) records scope, contract review, tests and rollback.
 
 The normal candidate uses Opus for routing, teaching, repair and recap, keeping source selection and student-first closing. Grok is an explicit rollback. Existing panels/colors/line labels were reviewed across parser, geometry, styling, store and lesson validation without expanding frozen contracts. PR #11 remains separate because its persistence/identity assumptions need reconciliation. The README now describes the continuing product, preserves demo links and labels prototype limits.
 
-All 18 offline checks, full lint, integration checks and an isolated production build pass. A live matrix lesson, PDF zoom/ink undo/redo, board ink and reload recovery were inspected in an isolated browser. Synthetic real TTS and STT succeed. A graded-answer guess leaked on the first live test; tightened guidance passed two fresh equation/chemistry checks. This is not proof against all answer leaks. Speech length, broad STEM semantics, human acoustic quality and full end-to-end latency remain open. Public Vercel stays paused; git-triggered deployment is disabled in the candidate configuration. Publication needs David's concrete review before any push/PR/main merge.
+All 18 offline checks, full lint, integration checks and an isolated production build pass. A live matrix lesson, PDF zoom/ink undo/redo, board ink and reload recovery were inspected in an isolated browser. Synthetic real TTS and STT succeed. A graded-answer guess leaked on the first live test; tightened guidance passed two fresh equation/chemistry checks. This is not proof against all answer leaks. Speech length, broad STEM semantics, human acoustic quality and full end-to-end latency remain open. Public Vercel stays paused; git-triggered deployment is disabled in the candidate configuration. This candidate's publication review is complete; further publication needs its own applicable authorization.
 
 September 20 interaction foundation: voice stays primary, typing opens explicitly, controls share a visual system, and state cues are explicit. See [UI foundation](UI_FOUNDATION.md) and [product checklist](PRODUCT_CHECKLIST.md). Earlier snapshots/data remain preserved; STATUS tracks running versions.

@@ -1,7 +1,7 @@
 # Active task
 
 Updated: 2026-10-09
-State: ready_for_review
+State: complete
 Branch: lane/post-hackathon-local
 Base: b8e9a2579053e5182b0ec65631a14a898afb01f8
 
@@ -11,15 +11,15 @@ Integrate relevant accumulated work toward main, promote David's chosen Opus tut
 
 ## Scope and constraints
 
-David accepted the integration plan and chose Opus because Grok felt slow. All implementation, tests and commits are local. No push, PR, main merge, deployment or public reopening occurred. AGENTS requires a concrete reviewed publication step. Preserve frozen contracts/human policy, graded boundaries, student data and the public pause. Groundtrack tools unavailable.
+David explicitly approved publishing all reviewed accumulated changes to main except PR #11. The publication step is complete. Public reopening/deployment remains unauthorized. Frozen contracts/human policy, graded boundaries, student data and existing runtime saves were preserved. Groundtrack tools unavailable.
 
 ## Progress
 
-Fetched origin/main 3163d7ffea5ff820247403298546993295c70298 and merged locally at d0d4d31. Remote LinkedIn demo link retained; local main remains stale. The accumulated interdependent candidate and technical review are in [integration packet](evaluations/2026-10-09-main-integration.md). PR #11 remains separate.
+Published the development branch and merged [PR #15](https://github.com/Alienware2000/better-office-hours/pull/15) at fe59fa6503b453a5929af98ac147cdf9d61bb6ef. GitHub main contains candidate db98c97 and all its accumulated dependencies. PR #11 stays OPEN; its commit c1a69d8 is not an ancestor of main. origin/main was fetched after merge and this development branch fast-forwarded to it. The branch named local main is still stale; GitHub origin/main is authoritative.
 
-Implementation commit 830980a: normal routing, teaching, visual repair and recap now use pinned Opus 5 through OpenRouter. Explicit BOH_TUTOR_PROVIDER=grok restores previous xAI routes; missing credentials fail without fallback. Course selection and student-first recap remain. Existing panel/color/line-label consumers reviewed without expanding lib/types.ts. README cleaned up, public links retained, prototype limits explicit. Fixed six existing lint errors; ignored generated/runtime directories in lint. Candidate disables git-triggered Vercel deployment to preserve the pause.
+Implementation 830980a uses pinned Opus 5 through OpenRouter for normal routing, teaching, repair and recap, with explicit Grok rollback and no missing-key fallback. README refreshed, demo links retained, existing shared-contract consumers reviewed, six lint errors fixed. Authored galleries remain prototypes. The [integration packet](evaluations/2026-10-09-main-integration.md) records scope, tests and limits. Candidate disables git-triggered Vercel deployment to preserve the pause.
 
-Old 3116 listener verified in its retained .data snapshot and left untouched. Isolated review app is localhost:3120 in /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-opus-review-0n3fmnbl with separate data. Its browser uses only synthetic material.
+The old 3116 runtime remains untouched. Tested localhost:3120 runs in isolated /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-opus-review-0n3fmnbl with separate synthetic data. No live snapshot or browser-origin saves were migrated or restarted during publication.
 
 ## Decisions
 
@@ -33,8 +33,8 @@ All 18 offline candidate checks, full lint, integration smoke and isolated defau
 
 ## Next action
 
-Present committed candidate and integration packet for David's publication review. After authorization, fetch main again, inspect any new diff, push the reviewed branch and create/attach a PR or merge by the agreed path. Preserve deployment pause and rollback origin/main 3163d7f. Before release, run human acoustic/interruption checks and broader graded/STEM evaluation. Reorient before changing any old live snapshot.
+This integration task is complete. Archive this TASK before defining the next bounded user-requested slice. Reorient first. Product release work remains: human microphone/listening/interruption checks, useful-response timing, broader graded adversarial tests and STEM diagram quality. PR #11 requires a separate reconciliation decision; do not merge it automatically. Public reopening remains separate.
 
 ## Blockers
 
-Main publication awaits concrete review under AGENTS. Public reopening has no authorization. Broad STEM semantics, speech length, acoustic quality and end-to-end latency remain unverified. Prior 3117 source 19a3681 is historical evidence, not freshly verified. No broad reliability/learning-effectiveness claim.
+No remaining blocker to the completed main integration. Public deployment is intentionally paused. Broad STEM semantics, speech length, acoustic quality and end-to-end latency remain unverified release concerns, not claims of readiness.

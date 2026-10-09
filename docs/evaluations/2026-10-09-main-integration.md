@@ -1,6 +1,6 @@
 # October 9 main integration candidate
 
-David requested relevant accumulated work on main, a light README refresh, and selected Opus over slow Grok. This packet is the concrete review step. Implementation commit: `830980a`. All work remains local on `lane/post-hackathon-local`. No push, PR, main merge, deployment or public reopening occurred.
+David requested relevant accumulated work on main, a light README refresh, and selected Opus over slow Grok. He then explicitly authorized publication excluding PR #11. Implementation commit: `830980a`; reviewed candidate: `db98c97`. [PR #15](https://github.com/Alienware2000/better-office-hours/pull/15) merged at `fe59fa6503b453a5929af98ac147cdf9d61bb6ef`. GitHub main includes the accumulated candidate. PR #11 remains open; c1a69d8 is not an ancestor of main. No deployment or public reopening occurred.
 
 ## Publication scope
 
@@ -53,4 +53,4 @@ The isolated review app runs at localhost:3120. The old localhost:3116 snapshot 
 
 Persistence currently means browser-origin IndexedDB records for transcript, board, ink and recap, plus server-held PDF references. PDF bytes need their own local/private storage. Saves restore the selected desk with audio paused. Clearing browser data can erase sessions. This is not cross-device sync or cross-session learner memory.
 
-Before publication: David reviews this concrete candidate and the diff, then authorizes push/PR/main integration. Public deployment stays a separate decision. Before release: human microphone/listening/interruption testing, useful-response timing, broader graded adversarial tests and STEM teaching/diagram quality. The first graded failure and long speech remain explicit risks; two passing retests are limited evidence. No more prompt-loop tuning or unrelated renderer redesign is included in this slice.
+Publication completed after David reviewed the concrete candidate and explicitly approved it; main ancestry and PR states were verified. Public deployment stays a separate decision. Before release: human microphone/listening/interruption testing, useful-response timing, broader graded adversarial tests and STEM teaching/diagram quality. The first graded failure and long speech remain explicit risks; two passing retests are limited evidence. No more prompt-loop tuning or unrelated renderer redesign is included in this slice.

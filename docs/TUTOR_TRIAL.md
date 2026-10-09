@@ -1,6 +1,6 @@
 # Local voice trial
 
-October 9 update: David selected Opus as the normal tutor default. Normal routing, teaching, visual repair and recap now use the pinned profile through OpenRouter; BOH_TUTOR_PROVIDER=grok explicitly rolls back. The direct-teaching trial launcher remains separate. Publication review and the public pause remain. See [integration evidence](evaluations/2026-10-09-main-integration.md).
+October 9 update: David selected Opus as the normal tutor default. Normal routing, teaching, visual repair and recap now use the pinned profile through OpenRouter; BOH_TUTOR_PROVIDER=grok explicitly rolls back. The direct-teaching trial launcher remains separate. The reviewed candidate landed on main through PR #15; the public pause remains. See [integration evidence](evaluations/2026-10-09-main-integration.md).
 
 The September 15 trial record below is historical evidence, not the current provider decision.
 
