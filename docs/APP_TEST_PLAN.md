@@ -1,19 +1,14 @@
 # From board studies to a learning session
 
-Updated September 20, 2026. Local development only; Vercel stays paused.
+Updated October 9, 2026. Product source is on GitHub main; Vercel stays paused. The September 20 test protocol below remains useful, but its old runtime addresses are historical snapshots.
 
 ## What is saved and what is running
 
-The live composition candidate is committed at `19a3681` on `lane/post-hackathon-local`. TASK, STATUS, STEM_WHITEBOARD and the evaluation reports preserve decisions, limitations and the next step. `npm run handoff` refreshes the machine-local continuation record. Local Git and handoff files are not a remote backup; no push has occurred.
+Main contains the reviewed integration through PR #15 and checkpoint `ad35fce`, including Opus default, matrix/layout fixes and optional typing/mic mute. The current isolated test app is http://localhost:3120/, built with implementation `830980a`; its code matches the published product slice. The retained http://localhost:3116/ snapshot remains on `1770053`, with authored STEM galleries. Other older ports, including 3117, were not reverified October 9.
 
-| Surface | Purpose | Current state |
-| --- | --- | --- |
-| http://localhost:3116/ | Retained voice tutor baseline | Snapshot `1770053`, board-text fix and existing DRAW/ANIM pipeline |
-| http://localhost:3117/ | Isolated live composition candidate | Snapshot `19a3681`, measured diagram equations and lateral placement; [evidence](evaluations/2026-09-20-live-composition.md) |
-| http://localhost:3116/board-stem.html | Authored renderer/design examples | Eight pages using the document composition prototype |
-| http://localhost:3116/board-stem-models.html | Inspection of real model output | Four saved synthetic requests, excluding the voice pipeline |
+Source and curated decisions are backed up on GitHub. Raw provider records, audio, PDFs, browser sessions and local handoff metadata are not. Others need David CODEOWNER review; his admin account retains direct-push access. PR #11 is DRAFT on hold. See STATUS and TASK for current authority and the [integration evidence](evaluations/2026-10-09-main-integration.md) for checks already completed.
 
-The document composition prototype is not connected to the tutor. Starting another snapshot of current HEAD alone will not integrate it. Both the root and gallery returned HTTP 200 when preparing this plan; that is reachability evidence only.
+The document composition prototype is not connected to the tutor. Starting another snapshot of current HEAD alone will not integrate it. The root/gallery reachability checks in the original September 20 plan did not establish learning quality.
 
 ## Next bounded product milestone
 

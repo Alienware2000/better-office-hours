@@ -4,7 +4,7 @@
 
 Better Office Hours is David and Hussein's voice-first tutor for Yale students. The repository is shared memory across agents and chats. This September 14 workflow replaces the [historical startup instructions](docs/archive/AGENTS-2026-09-13.md).
 
-**Current authority (October 9):** David authorized publishing the reviewed accumulated work to main, excluding PR #11. It landed through PR #15 at fe59fa6. The contest hold is retired after the reported win; public Vercel remains paused. A main merge is not permission to deploy or reopen it. Continue local work on `lane/post-hackathon-local`; local `main` is stale, so use fetched `origin/main` for publication comparisons. New pushes, PRs, merges, deployments and production changes require their concrete reviewed publication step unless already authorized. See [DEVELOPMENT](docs/DEVELOPMENT.md) for product, candidate and evaluation separation.
+**Current authority (October 9):** David approved the main integration through PR #15. PR #11 is DRAFT on hold until he explicitly reopens it. Other contributors need David's CODEOWNER approval for main; his admin account is exempt and can push directly. New commits dismiss stale reviews. Do not disable protections. The contest hold is retired; public Vercel stays paused. Merging is not permission to deploy/reopen. Continue local work on `lane/post-hackathon-local`; compare fetched `origin/main`, not stale local main. Agent publication requires its concrete reviewed step unless already authorized. See [DEVELOPMENT](docs/DEVELOPMENT.md).
 
 ## Start or resume
 

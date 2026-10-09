@@ -1,6 +1,6 @@
 # Historical evidence
 
-These are snapshots, not current instructions. Start with [STATUS](../STATUS.md), [TASK](../TASK.md), and [AGENTS](../../AGENTS.md). The publication freeze overrides every historical push, PR, merge, deployment, and recording directive.
+These are snapshots, not current instructions. Start with [STATUS](../STATUS.md), [TASK](../TASK.md), and [AGENTS](../../AGENTS.md). Current AGENTS authority overrides historical publication and deployment directives.
 
 - [STATUS through September 13](STATUS-2026-09-13.md): original chronological build, deployment, testing, model experiments, and Groundtrack setup evidence.
 - [NOTES through September 13](NOTES-2026-09-13.md): original lane-specific workarounds, rejected approaches, and test artifact references.
@@ -35,3 +35,5 @@ The three archived files preserve their pre-workflow bytes. Search with `rg -n '
 - [September 20 live composition](tasks/2026-09-20-live-composition.md): diagram equation layout, isolated 3117 and typed lesson recovery checks.
 
 - [September 20 representation checkpoint](tasks/2026-09-20-representation.md): matrices and writing scale; teaching/latency review remains pending and is carried into the October 8 integration plan.
+
+- [October 9 main integration](tasks/2026-10-09-main-integration.md): completed PR #15 publication, Opus default, README cleanup and validation; PR #11 excluded and public pause retained.

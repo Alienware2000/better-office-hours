@@ -7,11 +7,15 @@ Submitted baseline: b74e11a85dab17a5951fdee6cd574b83b91e3c15
 
 ## Authority
 
-October 9: David explicitly authorized moving all reviewed work to main except PR #11. [PR #15](https://github.com/Alienware2000/better-office-hours/pull/15) merged at fe59fa6, including Opus default, product improvements, prototypes/tooling and README cleanup. PR #11 remains OPEN and excluded. Public Vercel remains paused; no deployment or reopening occurred. See [integration packet](evaluations/2026-10-09-main-integration.md).
+October 9: David explicitly authorized moving all reviewed work to main except PR #11. [PR #15](https://github.com/Alienware2000/better-office-hours/pull/15) merged at fe59fa6, including Opus default, product improvements, prototypes/tooling and README cleanup. PR #11 is now DRAFT on hold, with no auto-merge. Public Vercel remains paused; no deployment or reopening occurred. See [integration packet](evaluations/2026-10-09-main-integration.md).
 
 September 20: David reports the hackathon win and authorizes continued development/consolidation. The contest hold is retired. Vercel remains paused until explicitly reopened. That initial local-only scope was superseded by the October 9 publication approval; deployment/public reopening remain separate. [DEVELOPMENT](DEVELOPMENT.md) defines baseline, trial, evaluation, and promotion.
 
 David requested frictionless reorientation across coding agents, fresh chats, and different checkouts. See [TASK](TASK.md) for the active slice and [WORKFLOW](WORKFLOW.md) for commands. Current instructions are in [AGENTS](../AGENTS.md). Historical build notes and completed tasks are [archived](archive/README.md), not current work orders.
+
+## Repository protection
+
+Other contributors require a PR approved by David, with fresh review after new commits and resolved conversations. `.github/CODEOWNERS` assigns all paths to @Alienware2000. David explicitly retains admin exemption and direct-push access; force pushes/deletion are blocked for non-admins. Verified through GitHub API October 9. No CI checks are required yet. Agent publication still needs its applicable authorization; do not disable protection for checkpoints.
 
 ## Local runtime
 
@@ -38,7 +42,7 @@ GitHub main now includes reviewed candidate db98c97 through PR #15 / fe59fa6. Op
 
 ## Next
 
-October 9: integration complete and published through PR #15. All 18 offline checks, full lint, integration smoke and isolated production build pass. Browser matrix/PDF/ink/zoom/undo/reload checks and real synthetic TTS/STT pass. Human listening/interruption, broader STEM/graded safety and full latency remain release evidence. TASK is complete; define the next bounded slice only from a new user request.
+October 9: integration complete and published through PR #15. All 18 offline checks, full lint, integration smoke and isolated production build pass. Browser matrix/PDF/ink/zoom/undo/reload checks and real synthetic TTS/STT pass. Human listening/interruption, broader STEM/graded safety and full latency remain release evidence. Main protection and PR #11 hold are complete. Next product recommendation is a real voice learning-session test; automated PR checks are the remaining repository safeguard. Define implementation scope from a new bounded request.
 
 September 20: [Representation audit](evaluations/2026-09-20-representation.md) follows Gaussian-elimination feedback. General guidance selected matrices in one sample, exposing an augmented-divider rendering bug. Candidate timing/teaching remain mixed. Live 3117 stays on 19a3681; [test plan](APP_TEST_PLAN.md) and acoustic review remain open.
 
