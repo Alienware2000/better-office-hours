@@ -38,7 +38,7 @@ for (const name of [
 ]) env[name] = '';
 console.log(`Better Office Hours: http://localhost:${port}`);
 console.log(`Worktree: ${root}\nStorage: ${data} (local only); Google sign-in disabled.`);
-console.log('Voice uses configured xAI/ElevenLabs credentials when you start speaking. Ctrl-C stops this server.');
+console.log('Voice uses the configured tutor provider and ElevenLabs credentials when you start speaking. Ctrl-C stops this server.');
 const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm',
   ['run', 'dev', '--', '--hostname', '127.0.0.1', '--port', String(port)],
   { cwd: root, env, stdio: 'inherit' });

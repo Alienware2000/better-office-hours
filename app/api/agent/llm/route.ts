@@ -1,9 +1,9 @@
-import { trialEnabled, TRIAL_MODEL } from "@/lib/agent/trial";
+import { tutorModel } from "@/lib/agent/provider";
 import { courseOwner } from "@/lib/context/ownership";
 import { studentCourseContext } from "@/lib/context/catalog";
 import { currentIdentity } from "@/lib/auth/server";
 import { asSessionEvent } from "@/lib/agent/events";
-import { GROK_DEEP_MODEL, GROK_MODEL, streamGrok, usesConceptLesson } from "@/lib/agent/grok";
+import { streamGrok, usesConceptLesson } from "@/lib/agent/grok";
 import { type LivePage } from "@/lib/pdf/live-page";
 import { asLiveBoard } from "@/lib/whiteboard/live-board";
 import type { ChatMessage } from "@/lib/agent/tags";
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     board: body && typeof body === 'object' ? asLiveBoard((body as { liveBoard?: unknown }).liveBoard) : null,
     student: { ...course, studentName: identity?.name ?? course.studentName ?? 'unknown' },
   };
-  const model = trialEnabled() && visualRepair ? TRIAL_MODEL : deep ? GROK_DEEP_MODEL : GROK_MODEL;
+  const model = tutorModel(deep);
   const structuredLesson = usesConceptLesson(deep, visualRepair, context);
   const id = `tutor-${crypto.randomUUID()}`;
   const started = Date.now();

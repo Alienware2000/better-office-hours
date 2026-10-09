@@ -46,9 +46,9 @@ symlinkSync(storage, join(runtime, '.data'), 'dir');
 const local = parseEnv(readFileSync(join(root, '.env.local'), 'utf8'));
 const benchmark = parseEnv(readFileSync(join(root, '.env.benchmark.local'), 'utf8'));
 const env = { PATH: process.env.PATH, HOME: process.env.HOME, TMPDIR: process.env.TMPDIR,
-  NODE_ENV: 'development', NEXT_TELEMETRY_DISABLED: '1', BOH_VOICE_TRIAL: '1', NEXT_PUBLIC_BOH_VOICE_TRIAL: '1',
+  NODE_ENV: 'development', BOH_TUTOR_PROVIDER: 'opus', NEXT_TELEMETRY_DISABLED: '1', BOH_VOICE_TRIAL: '1', NEXT_PUBLIC_BOH_VOICE_TRIAL: '1',
   OPENROUTER_API_KEY: benchmark.OPENROUTER_API_KEY, ELEVENLABS_API_KEY: local.ELEVENLABS_API_KEY, XAI_API_KEY: local.XAI_API_KEY };
-for (const name of ['OPENROUTER_API_KEY', 'ELEVENLABS_API_KEY', 'XAI_API_KEY']) if (!env[name]) throw new Error(`Missing private ${name} configuration.`);
+for (const name of ['OPENROUTER_API_KEY', 'ELEVENLABS_API_KEY']) if (!env[name]) throw new Error(`Missing private ${name} configuration.`);
 const signing = join(base, 'signing-key');
 try { writeFileSync(signing, randomBytes(32).toString('hex'), { flag: 'wx', mode: 0o600 }); } catch (error) { if (error.code !== 'EEXIST') throw error; }
 if (!lstatSync(signing).isFile() || lstatSync(signing).isSymbolicLink()) throw new Error('Invalid local signing file.');

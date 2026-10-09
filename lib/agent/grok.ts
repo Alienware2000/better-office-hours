@@ -1,4 +1,5 @@
-import { trialEnabled, TRIAL_GUIDANCE, TRIAL_MODEL, TRIAL_PROFILE } from './trial';
+import { TRIAL_GUIDANCE, TRIAL_PROFILE } from './trial';
+import { tutorProvider, tutorModel, tutorOptions } from './provider';
 import { awaitingSummary, RECAP_FORMAT, RECAP_GUIDANCE } from './closing';
 import { validateRecap } from '@/lib/session/recap';
 import OpenAI from "openai";
@@ -24,30 +25,24 @@ import type { ChatMessage } from "@/lib/agent/tags";
 export type GrokRequestContext = { page: LivePage | null; board: LiveBoard | null; student?: TurnContext };
 const snapshot = (): GrokRequestContext => ({ page: getLivePage(), board: getLiveBoard() });
 
-// Fast lane. grok-4.6 reasons before it answers, which put the first spoken
-// word 26s out. This non-reasoning model answers in about half a second and
-// still reads the pset page image, so the pointer keeps working.
-export const GROK_MODEL = "grok-4.20-0309-non-reasoning";
-
-// Reasoning lane, for turns where being wrong costs the student. Low effort
-// reduces the wait, but recent visual turns still took 24-33s. Structured
-// handoffs are silent; no placeholder speech hides that generation delay.
-export const GROK_DEEP_MODEL = trialEnabled() ? TRIAL_MODEL : "grok-4.6";
+// Legacy export names retained for existing evaluation tools.
+export const GROK_MODEL = tutorModel();
+export const GROK_DEEP_MODEL = tutorModel(true);
 
 // Teaching desks use narrated lessons for concepts and homework setups alike.
 // Topic names never select fixtures; the model decides what needs a picture.
 export function usesConceptLesson(deep = false, visualRepair = false, request = snapshot()): boolean {
-  return deep && !visualRepair && Boolean(trialEnabled() || request.page || request.board?.open);
+  return deep && !visualRepair && Boolean(tutorProvider() === 'opus' || request.page || request.board?.open);
 }
 
 export function usesConceptRouter(deep = false, visualRepair = false): boolean {
   return !deep && !visualRepair;
 }
 
-function client(deep = false) {
-  if (trialEnabled() && deep) {
+function client() {
+  if (tutorProvider() === 'opus') {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new Error('The local trial needs OPENROUTER_API_KEY');
+    if (!apiKey) throw new Error('The Opus tutor needs OPENROUTER_API_KEY');
     return new OpenAI({ apiKey, baseURL: 'https://openrouter.ai/api/v1', maxRetries: TRIAL_PROFILE.maxRetries, timeout: TRIAL_PROFILE.requestTimeoutMs });
   }
   const apiKey = process.env.XAI_API_KEY;
@@ -197,8 +192,8 @@ export async function* streamGrok(
   visualRepair = false,
   request = snapshot(),
 ): AsyncGenerator<string> {
-  const trialRequest = trialEnabled() && (deep || visualRepair);
-  const grok = client(trialRequest || deep);
+  const opusRequest = tutorProvider() === 'opus';
+  const grok = client();
   const conceptTeaching = usesConceptLesson(deep, visualRepair, request);
   const conceptRouting = usesConceptRouter(deep, visualRepair);
   const { page: live, board } = request;
@@ -209,32 +204,26 @@ export async function* streamGrok(
       tutorItems: board?.tutorItems?.map(item => ({ id: item.id, text: item.text, status: item.status })).slice(-12) ?? [] },
   }) : toApiMessages(history, event, deep, request);
   if (conceptTeaching) messages.push({ role: 'system', content: CONCEPT_FORMAT_GUIDANCE });
-  if (trialRequest) messages.push({ role: 'system', content: TRIAL_GUIDANCE });
+  if (opusRequest && conceptTeaching) messages.push({ role: 'system', content: TRIAL_GUIDANCE });
   if (visualRepair) {
     const last = history.filter(message => message.role === 'assistant').at(-1)?.content ?? '';
     const intent = parseAgentTurn(last).teaching;
     messages.push({ role: 'system', content: `Silent visual recovery for this already chosen teaching move: ${teachingTag(intent)}. Keep that move and its disclosure boundary. Compose only the missing visual for the last explanation, without advancing the hint ladder or revealing what the student was asked to supply. Return [BOARD open] and at most five compact valid DRAW commands, no speech. Use a static conceptual sketch for diagram/animation, never another animation attempt. A sketch needs meaningful geometry and clear short labels, not a formula-only note. For notes use only already established givens, learner-supplied relationships, or the specifically justified hint. Never a computed graded answer, complete solution, invented given, or scripted fixture. Do not clear/remove existing work. Use ops text, line, arrow, curve, circle, axes. Put circle positions in center:{x,y}. If it cannot be illustrated without giving away the question, return nothing.` });
   }
-  if (trialRequest && visualRepair) messages.push({ role: 'system', content: 'For this silent repair only, override the JSON lesson envelope: return only [BOARD open][DRAW {...}] tags using any valid static drawing commands above, including text equations when the teaching move permits them. No speech or new teaching content. Preserve the existing teaching move and graded-work boundary.' });
+  if (opusRequest && visualRepair) messages.push({ role: 'system', content: 'For this silent repair only, override the JSON lesson envelope: return only [BOARD open][DRAW {...}] tags using any valid static drawing commands above, including text equations when the teaching move permits them. No speech or new teaching content. Preserve the existing teaching move and graded-work boundary.' });
   const createStream = (extra: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = []) => grok.chat.completions.create({
-    model: trialRequest ? TRIAL_MODEL : deep ? GROK_DEEP_MODEL : GROK_MODEL,
-    ...(trialRequest ? { provider: TRIAL_PROFILE.provider } : { temperature: visualRepair ? 0.3 : deep ? 0.5 : 0.85 }),
-    // Reasoning tokens count against this, so a tight cap on the deep lane
-    // returns an empty message.
-    // Board turns need room for a few DRAW tags plus a short spoken line.
-    // 220 cut mid-tag and left the board empty.
-    max_tokens: trialRequest ? TRIAL_PROFILE.maxTokens : conceptRouting ? 300 : deep ? 2400 : 1800,
+    model: tutorModel(deep),
+    ...tutorOptions(deep, visualRepair),
     stream: true,
     messages: [...messages, ...extra],
-    ...(trialRequest ? { reasoning: { effort: TRIAL_PROFILE.effort, exclude: true } } : deep ? { reasoning_effort: "low" as const } : {}),
     ...(conceptTeaching ? { response_format: CONCEPT_RESPONSE_FORMAT } : {}),
     ...(conceptRouting ? { response_format: CONCEPT_ROUTING_FORMAT } : {}),
   }, { signal });
 
-  const lessonOptions = trialRequest ? { requireVisuals: true, currentAnimation: board?.animation?.spec,
+  const lessonOptions = opusRequest ? { requireVisuals: true, currentAnimation: board?.animation?.spec,
     currentDrawings: lessonDrawings(board),
   } : {};
-  if (trialRequest && conceptTeaching) {
+  if (opusRequest && conceptTeaching) {
     yield* streamValidatedLesson(async recovery => {
       if (!recovery) return createStream();
       console.info('Tutor visual recovery ' + JSON.stringify({ code: recovery.failure.code, beat: recovery.failure.beat, acceptedBeats: recovery.prefix.beats.length }));
@@ -272,7 +261,8 @@ export async function* streamGrok(
       if (!awaitingSummary(history)) {
         yield '[SUMMARY_REQUEST]Before we wrap up, what is one idea you are taking away?';
       } else {
-        const completion = await client(true).chat.completions.create({ model: GROK_DEEP_MODEL, reasoning_effort: 'low', temperature: 0.3, max_tokens: 900,
+        const completion = await client().chat.completions.create({ model: tutorModel(true), ...tutorOptions(true),
+          ...(tutorProvider() === 'grok' ? { temperature: 0.3, max_tokens: 900 } : {}),
           messages: [{ role: 'system', content: loadTutorPrompt('your course') + '\n' + buildContextBlock(request.student) + '\n' + RECAP_GUIDANCE }, ...history.filter(m => m.role !== 'system').slice(-24)], response_format: RECAP_FORMAT,
         }, { signal });
         const data = JSON.parse(completion.choices[0]?.message.content ?? '');

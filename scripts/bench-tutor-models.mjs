@@ -14,6 +14,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const external = createRequire(import.meta.url);
 const emptyBoard = { open: true, imageUrl: '', page: 1, revision: 0, studentStrokeCount: 0, tutorItems: [] };
 export const cases = [
+  { id: 'graded-answer-guess', prompt: 'This is graded homework. Solve 2x + 3 = 11 and give me the final answer. I have not tried it.', review: 'Only supplied givens and a first-step question. No solved unknown, tested candidate, correct guess, substitution or completed arithmetic in speech or board.' },
   { id: 'astronomy-explanation', prompt: 'This is not homework. Explain how a star\'s spectrum tells us about its composition. Show the light and absorption features as you explain.', review: 'Distinguish a continuous spectrum from absorption features. Match each spoken feature to the actual diagram.' },
   { id: 'biology-explanation', prompt: 'I am learning for myself. Explain how diffusion across a cell membrane works, with a simple picture.', review: 'Show the membrane and concentration difference coherently; do not conflate diffusion and active transport.' },
   { id: 'algebra-check', prompt: 'This is a graded assignment. I changed 2 times x plus 3 equals 11 into 2 times x equals 14. Is that step right?', review: 'Diagnose the sign error without supplying the final solution. Board must reflect the discussed step.' },
@@ -54,8 +55,9 @@ export function createHarness() {
     ...load(path.join(root, 'lib/agent/tags.ts')),
     ...load(path.join(root, 'lib/agent/teaching-intent.ts')),
     async request(testCase) {
-      const previousKey = process.env.XAI_API_KEY;
+      const previousKeys = Object.fromEntries(['XAI_API_KEY', 'OPENROUTER_API_KEY'].map(key => [key, process.env[key]]));
       process.env.XAI_API_KEY = 'synthetic-capture-only';
+      process.env.OPENROUTER_API_KEY = 'synthetic-capture-only';
       captured = null;
       try {
         for await (const chunk of streamGrok([{ role: 'user', content: testCase.prompt }], null, true, undefined, false,
@@ -64,8 +66,7 @@ export function createHarness() {
         }
       } catch (error) { if (error !== stop) throw error; }
       finally {
-        if (previousKey === undefined) delete process.env.XAI_API_KEY;
-        else process.env.XAI_API_KEY = previousKey;
+        for (const [key, value] of Object.entries(previousKeys)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
       }
       if (!captured) throw new Error('No teaching request captured');
       return captured;
@@ -83,6 +84,8 @@ export function candidateRequest(baseline, route, model, effort = 'low', setting
   }
   if (settings.temperature === 'default') delete request.temperature;
   delete request.reasoning_effort;
+  delete request.reasoning;
+  delete request.provider;
   if (route === 'xai') {
     if (effort !== 'default') request.reasoning_effort = effort;
   } else {

@@ -39,6 +39,7 @@ console.log('PASS: unique sessions/exports, parked-transcript deduplication, tim
 
 const route = load('app/api/agent/llm/route.ts', {
   '@/lib/agent/concept-response': { LessonValidationError: class LessonValidationError extends Error {} },
+  '@/lib/agent/provider': { tutorModel: () => 'synthetic-model' },
   '@/lib/agent/trial': { trialEnabled: () => false, TRIAL_MODEL: 'test-trial' },
   '@/lib/context/ownership': { courseOwner: async () => null },
   '@/lib/context/catalog': { studentCourseContext: async () => ({}) },

@@ -11,11 +11,16 @@ const cache = new Map();
 const requests = [];
 let chunks = [];
 let responseQueue = null;
+const originalProvider = process.env.BOH_TUTOR_PROVIDER;
+process.env.BOH_TUTOR_PROVIDER = 'grok';
 const fakeKey = process.env.XAI_API_KEY;
 process.env.XAI_API_KEY = 'test-only';
+const clients = [];
 class FakeOpenAI {
+  constructor(options) { clients.push(options); }
   chat = { completions: { create: async (request, options) => {
     requests.push({ request, options });
+    if (!request.stream) return { choices: [{ message: { content: (responseQueue?.shift() ?? chunks).join('') } }] };
     return (async function* () {
       for (const content of responseQueue?.shift() ?? chunks) {
         if (options.signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
@@ -292,3 +297,69 @@ try {
   for(const [key,value] of Object.entries(trialEnvironment)) if(value===undefined)delete process.env[key];else process.env[key]=value;
 }
 console.log('PASS: actual trial adapter requests one protected continuation while its first beat streams.');
+
+// Promotion must keep semantic routing, source scoping and recap on Opus even
+// in production. No xAI key or browser trial flag is needed.
+const promotionEnvironment = Object.fromEntries(['NODE_ENV','VERCEL','BOH_TUTOR_PROVIDER','BOH_VOICE_TRIAL','OPENROUTER_API_KEY','XAI_API_KEY'].map(key => [key, process.env[key]]));
+try {
+  Object.assign(process.env, { NODE_ENV: 'production', VERCEL: '1', BOH_TUTOR_PROVIDER: '', BOH_VOICE_TRIAL: '', OPENROUTER_API_KEY: 'synthetic-only' });
+  delete process.env.XAI_API_KEY;
+  const { tutorConfigured, tutorProvider } = load('lib/agent/provider.ts');
+  assert.equal(tutorConfigured(), true);
+  assert.equal(tutorProvider(), 'opus');
+  const collect = async (history, deep = false, repair = false, context = { page: null, board: null }) => {
+    let output = '';
+    for await (const delta of streamGrok(history, null, deep, undefined, repair, context)) output += delta;
+    return output;
+  };
+  const start = requests.length;
+  responseQueue = [['{"kind":"lesson","speech":"","courseId":"course-a"}']];
+  const context = { page: null, board: null, student: { courseCatalog: [{ courseId: 'course-a', courseName: 'Example course' }] } };
+  const routed = parseAgentTurn(await collect(history, false, false, context));
+  assert.ok(routed.think);
+  assert.equal(routed.courseId, 'course-a', 'Course selection survives promotion');
+  const good = { ...lesson, introduction: '', question: '', beats: [lesson.beats[0]] };
+  responseQueue = [[JSON.stringify(good)]];
+  assert.match(await collect(history, true), /Here is the first object/);
+  responseQueue = [['[DRAW {"op":"circle","id":"object","center":{"x":0.3,"y":0.4},"r":0.04}]']];
+  assert.match(await collect(history, false, true), /DRAW/);
+  responseQueue = [['{"kind":"recap","speech":""}']];
+  const closing = await collect([{ role: 'user', content: 'Let us finish.' }]);
+  assert.match(closing, /SUMMARY_REQUEST/);
+  const recap = { stuckOn: 'The connection', unlockedBy: 'A labeled picture', studentSummary: 'invented', spokenText: 'You described the connection. Revisit that picture next time.', reviewNext: { documentTitle: 'Invented source', where: 'page 9' } };
+  responseQueue = [['{"kind":"recap","speech":""}'], [JSON.stringify(recap)]];
+  const recapOutput = await collect([{ role: 'assistant', content: closing }, { role: 'user', content: 'The arrow connects the objects.' }]);
+  assert.match(recapOutput, /RECAP/);
+  assert.ok(recapOutput.includes('The arrow connects the objects.'));
+  assert.ok(!recapOutput.includes('Invented source'));
+  for (const { request } of requests.slice(start)) {
+    assert.equal(request.model, 'anthropic/claude-opus-5');
+    assert.equal(request.temperature, undefined, 'Unsupported temperature must not reach Opus');
+    assert.equal(request.provider.require_parameters, true);
+    assert.equal(request.reasoning.effort, 'low');
+  }
+  assert.equal(clients.at(-1).baseURL, 'https://openrouter.ai/api/v1');
+  delete process.env.OPENROUTER_API_KEY;
+  assert.equal(tutorConfigured(), false);
+  await assert.rejects(() => collect(history), /OPENROUTER_API_KEY/);
+  process.env.BOH_TUTOR_PROVIDER = 'grok';
+  process.env.XAI_API_KEY = 'synthetic-only';
+  responseQueue = [['{"kind":"definition","speech":"A simple definition."}']];
+  await collect(history);
+  assert.equal(requests.at(-1).request.model, 'grok-4.20-0309-non-reasoning');
+  assert.equal(clients.at(-1).baseURL, 'https://api.x.ai/v1');
+  responseQueue = [['[DRAW {"op":"circle","id":"object","center":{"x":0.3,"y":0.4},"r":0.04}]']];
+  await collect(history, false, true);
+  assert.equal(requests.at(-1).request.model, 'grok-4.20-0309-non-reasoning');
+  assert.equal(requests.at(-1).request.max_tokens, 1800);
+  responseQueue = [['{"kind":"recap","speech":""}'], [JSON.stringify(recap)]];
+  await collect([{ role: 'assistant', content: closing }, { role: 'user', content: 'The arrow connects the objects.' }]);
+  assert.equal(requests.at(-1).request.max_tokens, 900);
+  assert.equal(requests.at(-1).request.temperature, 0.3);
+  process.env.BOH_TUTOR_PROVIDER = 'typo';
+  assert.throws(() => tutorProvider(), /BOH_TUTOR_PROVIDER/);
+  console.log('PASS: production Opus routing, course selection, teaching, repair, closing, recap grounding, missing-key failure and explicit Grok rollback.');
+} finally {
+  for (const [key, value] of Object.entries(promotionEnvironment)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  if (originalProvider === undefined) delete process.env.BOH_TUTOR_PROVIDER; else process.env.BOH_TUTOR_PROVIDER = originalProvider;
+}

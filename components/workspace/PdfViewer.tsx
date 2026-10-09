@@ -86,19 +86,15 @@ export function PdfViewer({
   const [color, setColor] = useState<InkColor>("ink");
   const [current, setCurrent] = useState(savedView?.current ?? 0);
   const [zoom, setZoom] = useState(savedView?.zoom ?? 1);
-  const zoomRef = useRef(1);
-  zoomRef.current = zoom;
+  const zoomRef = useRef(savedView?.zoom ?? 1);
   const [fitWidth, setFitWidth] = useState(0);
   const [panning, setPanning] = useState(false);
   const [laser, setLaser] = useState<{ x: number; y: number } | null>(
     null,
   );
   const onReadyRef = useRef(onReady);
-  onReadyRef.current = onReady;
   const activeRef = useRef(active);
-  activeRef.current = active;
   const toolRef = useRef(tool);
-  toolRef.current = tool;
   const zoomFocusRef = useRef<{ x: number; y: number; fx: number; fy: number } | null>(
     null,
   );
@@ -138,7 +134,14 @@ export function PdfViewer({
     setZoom(clamped);
   };
   const zoomAroundRef = useRef(zoomAround);
-  zoomAroundRef.current = zoomAround;
+  // Publish committed values to native event handlers, never speculative renders.
+  useLayoutEffect(() => {
+    zoomRef.current = zoom;
+    onReadyRef.current = onReady;
+    activeRef.current = active;
+    toolRef.current = tool;
+    zoomAroundRef.current = zoomAround;
+  });
 
   useLayoutEffect(() => {
     const stack = hostRef.current;
