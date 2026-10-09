@@ -1,10 +1,10 @@
 # Current engineering notes
 
-Updated: 2026-10-08. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
+Updated: 2026-10-09. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
 
 ## Workflow and environment
 
-- Fresh-clone TypeScript needs `next typegen` before `tsc` for LayoutProps. October 8 full lint found six pre-existing errors in unchanged PdfViewer/check-integration files; targeted lint history was not a full-repository pass. See DEVELOPMENT.
+- Fresh-clone TypeScript needs `next typegen` before `tsc` for LayoutProps. October 9 fixed six existing lint errors. ESLint now excludes generated voice assets and ignored .data snapshots. Turbopack cannot resolve a node_modules symlink outside an isolated clone; copy/install dependencies there.
 
 - AGENTS.md is shared authority; CLAUDE.md and Cursor point there. See MEMORY_GUIDE, MEMORY_RECIPE, and WORKFLOW for human instructions. Scripts validate/assemble memory; agents write it.
 - Archive completed TASKs before replacing them. Caps: TASK 6,000, default context 12,000, full context 28,000 characters. Strict writes validate branch/base/fields/links. Compact detail into linked guides; keep the caps.
@@ -16,6 +16,10 @@ Updated: 2026-10-08. Keep this short and current. Search [archived notes](archiv
 - Fast Refresh lost saved trial drawings; transcript survived. A tested development store now survives module replacement. Verify a recovery export before live edits. Keep live source stable; build/test with isolated data/runtime, never linked live .data. See TUTOR_TRIAL for the incident.
 
 ## Voice and pedagogy
+
+- October 9 Opus is the normal local default, not just a trial. Keep the semantic router for courses/recap. No unsupported temperature, no silent fallback on a missing key. Explicit Grok rollback retains fast repair and previous recap limits.
+- Real graded test leaked the correct answer as a board/speech "guess" despite refusing a final answer. Presentation guidance now forbids candidate substitutions and worked arithmetic on no-attempt graded work; two fresh live checks passed. This is prompt mitigation, not semantic proof. Raw synthetic evidence stays ignored; see evaluations/2026-10-09-main-integration.md.
+
 
 - Typing bypasses mic/STT; mute is independent of pause/abort and persists. Voice auto-listens unless muted. Orb stays plain, with a noninteractive caption. Keep integrated controls and collapsed trial details. See evaluations/2026-09-20-input-design.md and evaluations/2026-09-20-hybrid-voice-prose.md. Real-device review pending; old snapshot data retained.
 

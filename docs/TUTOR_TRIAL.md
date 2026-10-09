@@ -1,6 +1,8 @@
 # Local voice trial
 
-Updated September 15, 2026. David authorized a temporary Opus-low live trial and the necessary drawing-contract extension. This does not select a production model or lift the publication freeze.
+October 9 update: David selected Opus as the normal tutor default. Normal routing, teaching, visual repair and recap now use the pinned profile through OpenRouter; BOH_TUTOR_PROVIDER=grok explicitly rolls back. The direct-teaching trial launcher remains separate. Publication review and the public pause remain. See [integration evidence](evaluations/2026-10-09-main-integration.md).
+
+The September 15 trial record below is historical evidence, not the current provider decision.
 
 ## Try it
 

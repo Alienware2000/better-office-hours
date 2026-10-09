@@ -4,6 +4,12 @@ Read DESIGN.md first. This doc defines the system shape and the contracts betwee
 
 September 14 coordinated local-trial exception: David authorized extending DrawCommand with generic panels and optional line labels, plus six literal Color values. Existing operations remain compatible. `lib/whiteboard/panel.ts` owns fixed panel layout; the trial-only parser validates each beat across full DRAW/ANIM, not just panels. BoardDrawing owns one reveal clock per active group. `scripts/trial-tutor.mjs` isolates port 3107 and enables Opus low. See [TUTOR_TRIAL](TUTOR_TRIAL.md). Other shared-contract freezes remain.
 
+## October 9 implementation update
+
+The normal tutor now selects Opus 5 through OpenRouter for semantic routing, streamed teaching, silent visual repair and recap, using the OpenAI SDK. `lib/agent/provider.ts` owns selection; BOH_TUTOR_PROVIDER=grok explicitly restores the earlier xAI models. Missing credentials fail visibly, without automatic provider switching. The pinned profile omits temperature and requires provider parameter support. Normal routing still selects courses and the closing/recap flow; it does not use the direct-teaching trial bypass. Opus teaching uses per-beat visual validation and one bounded continuation. Validation checks structure and disclosure metadata, not arbitrary scientific correctness or every semantic answer leak. Shared contracts are unchanged in this slice. See [integration evidence](evaluations/2026-10-09-main-integration.md).
+
+Browser-local saves, PDF/ink recovery, scoped context, optional identity and recap are implemented as documented in the later updates. The early baseline and latency targets below are historical and must not override current code or measured evidence.
+
 ## Implementation baseline
 
 The diagram and interfaces below include target integrations. Read LANES.md for an inventory of actual files and first PR boundaries. Currently the browser owns the custom voice loop and calls the LLM route; STT and TTS are separate ElevenLabs API calls. The whiteboard is custom SVG. Auth, Supabase, ingest/retrieve endpoints, persistent session/recap endpoints, and the spoken recap flow are not implemented. Shared types describe their target data, not working services.

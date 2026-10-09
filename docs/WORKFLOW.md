@@ -30,13 +30,13 @@ This creates `~/.local/bin/boh-context` and its standalone implementation under 
 ~/.local/bin/boh-context --repo /path/to/checkout
 ```
 
-The helper survives deletion/movement of the checkout that installed it. It requires Node on PATH. No shell profile, other agent configuration, or global npm dependency is changed. Use the full path when ~/.local/bin is not on PATH. Rerun --install after changing the helper implementation. Never overwrite an unrelated executable at that path.
+The installed helper survives checkout moves/deletion and requires Node. Use its full path if ~/.local/bin is absent from PATH. Rerun --install after helper changes; never overwrite an unrelated executable. Shell profiles and other agents' configuration are untouched.
 
-Git worktrees are discovered automatically. Separate clones join the machine-local index when an agent runs --write (npm run handoff) or --install there. Identity is derived from the sanitized origin, normalizing ordinary HTTPS and SSH forms; no credentials enter the identity. Forks with different origins are deliberately separate. Without an origin, discovery is limited to the common Git directory. There is no whole-disk search.
+Git worktrees are discovered automatically. Separate clones enter the machine-local index after --write or --install. Identity uses sanitized origin URLs; forks remain separate and credentials are excluded. Without an origin, discovery uses the common Git directory. There is no whole-disk search.
 
-The index stores one latest JSON checkpoint per checkout: curated task text, source root, branch, commit, dirty flag, and checkpoint time. It never stores code diffs, environment values, student exports, or complete chats. Read-only orientation does not register the current checkout or alter another checkout. It refreshes reachable candidate metadata, flags moved/missing sources or potentially stale snapshots, and shows an explicit snapshot path for deeper retrieval.
+Each checkout has one latest JSON checkpoint: curated task, root, branch, commit, dirty flag and time. No code, environment values, exports or full chats are saved. Read-only orientation checks reachable metadata and exposes stale/missing snapshot paths without registration or changes to other checkouts.
 
-Compare the intended task and code, not just checkpoint timestamps. "Same commit", "included", "behind", "diverged", and "commit not available here" describe different states. A dirty checkpoint means uncommitted code remains at its source. If the current branch doesn't match TASK, first determine whether to continue there, use the source checkout, or deliberately transfer local commits. Don't merely rewrite Branch to silence the check. The helper never switches, merges, fetches, resets, deletes, or synchronizes files.
+Compare task and code, not timestamps. Included, behind, diverged and unavailable commits mean different things. Dirty files remain at their source. Resolve a TASK/branch mismatch before continuing; do not rewrite Branch merely to silence validation. The helper never switches, merges, fetches, resets, deletes or synchronizes files.
 
 On another computer, this local index is not available. Transfer/share the committed code and a lean checkpoint explicitly, then install/checkpoint there. Publication requires its own authorization; a context transfer is not permission to push. A plain brief transfers task context, not missing code, credentials, PDF bytes, or browser saves. Truly seamless cross-machine synchronization remains separate work.
 
@@ -51,7 +51,7 @@ npm ci
 npm run dev:local
 ```
 
-Open http://localhost:3105. Put existing xAI/ElevenLabs development keys in ignored `.env.local`, using names from `.env.example`. Missing keys still permit UI exploration. Real tutor usage calls the configured providers and consumes credits. Signing secrets for local Canvas experiments should be generated locally, not copied from production. Google sign-in is disabled in this launcher.
+Open http://localhost:3105. Put OpenRouter/ElevenLabs development keys in ignored `.env.local`, using names from `.env.example`. Opus is the default; BOH_TUTOR_PROVIDER=grok plus XAI_API_KEY explicitly selects the older Grok route. Missing keys still permit UI exploration. Real tutor usage calls the configured providers and consumes credits. Signing secrets for local Canvas experiments should be generated locally, not copied from production. Google sign-in is disabled in this launcher.
 
 `dev:local` binds to 127.0.0.1, uses this checkout's `.data`, and disables the existing Blob/Supabase cloud adapters and production mode via process environment overrides, including when `.env` contains those settings. It rejects externally linked `.data`. This is a local convenience guard, not a general outbound-network sandbox. Raw `npm run dev`/`build` do not have this guard.
 

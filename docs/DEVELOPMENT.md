@@ -1,13 +1,13 @@
 # Development baseline and promotion
 
-Updated September 20, 2026. David reports BOH won the hackathon. He requested consolidation before further board work. The contest hold is retired; the public Vercel pause remains. This document is the small index of what belongs where, not another transcript or complete history.
+Updated October 9, 2026. David reports BOH won the hackathon. He requested consolidation before further board work. The contest hold is retired; the public Vercel pause remains. This document is the small index of what belongs where, not another transcript or complete history.
 
 ## One repository, three uses
 
 | Use | Current truth | How it advances |
 | --- | --- | --- |
-| Product baseline | GitHub `origin/main`, fetched at `1b8c7c2`. Default source uses Grok routing/reasoning. Public deployment is separately paused. | Reviewed integration and deliberate release. A merge is not evidence of a deployment. |
-| Development candidate | This checkout, `lane/post-hackathon-local`; latest isolated candidate is localhost:3117 (`19a3681`), with 3116 (`1770053`) retained. OpenRouter Opus-low and protected structured lessons are trial-gated. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
+| Product baseline | GitHub `origin/main`, fetched at `3163d7f`. Remote source still uses Grok routing/reasoning. Public deployment is separately paused. | Reviewed integration and deliberate release. A merge is not evidence of a deployment. |
+| Development candidate | This checkout, `lane/post-hackathon-local`; October 9 candidate uses Opus by default. Isolated review app: localhost:3120. Older 3116 snapshot retained. | Small committed changes with checks and human review. Do not modify a live snapshot underneath a session. |
 | Evaluation | `scripts/bench-tutor-models.mjs`, `scripts/evaluation/`, `scripts/review-tutor-models.mjs`; dashboard conventionally 3106. | Synthetic comparisons and saved human judgments, independent of the default tutor configuration. |
 
 These are uses of the same codebase, not three products or separate permanent repositories. Evaluations should reuse the real parser/renderer. Evaluation fixtures must never select a student's runtime scene. Provider switching belongs in explicit configuration, not in duplicated app implementations.
@@ -29,7 +29,7 @@ These are uses of the same codebase, not three products or separate permanent re
 | Preserve accepted speech after late errors | Implemented `1185aec`; offline lifecycle checks. Keep interruption/barge-in. |
 | Numeric TeX guards and one bounded continuation | Implemented `b1ccabd`; [guard evidence](evaluations/2026-09-18-guard-recovery.md). Trial-specific continuation, not a blanket relaxation. |
 | Current-board focus validation | Implemented `3584f41`; [reproduction](evaluations/2026-09-20-drawing-focus.md). Historical cutoff cause remains unproven. |
-| Opus-low through OpenRouter | Candidate, not permanent model winner. 3110 human feedback is positive; cost, broader quality, and end-to-end latency remain evaluation criteria. |
+| Opus-low through OpenRouter | Selected by David October 9 as the local default, with explicit Grok rollback. Main publication awaits review; acoustic quality, cost and broader teaching reliability remain open. |
 | Board typography/composition | Live equation composition runs on isolated 3117; [evidence](evaluations/2026-09-20-live-composition.md). Document composition remains a separate prototype. |
 | Jev and broader renderer redesign | Deferred; [Jev research](JEV_RESEARCH.md), [board research](WHITEBOARD_RESEARCH.md). Research is not an integration decision. |
 | Public reopening | Deferred until David requests it and a release candidate is ready. Hackathon win does not reopen access. |
@@ -57,18 +57,12 @@ The [saved-session review](evaluations/2026-09-20-session-review.md) covers all 
 
 Update this register when a candidate is promoted or a decision changes. Keep detailed evidence in linked reports. Groundtrack remains unavailable; local docs are the current engineering memory. Credentials, private transcripts, uploads, and student exports never belong in committed evaluation records.
 
-## October 8 return to building
+## October 9 return to building
 
-David requests a main-integration plan and then a light README cleanup. Fresh origin/main is `3163d7ffea5ff820247403298546993295c70298`; development HEAD is `b8e9a25`. There are 66 local-only commits and one remote-only README commit replacing the video link with LinkedIn. Merge-tree simulation is conflict-free. Local main remains stale. Public demo returns HTTP 503 / DEPLOYMENT_PAUSED; keep that pause through publication planning.
+David accepted the integration plan and selected Opus over slow Grok. Fetched origin/main `3163d7ffea5ff820247403298546993295c70298` was merged locally at `d0d4d31`, preserving the LinkedIn demo link. Local main remains stale. No push, PR, main merge or deployment occurred. The concrete [integration packet](evaluations/2026-10-09-main-integration.md) records scope, contract review, tests and rollback.
 
-Recommended sequence:
+The normal candidate uses Opus for routing, teaching, repair and recap, keeping source selection and student-first closing. Grok is an explicit rollback. Existing panels/colors/line labels were reviewed across parser, geometry, styling, store and lesson validation without expanding frozen contracts. PR #11 remains separate because its persistence/identity assumptions need reconciliation. The README now describes the continuing product, preserves demo links and labels prototype limits.
 
-1. Prepare one reviewed accumulated integration against fresh origin/main. Include workflow/evaluation tooling, voice/input/UI reliability and general renderer fixes with their dependencies. Preserve the remote demo link. Keep Opus development-gated and document prototypes as studies. Merging their source does not promote them to product behavior.
-2. Review existing shared-contract additions (panels, literal colors, line labels) and all consumers. Keep PR #11 separate: its persistence/identity assumptions still need reconciliation. General prompt/layout changes also require review because they affect default Grok behavior.
-3. Clear existing lint errors; run isolated build and browser PDF/ink/save/reopen/interruption checks. Human listening and useful-response timing remain release evidence. No provider promotion or public reopening is implied.
-4. Present exact publication scope, validation and rollback revision before the main merge/push. Avoid blind cherry-picking of interdependent renderer/voice changes.
-5. After integration, lightly refresh README: product-focused introduction, hackathon as origin, current feature/limit descriptions, dev:local instructions, and retained hosted/LinkedIn demo links. Keep historical screenshots, but move build-process material below product usage.
-
-Fresh isolated checks at b8e9a25: all 18 candidate checks pass; next typegen followed by TypeScript passes. Full lint fails on five react-hooks/refs errors in PdfViewer.tsx and one no-assign-module-variable in check-integration.mjs. Both files are unchanged from main. No fresh build, provider, browser-recovery or acoustic test. TASK records the isolated evidence path. No push, PR, main merge, deployment or README edit occurred.
+All 18 offline checks, full lint, integration checks and an isolated production build pass. A live matrix lesson, PDF zoom/ink undo/redo, board ink and reload recovery were inspected in an isolated browser. Synthetic real TTS and STT succeed. A graded-answer guess leaked on the first live test; tightened guidance passed two fresh equation/chemistry checks. This is not proof against all answer leaks. Speech length, broad STEM semantics, human acoustic quality and full end-to-end latency remain open. Public Vercel stays paused; git-triggered deployment is disabled in the candidate configuration. Publication needs David's concrete review before any push/PR/main merge.
 
 September 20 interaction foundation: voice stays primary, typing opens explicitly, controls share a visual system, and state cues are explicit. See [UI foundation](UI_FOUNDATION.md) and [product checklist](PRODUCT_CHECKLIST.md). Earlier snapshots/data remain preserved; STATUS tracks running versions.
