@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 
-export function ResponseStatus({ label, busy }: { label: string; busy: boolean }) {
+export type ResponsePresentation = {
+  tone: 'ready' | 'listening' | 'thinking' | 'speaking' | 'connecting' | 'error';
+  label: string;
+  hint: string;
+};
+
+export function ResponseStatus({ label, hint, tone }: ResponsePresentation) {
   return (
-    <div className="response-status">
-      <p className="orb-status" role="status">{label}</p>
+    <div className={`response-status is-${tone}`}>
+      <p className="orb-status" role="status">{tone !== 'ready' && <span className="state-signal" aria-hidden><i/><i/><i/></span>}{label}</p>
+      {tone !== 'ready' && <p className="response-hint">{hint}</p>}
       <div className="response-activity">
-        {busy && <WaitingActivity />}
+        {tone === 'thinking' && <WaitingActivity />}
       </div>
     </div>
   );
@@ -19,7 +26,6 @@ function WaitingActivity() {
   }, []);
   return (
     <>
-      <span className="response-dots" aria-hidden="true"><i /><i /><i /></span>
       {slow && <span className="response-delay" role="status">Taking a little longer</span>}
     </>
   );

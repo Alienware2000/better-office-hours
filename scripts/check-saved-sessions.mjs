@@ -38,6 +38,9 @@ assert.deepEqual(second.voice,null,'A new session does not inherit previous conv
 console.log('PASS: unique sessions/exports, parked-transcript deduplication, timestamps/roles, renamed titles, structured board/ink/animation/timing export.');
 
 const route = load('app/api/agent/llm/route.ts', {
+  '@/lib/agent/concept-response': { LessonValidationError: class LessonValidationError extends Error {} },
+  '@/lib/agent/provider': { tutorModel: () => 'synthetic-model' },
+  '@/lib/agent/trial': { trialEnabled: () => false, TRIAL_MODEL: 'test-trial' },
   '@/lib/context/ownership': { courseOwner: async () => null },
   '@/lib/context/catalog': { studentCourseContext: async () => ({}) },
   '@/lib/auth/server': { currentIdentity: async () => null },

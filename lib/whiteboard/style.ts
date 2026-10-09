@@ -1,5 +1,5 @@
 import type { Color } from "../types";
-import { hasLatex } from './math-source';
+import { hasLatex, isMathNotation } from './math-source';
 
 export const boardStyle = {
   paper: "#fffcf6",
@@ -8,9 +8,14 @@ export const boardStyle = {
     accent: "#b95832",
     muted: "#938b7d",
     warn: "#a77726",
+    red: "#cf3434", orange: "#ef842d", yellow: "#eacb38",
+    green: "#329653", blue: "#347ac5", violet: "#7850b1",
   } satisfies Record<Color, string>,
   stroke: 2.25,
   label: { s: 0.054, m: 0.075 },
+  // Equations use one working scale, whether alone or beside a figure.
+  // Compact symbol labels keep their separate .038 scale.
+  equation: 0.052,
   motion: {
     reveal: 0.52,
     hold: 0.65,
@@ -20,8 +25,12 @@ export const boardStyle = {
 
 export function boardLabel(value: string) {
   // Never truncate a TeX command or normalize its braces into invalid source.
-  if (hasLatex(String(value))) return String(value).trim().slice(0, 800);
+  if (hasLatex(String(value)) && isMathNotation(String(value))) return String(value).trim().slice(0, 800);
   return String(value)
+    .replace(/\\(?:text|textrm|mathrm)\{([^{}]*)\}/g, '$1')
+    .replace(/\\[,;:! ]/g, ' ')
+    .replace(/\$|\\[()[\]]/g, '')
+    .replace(/_\{(\d+)\}/g, '_$1')
     .replace(/[\u2014\u2013]/g, ", ")
     .replace(/\^([23])/g, (_, digit: string) => digit === '2' ? '²' : '³')
     .replace(/\b([a-zA-Z])_?(\d+)\b/g, (_, symbol: string, digits: string) => symbol + [...digits].map(digit => '₀₁₂₃₄₅₆₇₈₉'[Number(digit)]).join(''))

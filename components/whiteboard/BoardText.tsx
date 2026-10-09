@@ -4,7 +4,7 @@ import { textReveal } from '@/lib/whiteboard/reveal';
 import type { Drawable } from '@/lib/whiteboard/geometry';
 import { typesetMath } from '@/lib/whiteboard/math-layout';
 
-export function BoardText({ mark, entering = false, delay = 0 }: { mark: Extract<Drawable, { kind: 'text' }>; entering?: boolean; delay?: number }) {
+export function BoardText({ mark, entering = false, delay = 0, elapsed = 0 }: { mark: Extract<Drawable, { kind: 'text' }>; entering?: boolean; delay?: number; elapsed?: number }) {
   const reveal = textReveal(mark.text);
   let offset = 0;
   const formula = mark.mathDrawing ?? ((mark.math ?? (!mark.heading && isMathText(mark.text))) ? typesetMath(mark.text, mark.color) : null);
@@ -14,8 +14,9 @@ export function BoardText({ mark, entering = false, delay = 0 }: { mark: Extract
     return <g className="board-math" role="img" aria-label={mark.text} data-latex={mark.text}
       transform={`translate(${left} ${mark.at.y}) scale(${size / 1000})`}>
       <title>{mark.text}</title>
-      {formula.paths.map((path, i) => <path key={i} d={path.d} fill={path.color} stroke="none"
+      {formula.paths.map((path, i) => <path key={i} d={path.d} fill={mark.color} stroke="none"
         transform={`matrix(${path.matrix.join(' ')})`}
+        opacity={entering && elapsed < delay + i * 32 ? 0 : 1}
         className={entering ? 'board-math-glyph' : undefined}
         style={entering ? { animationDelay: `${delay + i * 32}ms` } : undefined} />)}
     </g>;
@@ -27,7 +28,7 @@ export function BoardText({ mark, entering = false, delay = 0 }: { mark: Extract
     {textRuns(mark.text, mark.color).map((run, i) => <tspan key={i} fill={run.color}>
       {entering ? textReveal(run.text).glyphs.map(glyph => {
         const index = offset++;
-        return <tspan className="board-glyph" key={index} style={{ animationDelay: `${delay + (reveal.delays[index] ?? 0)}ms` }}>{glyph}</tspan>;
+        return <tspan className="board-glyph" opacity={elapsed < delay + (reveal.delays[index] ?? 0) ? 0 : 1} key={index} style={{ animationDelay: `${delay + (reveal.delays[index] ?? 0)}ms` }}>{glyph}</tspan>;
       }) : run.text}
     </tspan>)}
   </text>;

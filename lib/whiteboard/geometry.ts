@@ -1,3 +1,4 @@
+import { panelGroup, validPanel } from "./panel";
 import { closedBody } from "./body";
 import { curvePath, curveTrace } from "./curve";
 import type { Color, DrawCommand, Pt } from "@/lib/types";
@@ -48,6 +49,7 @@ export type ShapeGroup = {
   geometry?: Pt[][]; // Local collision traces, never a change to model coordinates.
   source?: DrawCommand; // Model-authored geometry retained for relative updates.
   unresolved?: boolean;
+  fixedLayout?: boolean;
 };
 
 export type BoardOp =
@@ -60,6 +62,7 @@ export function interpretCommand(
   command: DrawCommand,
   seq: number,
 ): BoardOp | null {
+  if (command.op === "panel") return validPanel(command) ? { kind: "draw", group: panelGroup(command) } : null;
   if (command.op === "clear") return { kind: "clear" };
   if (command.op === "remove") {
     const id = typeof command.id === "string" ? command.id.trim() : "";
@@ -137,6 +140,7 @@ export function interpretCommand(
         dashed: Boolean(command.dashed),
       },
     ];
+    if (command.label) drawables.push(midLabel(`${id}-l`, from, to, command.label, color, diagram.labelSide));
     if (diagram.surface) drawables.unshift(surfaceHatching(id, from, to, diagram.surface));
     return finish(drawables, [[from, to]], diagram.attach ? command : { ...command, from, to });
   }
@@ -329,6 +333,7 @@ export function isDrawCommand(value: unknown): value is DrawCommand {
   if (!value || typeof value !== "object") return false;
   const op = (value as { op?: unknown }).op;
   return (
+    (op === "panel" && validPanel(value)) ||
     op === "clear" ||
     op === "axes" ||
     op === "arrow" ||

@@ -54,8 +54,8 @@ function ptPair(raw: string | undefined): Pt | null {
 }
 
 function colorOf(value: string | undefined): Color | undefined {
-  if (value === "ink" || value === "accent" || value === "muted" || value === "warn") {
-    return value;
+  if (["ink", "accent", "muted", "warn", "red", "orange", "yellow", "green", "blue", "violet"].includes(value ?? "")) {
+    return value as Color;
   }
   return undefined;
 }

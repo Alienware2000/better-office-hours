@@ -60,53 +60,58 @@ const empty = (): BoardState => ({
   animation: null, time: 0, playing: false, focus: null,
 });
 
-let state: BoardState = empty();
-let revision = 0;
-const listeners = new Set<() => void>();
+type BoardStore = { state: BoardState; revision: number; listeners: Set<() => void> };
+// Development module replacement must not erase a student's current board and
+// let autosave persist that empty replacement. The tab owns this one store.
+// Keep the shared object, including subscriptions, so old callbacks remain valid.
+const developmentWindow = process.env.NODE_ENV === 'development' && typeof window !== 'undefined'
+  ? window as Window & { __bohDevelopmentBoard?: BoardStore } : null;
+const boardStore: BoardStore = developmentWindow?.__bohDevelopmentBoard ?? { state: empty(), revision: 0, listeners: new Set() };
+if (developmentWindow) developmentWindow.__bohDevelopmentBoard = boardStore;
 
 function emit() {
-  state = { ...state, revision: ++revision };
-  listeners.forEach((fn) => fn());
+  boardStore.state = { ...boardStore.state, revision: ++boardStore.revision };
+  boardStore.listeners.forEach((fn) => fn());
 }
 
 export function getBoardState(): BoardState {
-  return state;
+  return boardStore.state;
 }
 
 export function subscribeBoard(listener: () => void) {
-  listeners.add(listener);
+  boardStore.listeners.add(listener);
   return () => {
-    listeners.delete(listener);
+    boardStore.listeners.delete(listener);
   };
 }
 
 export function openBoard() {
-  if (state.open) return;
-  state = { ...state, open: true };
+  if (boardStore.state.open) return;
+  boardStore.state = { ...boardStore.state, open: true };
   emit();
 }
 
 export function resetBoard() {
-  state = empty();
+  boardStore.state = empty();
   emit();
 }
 
 function nextPage(current: BoardState): BoardState {
   if (!current.groups.length && !current.student.length && !current.animation) return current;
-  const page: BoardPage = { id: current.pageId, groups: current.groups, student: current.student, animation: current.animation, time: current.time, focus: current.focus };
+  const page: BoardPage = { id: current.pageId, groups: layoutDiagram(composeDiagram(current.groups), current.student), student: current.student, animation: current.animation, time: current.time, focus: current.focus };
   return { ...current, pageId: current.pageId + 1, earlierPages: [...current.earlierPages, page], groups: [], student: [], studentPast: [], studentFuture: [], studentSince: '', animation: null, playing: false, time: 0, focus: null, pulseId: null };
 }
 
 export function continueBoardPage() {
-  const next = nextPage(state);
-  if (next === state) return;
-  state = next;
+  const next = nextPage(boardStore.state);
+  if (next === boardStore.state) return;
+  boardStore.state = next;
   emit();
 }
 
 export function applyDrawCommands(commands: DrawCommand[]) {
   if (!commands.length) return;
-  let next: BoardState = { ...state, open: true, groups: [...state.groups] };
+  let next: BoardState = { ...boardStore.state, open: true, groups: [...boardStore.state.groups] };
   for (const command of commands) {
     const op = interpretCommand(command, next.seq + 1);
     if (!op) continue;
@@ -127,6 +132,10 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, pulseId: op.id };
       continue;
     }
+    // Fixed panel rows and free geometry have different space reservations.
+    // Preserve the previous page when switching drawing formats.
+    if (next.groups.some(group => (group.source?.op === 'panel') !== (command.op === 'panel'))) next = nextPage(next);
+    if (command.op === 'panel' && next.groups.some(group => group.source?.op === 'panel' && group.source.slot === command.slot && group.id !== command.id)) next = nextPage(next);
     const previous = next.groups.find(group => group.id === op.group.id);
     if (op.group.source && previous?.source && JSON.stringify(op.group.source) === JSON.stringify(previous.source)) continue;
     // A new topic continues below the old work, with its student ink intact.
@@ -143,7 +152,7 @@ export function applyDrawCommands(commands: DrawCommand[]) {
     if (!laidOut) continue;
     const existing = next.groups.findIndex((group) => group.id === op.group.id);
     if (existing >= 0 && JSON.stringify(next.groups[existing].drawables) === JSON.stringify(laidOut.drawables)) continue;
-    const geometryEdit = previous?.source && op.group.source?.op === previous.source.op && previous.appear === 'done' && !previous.unresolved;
+    const geometryEdit = command.op !== 'panel' && previous?.source && op.group.source?.op === previous.source.op && previous.appear === 'done' && !previous.unresolved;
     const group: BoardGroup = { ...laidOut, appear: geometryEdit ? 'done' : 'pending', version: geometryEdit ? previous.version : next.seq };
     if (existing >= 0) {
       const groups = next.groups.slice();
@@ -153,55 +162,55 @@ export function applyDrawCommands(commands: DrawCommand[]) {
       next = { ...next, groups: [...next.groups, group] };
     }
   }
-  state = { ...next, groups: layoutDiagram(composeDiagram(next.groups), next.student) };
+  boardStore.state = { ...next, groups: layoutDiagram(composeDiagram(next.groups), next.student) };
   emit();
 }
 
 export function markGroupShown(id: string) {
   let changed = false;
-  const groups = state.groups.map((group) => {
+  const groups = boardStore.state.groups.map((group) => {
     if (group.id !== id || group.appear === "done") return group;
     changed = true;
     return { ...group, appear: "done" as const };
   });
   if (!changed) return;
-  state = { ...state, groups };
+  boardStore.state = { ...boardStore.state, groups };
   emit();
 }
 
 export function setStudentStrokes(student: BoardStroke[]) {
-  if (student === state.student) return;
-  state = {
-    ...state,
+  if (student === boardStore.state.student) return;
+  boardStore.state = {
+    ...boardStore.state,
     student,
-    studentPast: [...state.studentPast, state.student].slice(-30), studentFuture: [],
+    studentPast: [...boardStore.state.studentPast, boardStore.state.student].slice(-30), studentFuture: [],
     studentSince: student.length ? new Date().toISOString() : "",
   };
   emit();
 }
 
 export function addStudentStroke(stroke: BoardStroke) {
-  setStudentStrokes([...state.student, stroke]);
+  setStudentStrokes([...boardStore.state.student, stroke]);
 }
 
 export function eraseStudentStrokes(ids: string[]) {
   if (!ids.length) return;
   const skip = new Set(ids);
-  const student = state.student.filter((stroke) => !skip.has(stroke.id));
-  if (student.length !== state.student.length) setStudentStrokes(student);
+  const student = boardStore.state.student.filter((stroke) => !skip.has(stroke.id));
+  if (student.length !== boardStore.state.student.length) setStudentStrokes(student);
 }
 
 export function undoStudentInk() {
-  const student = state.studentPast.at(-1);
+  const student = boardStore.state.studentPast.at(-1);
   if (!student) return;
-  state = { ...state, student, studentPast: state.studentPast.slice(0, -1), studentFuture: [state.student, ...state.studentFuture].slice(0, 30), studentSince: student.length ? new Date().toISOString() : "" };
+  boardStore.state = { ...boardStore.state, student, studentPast: boardStore.state.studentPast.slice(0, -1), studentFuture: [boardStore.state.student, ...boardStore.state.studentFuture].slice(0, 30), studentSince: student.length ? new Date().toISOString() : "" };
   emit();
 }
 
 export function redoStudentInk() {
-  const student = state.studentFuture[0];
+  const student = boardStore.state.studentFuture[0];
   if (!student) return;
-  state = { ...state, student, studentPast: [...state.studentPast, state.student].slice(-30), studentFuture: state.studentFuture.slice(1), studentSince: student.length ? new Date().toISOString() : "" };
+  boardStore.state = { ...boardStore.state, student, studentPast: [...boardStore.state.studentPast, boardStore.state.student].slice(-30), studentFuture: boardStore.state.studentFuture.slice(1), studentSince: student.length ? new Date().toISOString() : "" };
   emit();
 }
 
@@ -210,9 +219,9 @@ export function loadAnimation(input: unknown) {
   if (!validated) return false;
   const animation: AnimationSpec = { ...validated, shapes: validated.shapes.map(shape => {
     if (shape.kind === 'axes' || shape.kind === 'text') return shape;
-    const source = !state.animation || state.animation.id === validated.id
-      ? state.groups.find(group => group.id === shape.id && !group.unresolved)?.source : undefined;
-    const previous = state.animation?.id === validated.id ? state.animation.shapes.find(item => item.id === shape.id) : undefined;
+    const source = !boardStore.state.animation || boardStore.state.animation.id === validated.id
+      ? boardStore.state.groups.find(group => group.id === shape.id && !group.unresolved)?.source : undefined;
+    const previous = boardStore.state.animation?.id === validated.id ? boardStore.state.animation.shapes.find(item => item.id === shape.id) : undefined;
     const label = source && 'label' in source ? source.label : previous && 'label' in previous ? previous.label : undefined;
     // Changing an object's representation should retain its established name.
     // An explicit empty label still lets the tutor remove it deliberately.
@@ -233,48 +242,48 @@ export function loadAnimation(input: unknown) {
   // Reusing scene/object IDs explicitly continues this figure. Unrelated
   // animations still get a fresh page, preserving earlier work and ink.
   const shapeIds = new Set(animation.shapes.map(shape => shape.id));
-  const continuing = state.animation?.id === animation.id ||
-    (!state.animation && state.groups.some(group => group.source && shapeIds.has(group.id)));
-  if (!continuing && (state.animation || state.student.length || state.groups.some(group => group.id !== 'topic'))) state = nextPage(state);
+  const continuing = boardStore.state.animation?.id === animation.id ||
+    (!boardStore.state.animation && boardStore.state.groups.some(group => group.source && shapeIds.has(group.id)));
+  if (!continuing && (boardStore.state.animation || boardStore.state.student.length || boardStore.state.groups.some(group => group.id !== 'topic'))) boardStore.state = nextPage(boardStore.state);
   if (continuing) {
     // The animated object replaces its static counterpart, not the backdrop.
     // Drop source references to replaced shapes rather than leave dependents
     // attached to their old position. Composition marks these unresolved.
-    state = { ...state, groups: layoutDiagram(composeDiagram(state.groups.filter(group => !shapeIds.has(group.id))), state.student) };
+    boardStore.state = { ...boardStore.state, groups: layoutDiagram(composeDiagram(boardStore.state.groups.filter(group => !shapeIds.has(group.id))), boardStore.state.student) };
   }
-  state = { ...state, open: true, animation, time: 0, playing: true, focus: null };
+  boardStore.state = { ...boardStore.state, open: true, animation, time: 0, playing: true, focus: null };
   emit();
   return true;
 }
 export function pauseAnimation() {
-  if (!state.playing) return;
-  state = { ...state, playing: false };
+  if (!boardStore.state.playing) return;
+  boardStore.state = { ...boardStore.state, playing: false };
   emit();
 }
 export function playAnimation() {
-  if (!state.animation) return;
-  state = { ...state, playing: true, time: state.time >= state.animation.duration ? 0 : state.time };
+  if (!boardStore.state.animation) return;
+  boardStore.state = { ...boardStore.state, playing: true, time: boardStore.state.time >= boardStore.state.animation.duration ? 0 : boardStore.state.time };
   emit();
 }
 export function seekAnimation(time: number) {
-  if (!state.animation || !Number.isFinite(time)) return;
-  state = { ...state, time: Math.max(0, Math.min(state.animation.duration, time)) };
+  if (!boardStore.state.animation || !Number.isFinite(time)) return;
+  boardStore.state = { ...boardStore.state, time: Math.max(0, Math.min(boardStore.state.animation.duration, time)) };
   emit();
 }
 export function advanceAnimation(seconds: number) {
-  if (!state.playing || !state.animation) return;
-  const time = Math.min(state.animation.duration, state.time + seconds);
-  state = { ...state, time, playing: time < state.animation.duration };
+  if (!boardStore.state.playing || !boardStore.state.animation) return;
+  const time = Math.min(boardStore.state.animation.duration, boardStore.state.time + seconds);
+  boardStore.state = { ...boardStore.state, time, playing: time < boardStore.state.animation.duration };
   emit();
 }
 export function focusAnimation(id: string) {
-  if (!state.animation?.shapes.some(s => s.id === id)) return;
-  state = { ...state, focus: id };
+  if (!boardStore.state.animation?.shapes.some(s => s.id === id)) return;
+  boardStore.state = { ...boardStore.state, focus: id };
   emit();
 }
 
 // Park each desk independently, always restoring a still frame.
 export function restoreBoard(snapshot: BoardState) {
-  state = { ...structuredClone(snapshot), pageId: snapshot.pageId ?? 1, earlierPages: structuredClone(snapshot.earlierPages ?? []), studentPast: structuredClone(snapshot.studentPast ?? []), studentFuture: structuredClone(snapshot.studentFuture ?? []), playing: false };
+  boardStore.state = { ...structuredClone(snapshot), pageId: snapshot.pageId ?? 1, earlierPages: structuredClone(snapshot.earlierPages ?? []), studentPast: structuredClone(snapshot.studentPast ?? []), studentFuture: structuredClone(snapshot.studentFuture ?? []), playing: false };
   emit();
 }

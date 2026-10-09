@@ -155,7 +155,7 @@ export function SessionLibrary({ Desk, ownerKey = 'guest', accountName, signInAv
 
   return <div className="session-app">
     <header className="session-header">
-      <button ref={entry} className="session-history-button" type="button" aria-label="Sessions" aria-expanded={open} onClick={() => { suspend.current?.(); setOpen(true); }}>☰ <span>Sessions</span></button>
+      <button ref={entry} className="session-history-button" type="button" aria-label="Sessions" aria-expanded={open} onClick={() => { suspend.current?.(); setOpen(true); }}><svg aria-hidden viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="2.5" y="3" width="15" height="14" rx="3"/><path d="M7 3v14M10 7h4M10 11h4"/></svg><span>Sessions</span></button>
       <div className="session-current"><strong title={title}>{title}</strong><span role="status">{failure ? 'Not saved' : status}</span></div>
       <div className="session-header-actions" ref={setHeaderActions} />
       <button className="session-new-button" type="button" disabled={switching} onClick={onNew}>+ New session</button>

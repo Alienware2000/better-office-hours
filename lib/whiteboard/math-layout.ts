@@ -8,7 +8,6 @@ import '@mathjax/src/js/input/tex/base/BaseConfiguration.js';
 import '@mathjax/src/js/input/tex/ams/AmsConfiguration.js';
 import type { LiteElement } from '@mathjax/src/js/adaptors/lite/Element.js';
 import { mathSource } from './math-source';
-import { textRuns } from './text';
 
 export type Matrix = [number, number, number, number, number, number];
 export type MathDrawing = {
@@ -32,6 +31,34 @@ function transform(value: string): Matrix {
   return result;
 }
 
+// MathJax's SVG mtable wrapper emits solid array rules as stroked <line>
+// elements. Its stylesheet uses 70px in the same 1000-units-per-em space as
+// glyphs; setLineThickness emits stroke-thickness for a non-default rule.
+// Our SVG and snapshot paths are filled, so retain that thickness as a closed
+// rectangle. Other line styles remain unsupported rather than losing meaning.
+function tableRulePath(element: LiteElement): string {
+  const direction = adaptor.getAttribute(element, 'data-line');
+  if (!['h', 'v'].includes(direction) || adaptor.getAttribute(element, 'class') !== 'mjx-solid' ||
+    adaptor.getAttribute(element, 'stroke-dasharray')) throw new Error('Unsupported math line');
+  const coordinates = ['x1', 'y1', 'x2', 'y2'].map(name => {
+    const value = adaptor.getAttribute(element, name);
+    if (value === undefined || value.trim() === '') throw new Error('Missing math line coordinate');
+    return Number(value);
+  });
+  const thicknessSource = adaptor.getAttribute(element, 'stroke-width') ?? adaptor.getAttribute(element, 'stroke-thickness') ?? '70';
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:px)?$/.test(thicknessSource)) throw new Error('Unsupported math line thickness');
+  const thickness = Number(thicknessSource.replace(/px$/, ''));
+  const [x1, y1, x2, y2] = coordinates;
+  if (!coordinates.every(Number.isFinite) || !Number.isFinite(thickness) || thickness <= 0 ||
+    (direction === 'v' ? x1 !== x2 : y1 !== y2)) throw new Error('Invalid math line');
+  const x = direction === 'v' ? x1 - thickness / 2 : Math.min(x1, x2);
+  const y = direction === 'h' ? y1 - thickness / 2 : Math.min(y1, y2);
+  const width = direction === 'v' ? thickness : Math.abs(x2 - x1);
+  const height = direction === 'h' ? thickness : Math.abs(y2 - y1);
+  if (![x, y, width, height, x + width, y + height].every(Number.isFinite) || width <= 0 || height <= 0) throw new Error('Invalid math line bounds');
+  return `M${x},${y}h${width}v${height}h${-width}Z`;
+}
+
 // Explicit synchronous packages and bundled TeX font: no CDN, dynamic macro
 // loading, HTML embedding, links, or per-equation network request.
 const adaptor = liteAdaptor();
@@ -43,9 +70,9 @@ const document = mathjax.document('', {
 });
 const cache = new Map<string, MathDrawing | null>();
 
-export function typesetMath(text: string, color: string, semanticColors = true): MathDrawing | null {
+export function typesetMath(text: string, color: string): MathDrawing | null {
   const source = mathSource(text);
-  const key = `${semanticColors}:${color}:${source}`;
+  const key = `${color}:${source}`;
   if (cache.has(key)) return cache.get(key)!;
   let result: MathDrawing | null = null;
   try {
@@ -58,18 +85,9 @@ export function typesetMath(text: string, color: string, semanticColors = true):
     const visit = (element: LiteElement, parent: Matrix, inheritedColor: string) => {
       const kind = adaptor.kind(element);
       const matrix = multiply(parent, transform(adaptor.getAttribute(element, 'transform') ?? ''));
-      let fill = inheritedColor;
-      const code = adaptor.getAttribute(element, 'data-c');
-      if (kind === 'path' && code) {
-        const n = parseInt(code, 16);
-        // Italic identifiers and Greek symbols keep the board's semantic colors;
-        // upright unit text stays in the equation's ink color.
-        if (semanticColors && (n >= 0x1d400 || (n >= 0x391 && n <= 0x3c9))) {
-          const symbol = String.fromCodePoint(n).normalize('NFKC');
-          fill = textRuns(`${symbol} =`, color)[0]?.color ?? color;
-        }
-      }
+      const fill = inheritedColor;
       if (kind === 'path') paths.push({ d: adaptor.getAttribute(element, 'd'), matrix, color: fill });
+      else if (kind === 'line') paths.push({ d: tableRulePath(element), matrix, color: fill });
       else if (kind === 'rect') {
         const num = (name: string) => Number(adaptor.getAttribute(element, name) ?? 0);
         paths.push({ d: `M${num('x')},${num('y')}h${num('width')}v${num('height')}h${-num('width')}Z`, matrix, color: fill });

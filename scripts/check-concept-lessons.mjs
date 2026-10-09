@@ -10,13 +10,19 @@ const external = createRequire(import.meta.url);
 const cache = new Map();
 const requests = [];
 let chunks = [];
+let responseQueue = null;
+const originalProvider = process.env.BOH_TUTOR_PROVIDER;
+process.env.BOH_TUTOR_PROVIDER = 'grok';
 const fakeKey = process.env.XAI_API_KEY;
 process.env.XAI_API_KEY = 'test-only';
+const clients = [];
 class FakeOpenAI {
+  constructor(options) { clients.push(options); }
   chat = { completions: { create: async (request, options) => {
     requests.push({ request, options });
+    if (!request.stream) return { choices: [{ message: { content: (responseQueue?.shift() ?? chunks).join('') } }] };
     return (async function* () {
-      for (const content of chunks) {
+      for (const content of responseQueue?.shift() ?? chunks) {
         if (options.signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
         yield { choices: [{ delta: { content } }] };
       }
@@ -39,7 +45,7 @@ function load(file) {
   cache.set(file, mod.exports);
   return mod.exports;
 }
-const { conceptProgress, conceptResponse } = load('lib/agent/concept-response.ts');
+const { conceptProgress, conceptResponse, lessonDrawings } = load('lib/agent/concept-response.ts');
 const { parseAgentTurn, visualBeats } = load('lib/agent/tags.ts');
 const { needsBoardRepair } = load('lib/agent/teaching-intent.ts');
 const circle = { op: 'circle', id: 'object', at: { x: .25, y: .45 }, r: .04, label: 'Object "A"' };
@@ -218,3 +224,142 @@ assert.equal(boardStore.getBoardState().pageId, 2);
 assert.equal(boardStore.getBoardState().earlierPages[0].student[0].id, 'mine');
 assert.equal(asLiveBoard({ open: true, animation: { spec: {}, time: 99 } }).animation, undefined);
 console.log('PASS: structured replay/focus, absent-scene repair, static-to-moving continuity, scene revisions, ink preservation, separate pages, and current animation context.');
+
+// The real trial adapter performs one continuation request after a later
+// rejected beat, retaining the initial move and accepted scene context.
+const trialEnvironment = Object.fromEntries(['NODE_ENV','BOH_VOICE_TRIAL','OPENROUTER_API_KEY'].map(key=>[key,process.env[key]]));
+try {
+  process.env.NODE_ENV='development';process.env.BOH_VOICE_TRIAL='1';process.env.OPENROUTER_API_KEY='synthetic-only';
+  const start=requests.length;
+  const failed={...lesson,introduction:'',beats:[lesson.beats[0],{...lesson.beats[1],draw:[JSON.stringify(relation)]}]};
+  const repaired={...failed,beats:[{...lesson.beats[1],draw:[JSON.stringify(arrow)]}],question:'Which part is given?'};
+  responseQueue=[[...JSON.stringify(failed)],[...JSON.stringify(repaired)]];
+  let output='';let firstBeatCalls;
+  for await(const delta of streamGrok(history,null,true)) {
+    output+=delta;
+    if(!firstBeatCalls && parseAgentTurn(output).speech) firstBeatCalls=requests.length-start;
+  }
+  assert.equal(firstBeatCalls,1,'The first accepted beat streams without waiting for recovery');
+  assert.equal(requests.length-start,2,'Only one extra request on rejection');
+  const { TRIAL_PROFILE } = load('lib/agent/trial.ts');
+  for (const { request } of requests.slice(start)) {
+    assert.equal(request.model,TRIAL_PROFILE.model,'Initial and recovery requests use the pinned candidate');
+    assert.equal(request.max_tokens,TRIAL_PROFILE.maxTokens);
+    assert.equal(request.reasoning.effort,TRIAL_PROFILE.effort);
+    assert.deepEqual(request.provider,TRIAL_PROFILE.provider);
+  }
+  assert.ok(!output.includes('frac'),'Rejected equation stays withheld');
+  assert.equal(parseAgentTurn(output).speech,[failed.beats[0].speech,repaired.beats[0].speech,repaired.question].join(' '));
+  const extra=requests.at(-1).request.messages.slice(-2);
+  assert.equal(JSON.parse(extra[0].content).beats.length,1);
+  assert.ok(extra[1].content.includes('move=orient'));
+  // Round-trip real rendered inventory. Text has no source; a detailed curve's
+  // source exceeds the descriptive limit. Both are still highlightable.
+  boardStore.resetBoard();
+  const topic = { op: 'text', id: 'topic', at: { x: .1, y: .1 }, text: 'A simple picture' };
+  const note = { op: 'text', id: 'given', at: { x: .1, y: .8 }, text: 'Given object' };
+  const curve = { op: 'curve', id: 'long-curve', points: Array.from({ length: 80 }, (_, i) => ({ x: .1 + i / 100, y: .4 + .1 * Math.sin(i / 20) })) };
+  boardStore.applyDrawCommands([topic, curve, note]);
+  const inventory = asLiveBoard({ ...boardProvenance(boardStore.getBoardState()), open: true });
+  assert.equal(inventory.tutorItems.find(item => item.id === 'given').layout, undefined);
+  assert.equal(inventory.tutorItems.find(item => item.id === 'long-curve').layout.length, 1200);
+  assert.throws(() => JSON.parse(inventory.tutorItems.find(item => item.id === 'long-curve').layout));
+  setLiveBoard(inventory);
+  const focused = { ...lesson, introduction: '', question: 'Which part is given?', beats: ['given', 'long-curve'].map(id => ({ pdf: '', draw: [JSON.stringify({ op: 'highlight', id })], animation: '', speech: `Look at ${id}.` })) };
+  // This is the old adapter's input, confirming the reproduced rejection.
+  const { parseDrawCommand } = load('lib/whiteboard/parse-draw.ts');
+  const oldInventory = inventory.tutorItems.flatMap(item => { try { const command = parseDrawCommand(item.layout ?? ''); return command ? [command] : []; } catch { return []; } });
+  for (const beat of focused.beats) assert.throws(() => conceptResponse(JSON.stringify({ ...focused, beats: [beat] }), { requireVisuals: true, currentDraw: oldInventory }), error => error.code === 'stale_drawing');
+  const beforeFocus = requests.length;
+  responseQueue = [[...JSON.stringify(focused)]];
+  let focusedOutput = '';
+  for await (const delta of streamGrok(history, null, true)) focusedOutput += delta;
+  assert.equal(requests.length - beforeFocus, 1, 'Valid existing drawings need no recovery call');
+  assert.equal(parseAgentTurn(focusedOutput).speech, focused.beats.map(beat => beat.speech).concat(focused.question).join(' '));
+  const options = { requireVisuals: true, currentDrawings: lessonDrawings(inventory) };
+  const withCommands = commands => JSON.stringify({ ...focused, beats: [{ ...focused.beats[0], draw: commands.map(command => JSON.stringify(command)) }] });
+  const highlight = { op: 'highlight', id: 'given' };
+  assert.doesNotThrow(() => conceptResponse(withCommands([{ ...topic, text: ' A   simple picture ' }, highlight]), options));
+  for (const commands of [[{ op: 'clear' }, highlight], [{ op: 'remove', id: 'given' }, highlight], [{ ...topic, text: 'Another topic' }, highlight], [{ op: 'highlight', id: 'missing' }]]) {
+    assert.throws(() => conceptResponse(withCommands(commands), options), error => error.code === 'stale_drawing');
+  }
+  assert.deepEqual(lessonDrawings({ tutorItems: [
+    { id: 'unresolved', text: '', kinds: ['path'], status: 'unresolved' },
+    { id: 'animated', text: '', kinds: ['animation:dot'], status: 'visible' },
+  ] }), [], 'Unresolved and animation-only IDs cannot satisfy DRAW highlight');
+  const panel = { op: 'panel', id: 'panel', title: 'Setup', slot: 0, items: [{ label: 'Object', shape: 'circle' }] };
+  assert.throws(() => conceptResponse(withCommands([panel, highlight]), options), error => error.code === 'stale_drawing');
+  const panelOptions = { requireVisuals: true, currentDrawings: lessonDrawings({ tutorItems: [{ id: panel.id, text: 'Setup', kinds: ['path'], status: 'visible', layout: JSON.stringify(panel) }] }) };
+  assert.throws(() => conceptResponse(withCommands([{ ...panel, id: 'replacement' }, { op: 'highlight', id: 'panel' }]), panelOptions), error => error.code === 'stale_drawing');
+  console.log('PASS: rendered text/long geometry focus completes in one request; missing, removed, previous-page, unresolved, and animated IDs remain protected.');
+} finally {
+  responseQueue=null;
+  for(const [key,value] of Object.entries(trialEnvironment)) if(value===undefined)delete process.env[key];else process.env[key]=value;
+}
+console.log('PASS: actual trial adapter requests one protected continuation while its first beat streams.');
+
+// Promotion must keep semantic routing, source scoping and recap on Opus even
+// in production. No xAI key or browser trial flag is needed.
+const promotionEnvironment = Object.fromEntries(['NODE_ENV','VERCEL','BOH_TUTOR_PROVIDER','BOH_VOICE_TRIAL','OPENROUTER_API_KEY','XAI_API_KEY'].map(key => [key, process.env[key]]));
+try {
+  Object.assign(process.env, { NODE_ENV: 'production', VERCEL: '1', BOH_TUTOR_PROVIDER: '', BOH_VOICE_TRIAL: '', OPENROUTER_API_KEY: 'synthetic-only' });
+  delete process.env.XAI_API_KEY;
+  const { tutorConfigured, tutorProvider } = load('lib/agent/provider.ts');
+  assert.equal(tutorConfigured(), true);
+  assert.equal(tutorProvider(), 'opus');
+  const collect = async (history, deep = false, repair = false, context = { page: null, board: null }) => {
+    let output = '';
+    for await (const delta of streamGrok(history, null, deep, undefined, repair, context)) output += delta;
+    return output;
+  };
+  const start = requests.length;
+  responseQueue = [['{"kind":"lesson","speech":"","courseId":"course-a"}']];
+  const context = { page: null, board: null, student: { courseCatalog: [{ courseId: 'course-a', courseName: 'Example course' }] } };
+  const routed = parseAgentTurn(await collect(history, false, false, context));
+  assert.ok(routed.think);
+  assert.equal(routed.courseId, 'course-a', 'Course selection survives promotion');
+  const good = { ...lesson, introduction: '', question: '', beats: [lesson.beats[0]] };
+  responseQueue = [[JSON.stringify(good)]];
+  assert.match(await collect(history, true), /Here is the first object/);
+  responseQueue = [['[DRAW {"op":"circle","id":"object","center":{"x":0.3,"y":0.4},"r":0.04}]']];
+  assert.match(await collect(history, false, true), /DRAW/);
+  responseQueue = [['{"kind":"recap","speech":""}']];
+  const closing = await collect([{ role: 'user', content: 'Let us finish.' }]);
+  assert.match(closing, /SUMMARY_REQUEST/);
+  const recap = { stuckOn: 'The connection', unlockedBy: 'A labeled picture', studentSummary: 'invented', spokenText: 'You described the connection. Revisit that picture next time.', reviewNext: { documentTitle: 'Invented source', where: 'page 9' } };
+  responseQueue = [['{"kind":"recap","speech":""}'], [JSON.stringify(recap)]];
+  const recapOutput = await collect([{ role: 'assistant', content: closing }, { role: 'user', content: 'The arrow connects the objects.' }]);
+  assert.match(recapOutput, /RECAP/);
+  assert.ok(recapOutput.includes('The arrow connects the objects.'));
+  assert.ok(!recapOutput.includes('Invented source'));
+  for (const { request } of requests.slice(start)) {
+    assert.equal(request.model, 'anthropic/claude-opus-5');
+    assert.equal(request.temperature, undefined, 'Unsupported temperature must not reach Opus');
+    assert.equal(request.provider.require_parameters, true);
+    assert.equal(request.reasoning.effort, 'low');
+  }
+  assert.equal(clients.at(-1).baseURL, 'https://openrouter.ai/api/v1');
+  delete process.env.OPENROUTER_API_KEY;
+  assert.equal(tutorConfigured(), false);
+  await assert.rejects(() => collect(history), /OPENROUTER_API_KEY/);
+  process.env.BOH_TUTOR_PROVIDER = 'grok';
+  process.env.XAI_API_KEY = 'synthetic-only';
+  responseQueue = [['{"kind":"definition","speech":"A simple definition."}']];
+  await collect(history);
+  assert.equal(requests.at(-1).request.model, 'grok-4.20-0309-non-reasoning');
+  assert.equal(clients.at(-1).baseURL, 'https://api.x.ai/v1');
+  responseQueue = [['[DRAW {"op":"circle","id":"object","center":{"x":0.3,"y":0.4},"r":0.04}]']];
+  await collect(history, false, true);
+  assert.equal(requests.at(-1).request.model, 'grok-4.20-0309-non-reasoning');
+  assert.equal(requests.at(-1).request.max_tokens, 1800);
+  responseQueue = [['{"kind":"recap","speech":""}'], [JSON.stringify(recap)]];
+  await collect([{ role: 'assistant', content: closing }, { role: 'user', content: 'The arrow connects the objects.' }]);
+  assert.equal(requests.at(-1).request.max_tokens, 900);
+  assert.equal(requests.at(-1).request.temperature, 0.3);
+  process.env.BOH_TUTOR_PROVIDER = 'typo';
+  assert.throws(() => tutorProvider(), /BOH_TUTOR_PROVIDER/);
+  console.log('PASS: production Opus routing, course selection, teaching, repair, closing, recap grounding, missing-key failure and explicit Grok rollback.');
+} finally {
+  for (const [key, value] of Object.entries(promotionEnvironment)) if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  if (originalProvider === undefined) delete process.env.BOH_TUTOR_PROVIDER; else process.env.BOH_TUTOR_PROVIDER = originalProvider;
+}

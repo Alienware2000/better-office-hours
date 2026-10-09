@@ -9,10 +9,10 @@ const external = createRequire(import.meta.url);
 const cache = new Map();
 function load(file) {
   file = path.resolve(file); if (cache.has(file)) return cache.get(file).exports;
-  const module = { exports: {} }; cache.set(file, module);
+  const loaded = { exports: {} }; cache.set(file, loaded);
   const js = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  vm.runInThisContext(`(function(require,module,exports){${js}\n})`, { filename: file })(name => name.startsWith('@/') ? load(name.slice(2) + '.ts') : name.startsWith('.') ? load(path.resolve(path.dirname(file), name) + '.ts') : external(name), module, module.exports);
-  return module.exports;
+  vm.runInThisContext(`(function(require,module,exports){${js}\n})`, { filename: file })(name => name.startsWith('@/') ? load(name.slice(2) + '.ts') : name.startsWith('.') ? load(path.resolve(path.dirname(file), name) + '.ts') : external(name), loaded, loaded.exports);
+  return loaded.exports;
 }
 const { pickGreeting } = load('app/(session)/voice/constants.ts');
 assert.match(pickGreeting('Alex Student'), /^Hi Alex\./);

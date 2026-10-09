@@ -3,7 +3,7 @@ import type { PdfViewState } from '@/lib/pdf/view-state';
 import type { VoiceArchive } from './useVoiceLoop';
 import type { Turn } from '@/lib/types';
 
-export type SessionDiagnostic = { at: string; kind: string; request?: string | null; deep?: boolean; elapsedMs?: number; page?: number; groups?: number; animation?: boolean; message?: string };
+export type SessionDiagnostic = { audioPositionMs?: number; audioDurationMs?: number; chunk?: number; at: string; kind: string; request?: string | null; deep?: boolean; elapsedMs?: number; page?: number; groups?: number; animation?: boolean; message?: string };
 export type SavedSession = {
   courseId?: string;
   version: 1;

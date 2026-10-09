@@ -66,7 +66,8 @@ export function snapshotBoard(
             for (const path of formula.paths) {
               ctx.save();
               ctx.transform(...path.matrix);
-              ctx.fillStyle = path.color;
+              // Stored drawings may predate neutral default math coloring.
+              ctx.fillStyle = mark.color;
               ctx.fill(new Path2D(path.d));
               ctx.restore();
             }

@@ -4,6 +4,28 @@ This is the source of truth for what we are building, why, and what we have deci
 
 ## Current implementation and sequencing
 
+September 20 live-lesson feedback: choose the standard representation proactively, including structured mathematics. Gaussian elimination exposed missing matrices, oversized scalar writing and a compressed explanation. Improve general teaching/composition, not a topic-specific scene.
+
+September 20 STEM clarification: named topics are examples. Build an open-ended visual tutor across STEM using general representations and collaborative ink, with latency as a release condition. [Vision and coverage](STEM_WHITEBOARD.md).
+
+September 20 board correction: always use the board while teaching through relevant diagrams, images, LaTeX, labels or focus on existing content. Prevent clutter through grouping, space and preserved page continuation. Keep key ideas visible without copying spoken paragraphs. Preserve ordered writing, meaningful color and optional notes. Prioritize usable learning sessions over further aesthetic variation. [Research](WHITEBOARD_EXPERIENCE_RESEARCH.md); live integration remains a separate review.
+
+September 20 UI direction: modern, warm, approachable, and voice-first. Keep the plain orb and typing closed by default. Use consistent surfaces, recognizable buttons/navigation, and explicit listening/thinking/speaking affordances across the desk. [UI foundation](UI_FOUNDATION.md) records the rules; [product checklist](PRODUCT_CHECKLIST.md) preserves latency, voice reliability, and whiteboard priorities.
+
+September 20 interaction correction from David: tap once to begin listening; automatically reopen listening only after the complete tutor response finishes playing. Transcription, thinking, synthesis, and playback mute input and discard busy audio. Escape/Interrupt stops a busy tutor and opens listening; Pause while listening suspends input. Paused sessions stay paused. Keep the orb plain. The orb is the sole start action; Tap to speak is a plain label below it. No icon/text inside. Show an explicit listening state. The three-second silence endpoint remains provisional; Done speaking submits sooner. No automatic greeting or acoustic barge-in. Noise during listening still needs real-device validation. Ordinary board prose containing symbols keeps spaces and normal lettering; numeric inline TeX scripts use readable subscripts. Equations retain LaTeX.
+
+September 14 product direction from David, not yet implemented: latency is the immediate bottleneck. Compare the current direct xAI teaching model with OpenRouter routes and alternative models using useful speech/visual latency and teaching quality together. No migration is selected. Review all saved Chrome sessions across subjects as a separate evidence task; preserve their browser state and private exports. See [TUTOR_EVALUATION](TUTOR_EVALUATION.md) for the audit, comparison tool, and review procedure.
+
+David's model-selection clarification: prioritize the strongest available teaching quality, then optimize speed within that quality bar. Do not default to smaller models because they are fast or cheap. Flash/Haiku are removed from the initial comparison in favor of flagship reasoning candidates. Model names and general benchmarks do not prove tutor quality; evaluate reasoning, graded boundaries, visual agreement, and system compatibility on the same cases before choosing.
+
+September 14 review feedback: David finds Astra/Fable astronomy diagrams poor and the explanations too complex and textbook-like; Claude outputs generally look better to him. Prioritize one understandable idea, visible support for each claim, and plain words before jargon/equations. Scientific color must remain meaningful, even with a themed interface. David subsequently authorized the local Opus-low trial, including panels, literal colors, and line labels; see [TUTOR_TRIAL](TUTOR_TRIAL.md). September 15: David rejected panel-only visuals; restore appropriate geometry and requested equations while retaining simple teaching. Layout and teaching remain experimental. See [visual teaching review](evaluations/2026-09-14-visual-teaching-review.md). No production model selected. Latency means end of student speech to first useful audible response; full duration is secondary. A full diagram design language stays deferred.
+
+September 16: [whiteboard research](WHITEBOARD_RESEARCH.md) covers composition, color, mathematics, motion, and learning evidence. David then reaffirmed latency as the immediate priority; the proposed board prototype is deferred. Measure first useful audio and pipeline stages, compare models with equivalent visual capabilities, and preserve teaching quality. Model changes are one latency lever, not a required migration.
+
+David also requested a local review surface to witness model tests, inspect their board/output/timings, and save his own judgments. This developer workshop is separate from the student experience; see [TUTOR_REVIEW](TUTOR_REVIEW.md).
+
+David now requests whiteboard involvement on every spoken turn, especially every explanation, description, equation, and number. The relevant content should be drawn, written, annotated, or visibly emphasized as it is discussed. Reusing and focusing existing items is valid; arbitrary decoration is not. Narration must agree with the actual visible page and objects, and the tutor must correct an absent or incorrect visual rather than insist it exists. This supersedes the older permission for some teaching turns to remain verbal-only. All-turn coverage, including social/topic-selection turns without an existing referent, still needs implementation/design; it is not a claim about current behavior. Preserve student ink, meaningful scene continuity, and the graded-work disclosure boundary across every surface. The human PROMPT/PEDAGOGY and shared contracts remain frozen.
+
 The product vision below includes future features. The current approved baseline is one adaptive desk: homework opens the PDF view; concepts and other requests open the whiteboard. Every request can use PDF attachments and the same tutor orb, captions, and visual tools. The tutor leads explanations on the board; students can mark their work and collaborate on that surface. Projectile motion is only a test case, not the product's subject boundary.
 
 David's concept-teaching clarification: ungraded explanations should supply requested definitions, equations, and illustrative answers. Give a novice an understandable example before asking them to apply it; do not make every prerequisite a quiz. Fade scaffolding for demonstrated knowledge and answer narrow clarifications directly. Graded-task final-answer protection still applies across workspace modes, and tutor-created content never counts as a student attempt. This adapts the documented pedagogy rather than replacing it. The expertise-reversal literature supports varying guidance with prior knowledge and integrating essential annotations with diagrams; these principles do not establish this demo's effectiveness ([Kalyuga et al., 2003](https://www.davidlewisphd.com/courses/EDD8121/readings/2003-Kalyuga_et_al.pdf)).
@@ -79,7 +101,7 @@ Rules: an animation plays only when the tutor says what to watch for; it pauses 
 The shell is the same in every mode. Each desk has Whiteboard and PDF views, with the orb and captions alongside. Homework starts at PDF upload; concept and other requests start at the board. While viewing a PDF, the tutor can draw on a smaller board in the agent pane. The board is primarily for the tutor to explain, and the student can annotate or work through an idea on the same surface. iPad and Apple Pencil are an intended use of this shared desk, with device-specific feel to be tested.
 
 ### Interaction rules
-- Voice is the only way to address the agent. Mouse and trackpad are for pointing, drawing, paging, and leaving, never for talking to the tutor.
+- Voice remains primary. September 20: David requests optional typing with the same board/narration/context, without microphone permission. A separate mic mute must preserve tutor inference/playback and stay muted across turns until explicitly enabled.
 - The orb speaks first with an open question. It names the pset and due date in its reply once the student says what they want.
 - Barge-in works. If the student talks over the tutor, it stops.
 - The tutor points before it explains.
@@ -203,7 +225,7 @@ Voice cloning. Professor-editable prompts. Lecture recording transcription (road
 
 - Product is office hours broadly, not psets only. Pset mode and concept mode share one shell.
 - The app opens on the orb alone with "What do you want to work on?" The student states the request; the layout transforms to match. Three optional chips mirror the choices for tapping.
-- Voice is the primary and only input to the agent.
+- Voice is primary; optional typed messages share the same tutor pipeline.
 - The pset is uploaded by the student; the Grok Bot collects everything around it.
 - Demo course is archived PHYS 180; the video shows the student flow only; README carries the honesty line.
 - Use what works for voice (ElevenLabs), keep Grok as the reasoning model so the sponsor stack is real.

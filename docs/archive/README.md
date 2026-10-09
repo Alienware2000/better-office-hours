@@ -1,0 +1,37 @@
+# Historical evidence
+
+These are snapshots, not current instructions. Start with [STATUS](../STATUS.md), [TASK](../TASK.md), and [AGENTS](../../AGENTS.md). The publication freeze overrides every historical push, PR, merge, deployment, and recording directive.
+
+- [STATUS through September 13](STATUS-2026-09-13.md): original chronological build, deployment, testing, model experiments, and Groundtrack setup evidence.
+- [NOTES through September 13](NOTES-2026-09-13.md): original lane-specific workarounds, rejected approaches, and test artifact references.
+- [AGENTS before portable workflow](AGENTS-2026-09-13.md): original read order, checkpoint rules, and managed Groundtrack policy.
+- [Portable workflow setup, September 14](tasks/2026-09-14-portable-workflow.md): completed local stack and initial cross-agent handoff task. The current checkout-aware helper supersedes its same-checkout restriction.
+- [Checkout-aware handoffs, September 14](tasks/2026-09-14-checkout-aware-handoffs.md): completed local discovery, standalone helper, bounded orientation, and validation task.
+- [Memory walkthrough, September 14](tasks/2026-09-14-memory-walkthrough.md): completed human guide and reproduction recipe.
+- [Voice endings, September 15](tasks/2026-09-15-voice-endings.md): complete-beat playback and ending diagnostics; human acoustic review remains open.
+- [Rich visual trial, September 16](tasks/2026-09-16-rich-visual-trial.md): restored geometry/math and ordered writing; runtime recovery, update loss incident, and scene review. Proposed board redesign moves to WHITEBOARD_RESEARCH.
+- [Post-hackathon handoff](../POST_HACKATHON_HANDOFF.md): September 13 baseline and operational boundary. Its initial read-only audit is complete; David authorized the local runtime/workflow slice on September 14.
+
+The three archived files preserve their pre-workflow bytes. Search with `rg -n 'Follow|cadence|recap' docs/archive` and read the matching section. Old temporary artifacts may no longer exist; check before citing them as newly inspected evidence. Do not load the full archive into every new chat.
+
+- [2026-09-16 whiteboard research](tasks/2026-09-16-whiteboard-research.md): systems/learning research, then latency priority correction.
+
+- [September 20 consolidation and transcript review](tasks/2026-09-20-consolidation.md): pinned candidate, offline gate, 33-session study; release checks remain open.
+
+- [September 20 hybrid voice/prose](tasks/2026-09-20-hybrid-voice.md): implemented local 3112 trial; human acoustic review still pending.
+
+- [September 20 typed input](tasks/2026-09-20-typed-input.md): optional composer and independent mute; behavior review pending.
+
+- [September 20 UI foundation](tasks/2026-09-20-ui-foundation.md): voice-first design corrections and live preview verification.
+
+- [September 20 board text](tasks/2026-09-20-board-text.md): neutral math and short-prose fixes, isolated visual review.
+
+- [September 20 board system](tasks/2026-09-20-board-system.md): cross-subject document prototype and first gallery review.
+
+- [September 20 board experience](tasks/2026-09-20-board-experience.md): visual learning research, linked diagrams/equations and ordered replay.
+
+- [September 20 STEM and Studdy study](tasks/2026-09-20-stem-study.md): broad STEM evaluation, comparative research and live-test handoff.
+
+- [September 20 live composition](tasks/2026-09-20-live-composition.md): diagram equation layout, isolated 3117 and typed lesson recovery checks.
+
+- [September 20 representation checkpoint](tasks/2026-09-20-representation.md): matrices and writing scale; teaching/latency review remains pending and is carried into the October 8 integration plan.

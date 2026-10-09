@@ -45,8 +45,8 @@ Untitled/
 # uploaded psets
 .data/
 
-# local harness files
-CLAUDE.md
+# Private agent overrides (CLAUDE.md is now a shared instructions bridge)
+CLAUDE.local.md
 
 # Generated from pinned voice dependencies during dev/build
 /public/voice-assets/

@@ -439,3 +439,134 @@
 
 .takeaway-dialog > article { box-shadow: none; }
 .takeaway-dialog > article > header { display: none; }
+
+/* Quiet diagnostic disclosure, separate from the student input surface. */
+.trial-status { position: relative; z-index: 3; flex: 0 0 auto; padding: 0 1.5rem; color: #77766e; font-size: .72rem; }
+.trial-status details { border-bottom: 1px solid #2926210c; }
+.trial-status summary { display: flex; align-items: center; gap: .65rem; min-height: 40px; cursor: pointer; list-style: none; }
+.trial-status summary::-webkit-details-marker { display: none; }
+.trial-indicator { width: 5px; height: 5px; border-radius: 50%; background: #89978a; }
+.trial-model { color: #929087; padding-left: .65rem; border-left: 1px solid #29262118; }
+.trial-latency { margin-left: auto; font-variant-numeric: tabular-nums; }
+.trial-status svg { width: 14px; height: 14px; stroke: currentColor; fill: none; transition: transform .18s ease; }
+.trial-status details[open] svg { transform: rotate(180deg); }
+.trial-details { max-width: 42rem; padding: .3rem 0 .8rem 1rem; line-height: 1.65; }
+.trial-details p { margin: .25rem 0; }
+.trial-status summary:focus-visible { outline: 2px solid #797b72; outline-offset: 2px; border-radius: 4px; }
+.session-desk:has(.trial-status) { display: flex; flex-direction: column; }
+.session-desk > .trial-status + .session-shell { flex: 1; height: auto; }
+
+/* One input surface. Microphone mute never cancels tutor output. */
+.tutor-input { width: min(100%, 34rem); margin: .25rem auto 0; pointer-events: auto; }
+.tutor-input-controls { display: flex; align-items: center; justify-content: center; gap: .25rem; }
+.tutor-input button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; border: 0; border-radius: 10px; padding: .5rem .7rem; background: transparent; color: #66665f; font: inherit; font-size: .8rem; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.tutor-input button:hover:not(:disabled) { background: #25292308; color: #242822; }
+.tutor-input svg { width: 17px; height: 17px; flex-shrink: 0; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.input-divider { height: 16px; width: 1px; background: #29262116; margin: 0 .3rem; }
+.tutor-input form { padding: 1rem .6rem .5rem; background: #fffefa; border: 1px solid #deded7; border-radius: 20px; box-shadow: 0 4px 18px #29262104, 0 1px 3px #29262103; transition: border-color .18s ease, box-shadow .18s ease; }
+.tutor-input form:focus-within { border-color: #93988b; box-shadow: 0 0 0 3px #89947b0b, 0 5px 22px #29262105; }
+.tutor-input textarea { display: block; box-sizing: border-box; width: 100%; resize: none; min-height: 64px; max-height: 180px; padding: .15rem .65rem .5rem; border: 0; border-radius: 0; outline: none; background: transparent; color: #292c27; font: inherit; font-size: 16px; line-height: 1.6; }
+.tutor-input textarea::placeholder { color: #91938a; }
+.tutor-input-footer { display: flex; align-items: center; gap: .25rem; }
+.tutor-input-footer small { flex: 1; text-align: right; padding-right: .4rem; color: #878a80; font-size: .63rem; line-height: 1.4; }
+.tutor-input .input-icon { width: 44px; padding: 0; flex-shrink: 0; }
+.tutor-input .input-send { background: #292e27; color: #fffefa; border-radius: 50%; }
+.tutor-input .input-send:hover:not(:disabled) { background: #454d40; color: #fffefa; }
+.tutor-input .input-send:disabled { background: #eeeee8; color: #abada3; }
+.tutor-input button:disabled { opacity: .55; cursor: default; }
+.tutor-input button:focus-visible { outline: 2px solid #797f70; outline-offset: 2px; }
+.agent-stage > .tutor-input { flex-shrink: 0; }
+.agent-stage .tutor-input-footer small { font-size: .6rem; }
+.welcome-stage { overflow-y: auto; padding: 2rem 1.5rem; justify-content: safe center; background: #f5f4ee; }
+.welcome-intro { text-align: center; margin: 0 0 2.25rem; }
+.welcome-intro p { margin: 0 0 .75rem; font-size: .65rem; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; color: #818579; }
+.welcome-intro h1 { margin: 0; font-size: clamp(1.8rem, 3.2vw, 2.4rem); line-height: 1.2; letter-spacing: -.045em; font-weight: 400; color: #30352d; }
+.welcome-stage .response-activity:empty { height: .25rem; }
+.welcome-stage .chip-row { margin-top: 1.6rem; gap: .15rem; }
+.welcome-stage .chip { min-height: 44px; border: 0; background: transparent; color: #777b70; padding: .4rem .8rem; border-radius: 8px; font-size: .72rem; }
+.welcome-stage .chip:hover { background: #292e2707; color: #30352d; transform: none; }
+.session-app:has(.welcome-stage), .session-desk:has(.welcome-stage) { background: #f5f4ee; }
+.session-app:has(.welcome-stage) .session-header { background: #f5f4ee; border-bottom-color: #2926210b; }
+@media (max-width: 640px) {
+  .trial-status { padding: 0 1rem; font-size: .65rem; }
+  .welcome-stage { padding: 1.5rem 1rem; }
+  .welcome-intro { margin-bottom: 1.6rem; }
+  .tutor-input-footer small { font-size: .6rem; max-width: 7rem; margin-left: auto; }
+  .workspace-layout { grid-template-rows: 13rem minmax(0, 1fr); }
+  .workspace-layout:has(.tutor-input form) { grid-template-rows: minmax(0, 55%) minmax(0, 1fr); }
+  .agent-stage { overflow-y: auto; justify-content: flex-start; }
+  .agent-stage .orb-frame { flex-shrink: 0; }
+  .agent-stage .tutor-input { margin: .25rem auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutor-input button, .tutor-input form, .trial-status svg { transition: none; }
+}
+
+/* The orb is the sole start action; its caption is noninteractive. */
+
+/* Shared interaction foundation across the welcome and working desk. */
+.session-app {
+  --ui-paper: #f5f4ee;
+  --ui-surface: #fffefa;
+  --ui-ink: #30352d;
+  --ui-muted: #6b7165;
+  --ui-line: #daddd2;
+  --ui-focus: #7b8b70;
+  background: var(--ui-paper);
+  color: var(--ui-ink);
+}
+.session-app .session-shell, .session-app .agent-stage, .session-app .session-header,
+.session-app .welcome-stage, .session-app .session-library { background: var(--ui-paper); }
+.session-app .session-header { border-bottom-color: var(--ui-line); }
+.session-app .session-header button, .session-app .session-header .course-bar > button,
+.session-app .session-library header button {
+  border: 1px solid var(--ui-line); border-radius: 12px; background: #fffefa99;
+  color: var(--ui-ink); min-height: 44px; transition: background .15s ease, border-color .15s ease;
+}
+.session-app .session-header button:hover, .session-app .session-header .course-bar > button:hover,
+.session-app .session-library header button:hover { background: var(--ui-surface); border-color: #aeb7a4; }
+.session-app .session-history-button { gap: .55rem; }
+.session-app .session-header .session-new-button { background: #e8ecdf; border-color: #d3dbc8; }
+.session-app .session-header button:active, .tutor-input-controls button:active, .welcome-stage .chip:active { transform: translateY(1px); }
+.session-app .session-header button:focus-visible, .session-app .session-library button:focus-visible,
+.session-app .session-library input:focus-visible, .session-app .desk-leave:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 3px; }
+.session-library { border-right: 1px solid var(--ui-line); box-shadow: 12px 0 60px #242d2112; }
+.session-library header button { width: 44px; padding: 0; }
+.session-library .session-new { border-radius: 12px; background: var(--ui-ink); }
+.session-library input { border-radius: 12px; background: var(--ui-surface); border-color: var(--ui-line); min-height: 44px; }
+.session-library li { border: 1px solid transparent; }
+.session-library li[aria-current=true] { background: #e8ecdf; border-color: #d3dbc8; }
+.session-library .session-resume:hover { background: #e8ecdf88; }
+.session-library-scrim { background: #252c2540; backdrop-filter: blur(3px); }
+.response-status { width: 100%; max-width: 28rem; margin-top: .8rem; }
+.response-status .orb-status { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 40px; margin: 0; font-size: .82rem; font-weight: 500; letter-spacing: 0; color: var(--ui-ink); }
+.response-hint { margin: .3rem 0 0; font-size: .68rem; color: var(--ui-muted); line-height: 1.5; }
+.response-status .response-activity { height: 1.3rem; padding-top: .3rem; }
+.welcome-stage .response-status .response-activity:empty { height: .25rem; }
+.state-signal { display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 18px; height: 18px; color: #637d53; }
+.state-signal i { display: block; width: 3px; height: 4px; background: currentColor; border-radius: 2px; }
+.is-listening .state-signal i { animation: listening-signal 2s ease-in-out infinite; }
+.is-listening .state-signal i:not(:first-child) { display: none; }
+.is-listening .state-signal i:first-child { width: 7px; height: 7px; border-radius: 50%; }
+.is-speaking .state-signal i { animation: speaking-signal .9s ease-in-out infinite alternate; }
+.is-speaking .state-signal i:nth-child(2) { animation-delay: -.35s; }
+.is-speaking .state-signal i:nth-child(3) { animation-delay: -.6s; }
+.is-thinking .state-signal, .is-connecting .state-signal { width: 13px; height: 13px; border: 1.5px solid #9ca58f55; border-top-color: #788765; border-radius: 50%; animation: thinking-signal 1.4s linear infinite; }
+.is-thinking .state-signal i, .is-connecting .state-signal i { display: none; }
+.is-error .state-signal { color: #aa654b; }
+.is-error .state-signal i:not(:first-child) { display: none; }
+.is-error .state-signal i:first-child { width: 6px; height: 6px; border-radius: 50%; }
+@keyframes listening-signal { 50% { box-shadow: 0 0 0 4px #637d5312; } }
+@keyframes speaking-signal { to { height: 13px; } }
+@keyframes thinking-signal { to { transform: rotate(360deg); } }
+@media (max-width: 640px) {
+  .agent-stage .response-status { margin-top: .35rem; }
+  .response-hint { font-size: .65rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .state-signal, .state-signal i { animation: none !important; }
+  .is-speaking .state-signal i { height: 8px; }
+  .is-speaking .state-signal i:nth-child(2) { height: 13px; }
+}
+
+.response-status.is-ready .orb-status { font-weight: 400; color: #6d675f; }

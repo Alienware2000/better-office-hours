@@ -15,8 +15,8 @@ function deferred() {
 }
 const settle = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); };
 
-async function mount({ llmText = '', llmResponse = null, manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, realIntent = false, startup = {} } = {}) {
-  const effects = [], states = [], requests = [], recordings = [];
+async function mount({ llmText = '', llmResponse = null, manualAudio = false, failTts = false, livePage = null, repairResponse = null, deferredTts = null, deferPlaying = false, autoStart = true, realIntent = false, startup = {}, trial = false } = {}) {
+  const effects = [], states = [], requests = [], recordings = [], diagnostics = [];
   const inputAudioState = { value: 'running' };
   const stt = deferred();
   const sttNext = deferred();
@@ -64,7 +64,8 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     './constants': { pickGreeting: () => 'What are we working on?', CHIPS: [] },
   };
   const globals = {
-    process: { env: { NODE_ENV: 'test' } },
+    process: { env: { NODE_ENV: 'test', NEXT_PUBLIC_BOH_VOICE_TRIAL: trial ? '1' : '' } },
+    CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
     Blob, FormData, AbortController, Response, TextDecoder, URL, DOMException,
     Audio: class {
       paused = false;
@@ -98,7 +99,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     requestAnimationFrame: callback => { frame = callback; return 1; },
     cancelAnimationFrame: noOp,
     document: { hidden: false, addEventListener: (name, cb) => listeners.set(name, cb), removeEventListener: noOp },
-    window: { matchMedia: () => ({ matches: false }), addEventListener: (name, cb) => listeners.set(name, cb), removeEventListener: noOp, setTimeout },
+    window: { dispatchEvent: event => { diagnostics.push(event.detail); }, matchMedia: () => ({ matches: false }), addEventListener: (name, cb) => listeners.set(name, cb), removeEventListener: noOp, setTimeout },
     fetch: async (url, options) => {
       requests.push({ url, ...options });
       if (url.endsWith('/health')) return startup.health ?? Response.json({ grok: true, elevenlabs: true });
@@ -141,24 +142,27 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
     await settle();
     assert.equal(states[9], true, 'Explicit activation makes the input ready');
     assert.equal(states[10], false, 'Startup settles before conversation');
-    assert.equal(requests.filter(r => r.url.endsWith('/tts')).length, 1, 'Start speaks the initial greeting once');
+    assert.equal(requests.filter(r => r.url.endsWith('/tts')).length, 0, 'Tap opens listening without a blocking greeting');
     requests.length = 0;
     audio.length = 0;
     initializing = false;
   }
   const tick = (volume, elapsed, detectorFrame = true) => { loud = volume; now += elapsed; if (detectorFrame) probabilityCallback(typeof volume === 'number' ? volume : volume ? .98 : .01, new Float32Array(Math.max(1,Math.round(elapsed*16))).fill(volume ? .25 : 0)); frame(); };
   async function record() {
+    if (states[0] === 'idle') hook.interrupt();
     tick(true, 1000);
     for (let i = 0; i < 20; i++) tick(true, 20);
     tick(false, 900);
     assert.equal(states[0], 'listening', 'A short thinking pause does not end the student turn');
-    tick(false, 1000);
+    tick(false, 1100);
+    assert.equal(states[0], 'listening', 'Two seconds of thinking silence remain inside the turn');
+    tick(false, 1300);
     await settle();
     assert.equal(states[0], 'thinking', 'Show processing while STT is pending');
     assert.equal(states[13], 'transcribing', 'Pending STT identifies the actual stage');
     assert.equal(recordings.length, 1, 'One recording before the first transcription');
   }
-  return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks,
+  return { hook, states, stt, sttNext, recordings, requests, record, listeners, tick, audio, marks, diagnostics,
     track,
     resourceCounts: () => ({ mediaRequests, closedContexts, destroyedDetectors }),
     expireStartup: milliseconds => {
@@ -206,7 +210,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
   await settle();
   assert.equal(test.states[9], true);
   assert.equal(test.states[10], false);
-  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1);
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 0);
   test.track.stop();
   test.tick(false, 100);
   await settle();
@@ -216,7 +220,7 @@ async function mount({ llmText = '', llmResponse = null, manualAudio = false, fa
   assert.equal(test.states[9], true, 'Retry acquires usable input');
   assert.equal(test.states[4], false, 'Retry resumes the conversation');
   assert.equal(test.resourceCounts().mediaRequests, 2);
-  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1, 'Retry does not repeat the greeting');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 0, 'Retry opens listening without a greeting');
   await test.record();
   test.stt.resolve(Response.json({ text: 'Can you hear me now?' }));
   await settle();
@@ -309,7 +313,7 @@ for (const result of ['valid', 'noise', 'failure']) {
   else test.stt.resolve(Response.json({ text: result === 'valid' ? 'Help me understand recursion' : '[background noise]' }));
   await settle();
   assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, result === 'valid' ? 1 : 0);
-  assert.equal(test.states[0], 'listening', `${result} settles back to listening`);
+  assert.equal(test.states[0], result === 'valid' ? 'listening' : 'idle', `${result}: completed turns reopen; rejected input waits for a tap`);
   assert.equal(test.states[13], null, `${result} clears the processing stage`);
   test.cleanup();
 }
@@ -368,13 +372,19 @@ const explanation = 'First, watch the arrow. Its value is 9.8 m/s². Notice the 
   test.tick(true, 1000);
   for (let i = 0; i < 12; i++) test.tick(true, 20);
   await settle();
-  assert.equal(test.audio[0].paused, true, 'Sustained student speech stops audio');
+  assert.equal(test.track.enabled, false, 'Microphone is disabled during tutor playback');
+  assert.equal(test.audio[0].paused, false, 'Sustained background speech cannot stop audio');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/stt')).length, 0, 'Muted speech never reaches transcription');
+  test.hook.pauseOrInterrupt();
+  await settle();
+  assert.equal(test.audio[0].paused, true, 'Explicit interruption stops audio');
+  assert.equal(test.track.enabled, true, 'Explicit interruption returns microphone ownership');
   assert.equal(test.audio.length, 1, 'Cancelled queued sentences never play');
   assert.equal(test.states[0], 'listening', 'The student now has the floor');
   await speaking;
   test.cleanup();
 }
-console.log('PASS: patient silence, tap-to-submit, full spoken captions, quiet uploads/ink, and sustained-speech barge-in.');
+console.log('PASS: patient silence, tap-to-submit, full spoken captions, quiet uploads/ink, and deliberate interruption with background-speech rejection.');
 
 {
   const test = await mount({ llmText: explanation, manualAudio: true });
@@ -410,7 +420,7 @@ console.log('PASS: patient silence, tap-to-submit, full spoken captions, quiet u
 {
   const test = await mount({ llmText: explanation, failTts: true });
   await test.hook.sendUtterance('Explain this idea');
-  assert.equal(test.states[0], 'listening', 'Audio failure does not strand the microphone');
+  assert.equal(test.states[0], 'idle', 'Audio failure leaves the microphone muted and ready for another tap');
   assert.ok(test.states[3], 'Audio failure is visible');
   assert.equal(test.audio.length, 0);
   test.cleanup();
@@ -448,7 +458,7 @@ console.log('PASS: finish-tap race across automatic endpoint and playback; separ
   const test = await mount();
   test.tick(true, 1000);
   for (let i=0;i<20;i++) test.tick(true,20);
-  for (let i=0;i<17;i++) test.tick(.45,100);
+  for (let i=0;i<33;i++) test.tick(.45,100);
   await settle();
   assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,1,'Uncertain background sound cannot renew the endpoint indefinitely');
   test.cleanup();
@@ -530,9 +540,10 @@ for (const result of ['noise', 'failure', 'empty', 'timeout', 'misheard']) {
     else if (result === 'timeout') test.expireTranscription();
     else test.stt.resolve(Response.json({ text: result === 'noise' ? '[background noise]' : result === 'misheard' ? 'An unclear phrase' : '' }));
     await settle();
+    test.hook.interrupt();
     test.tick(true, 1000);
     for (let i = 0; i < 20; i++) test.tick(true, 20);
-    test.tick(false, 1700);
+    test.tick(false, 3200);
     await settle();
     assert.equal(test.requests.filter(r => r.url.endsWith('/stt')).length, 2, `${result}: next utterance reaches transcription`);
     if (result === 'timeout') {
@@ -565,27 +576,30 @@ console.log('PASS: interrupted/closed/muted/ended/stalled input exposes recovery
 }
 console.log('PASS: actual voice queue advances measured PDF highlights with spoken sentences.');
 
-for (const order of ['first-first','second-first']) {
+// Input stays muted during transcription too. An explicit interruption
+// cancels that capture, and late STT cannot become a new tutor turn.
+{
   const test=await mount();
   await test.record();
+  assert.equal(test.track.enabled,false);
   test.tick(true,1000);
   for(let i=0;i<20;i++)test.tick(true,20);
-  assert.equal(test.recordings.length,2,'Capture continued speech during STT');
-  assert.equal(test.requests.find(r=>r.url.endsWith('/stt')).signal.aborted,false,'Continuation preserves the opening transcript');
-  if(order==='first-first') {test.stt.resolve(Response.json({text:'I understand the velocity'}));await settle();}
-  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,0,'Do not reply while the student continues');
-  test.tick(false,1000);
-  assert.equal(test.recordings[1].state,'recording','Allow a one-second thinking pause');
-  test.tick(false,700);await settle();
-  assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,2);
-  test.sttNext.resolve(Response.json({text:'but I do not understand acceleration'}));await settle();
-  if(order==='second-first') {
-    assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,0,'Wait for the opening transcript even if it finishes later');
-    test.stt.resolve(Response.json({text:'I understand the velocity'}));await settle();
-  }
+  assert.equal(test.recordings.length,1,'Busy speech is discarded, not buffered');
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,1);
+  test.hook.pauseOrInterrupt();
+  assert.equal(test.track.enabled,true);
+  assert.equal(test.states[0],'listening');
+  assert.equal(test.requests.find(r=>r.url.endsWith('/stt')).signal.aborted,true);
+  test.stt.resolve(Response.json({text:'Stale words from the cancelled capture'}));await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length,0,'Cancelled STT cannot generate a reply');
+  test.tick(false,400);
+  assert.equal(test.recordings.length,1,'No muted pre-roll starts recording when input reopens');
+  test.tick(true,1000);for(let i=0;i<20;i++)test.tick(true,20);
+  test.tick(false,3200);await settle();
+  test.sttNext.resolve(Response.json({text:'This is my replacement question'}));await settle();
   const calls=test.requests.filter(r=>r.url.endsWith('/llm'));
-  assert.equal(calls.length,1,'Continuation is one tutor turn');
-  assert.equal(JSON.parse(calls[0].body).messages.at(-1).content,'I understand the velocity but I do not understand acceleration');
+  assert.equal(calls.length,1);
+  assert.equal(JSON.parse(calls[0].body).messages.at(-1).content,'This is my replacement question');
   test.cleanup();
 }
 {
@@ -594,7 +608,49 @@ for (const order of ['first-first','second-first']) {
  assert.equal(test.marks.length,0,'Elicitation does not automatically copy an equation from speech or the student');
  test.hook.pauseVoice();await speaking;test.cleanup();
 }
-console.log('PASS: resumed speech survives pending STT in either completion order; elicitation does not auto-reveal a relationship.');
+console.log('PASS: busy STT stays muted, explicit interruption rejects late transcripts; elicitation does not auto-reveal a relationship.');
+
+// A busy generation owns the floor even before its first audio. Cancelled
+// requests and TTS may finish late, but cannot reopen input during a new turn.
+{
+  const oldResponse=deferred(), newResponse=deferred(); let calls=0;
+  const test=await mount({llmResponse:()=>++calls===1?oldResponse.promise:newResponse.promise});
+  const oldTurn=test.hook.sendUtterance('First question');await settle();
+  test.tick(true,1000);for(let i=0;i<20;i++)test.tick(true,20);
+  assert.equal(test.track.enabled,false,'Thinking disables the microphone');
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,0);
+  assert.equal(test.requests.find(r=>r.url.endsWith('/llm')).signal.aborted,false,'Noise cannot cancel generation');
+  test.hook.pauseOrInterrupt();
+  assert.equal(test.track.enabled,true);
+  const newTurn=test.hook.sendUtterance('Replacement question');await settle();
+  oldResponse.resolve(new Response('data: [DONE]\n\n'));await oldTurn;await settle();
+  assert.equal(test.track.enabled,false,'Old completion cannot unmute a newer generation');
+  assert.equal(test.states[0],'thinking');
+  newResponse.resolve(new Response('data: [DONE]\n\n'));await newTurn;await settle();
+  assert.equal(test.track.enabled,true,'Current natural completion reopens listening');
+  assert.equal(test.states[0],'listening');
+  test.tick(true,1000);for(let i=0;i<20;i++)test.tick(true,20);
+  assert.equal(test.recordings.length,1,'A follow-up starts without another tap');
+  test.hook.pauseOrInterrupt();
+  assert.equal(test.track.enabled,false,'The listening control still fully pauses');
+  assert.equal(test.states[4],true);
+  test.cleanup();
+}
+{
+  const tts=deferred();
+  const test=await mount({llmText:'Here is the complete explanation.',deferredTts:tts.promise});
+  const turn=test.hook.sendUtterance('Explain this');await settle();
+  test.tick(true,1000);for(let i=0;i<20;i++)test.tick(true,20);
+  assert.equal(test.track.enabled,false,'Preparing speech keeps input muted');
+  assert.equal(test.recordings.length,0);
+  test.hook.pauseOrInterrupt();
+  tts.resolve(new Response(new Blob(['late audio'])));await turn;await settle();
+  assert.equal(test.audio.length,0,'Cancelled prepared audio never starts');
+  assert.equal(test.track.enabled,true);
+  test.cleanup();
+}
+console.log('PASS: muted generation/synthesis, explicit floor transfer, natural recovery, and stale completion isolation.');
+
 
 for(const cancel of [false,true]) {
   const repair=deferred();
@@ -740,3 +796,160 @@ for (const cancel of [false, true]) {
   test.cleanup();
 }
 console.log('PASS: student-first summary metadata, recap/audio synchronization, interruption, and recap recovery.');
+
+{
+  const app = await mount({ trial: true, llmText: 'Light carries clues about the star.', deferPlaying: true });
+  await app.record();
+  app.tick(false, 1200);
+  app.stt.resolve(Response.json({ text: 'Explain starlight simply.' }));
+  await settle();
+  const requests = app.requests.filter(r => r.url.endsWith('/llm'));
+  assert.equal(requests.length, 1, 'Trial skips the separate fast routing request');
+  assert.equal(JSON.parse(requests[0].body).deep, true);
+  assert.equal(app.diagnostics.filter(d => d.kind === 'response_latency').length, 0, 'TTS readiness is not playback');
+  app.tick(false, 800);
+  app.audio[0].onplaying?.();
+  await settle();
+  const timing = app.diagnostics.filter(d => d.kind === 'response_latency');
+  assert.equal(timing.length, 1);
+  assert.ok(timing[0].elapsedMs >= 3900, 'Includes silence endpoint, STT, and playback wait');
+  app.audio[0].onplaying?.();
+  assert.equal(app.diagnostics.filter(d => d.kind === 'response_latency').length, 1, 'Duplicate playing event does not duplicate the timing');
+  app.cleanup();
+  console.log('PASS: isolated trial skips routing and records speech-end to playback once, including endpointing and STT.');
+}
+
+// A short closing sentence belongs to its completed teaching beat, not a
+// separate five-word synthesis request. The first beat still starts early.
+for (const ending of ['ended', 'interrupted', 'error']) {
+  let output;
+  const response = new Response(new ReadableStream({ start(controller) { output = controller; } }));
+  const test = await mount({ llmResponse: response, manualAudio: true });
+  const speaking = test.hook.sendUtterance('Explain a simple spectrum.');
+  const emit = content => output.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ bohSpeechBoundary: true, choices: [{ delta: { content } }] })}\n\n`));
+  const first = 'A star sends out many colors. We can spread them into a rainbow.';
+  const last = 'The gas removes some colors. These gaps are just schematic.';
+  emit('[TEACH move=consolidate visual=none]\n' + first + '\n');
+  await settle();
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1);
+  assert.equal(JSON.parse(test.requests.find(r => r.url.endsWith('/tts')).body).text, first);
+  assert.equal(test.audio.length, 1, 'Complete first beat starts before the response ends');
+  test.audio[0].currentTime = 4; test.audio[0].duration = 4; test.audio[0].onended();
+  assert.equal(test.track.enabled, false, 'Input stays closed between teaching beats');
+  emit(last + '\n'); output.close(); await settle();
+  const tts = test.requests.filter(r => r.url.endsWith('/tts'));
+  assert.equal(tts.length, 2, 'Two teaching beats produce two clips, not four sentence clips');
+  assert.equal(JSON.parse(tts[1].body).text, last);
+  assert.equal(test.track.enabled, false, 'Model completion cannot reopen input before audio drains');
+  const audio = test.audio[1]; audio.duration = 3; audio.currentTime = ending === 'ended' ? 3 : 1.2;
+  if (ending === 'ended') audio.onended();
+  else if (ending === 'interrupted') test.hook.pauseVoice();
+  else {
+    audio.onerror(); await settle();
+    // The existing error recovery speaks a separate short failure notice.
+    test.audio.slice(2).forEach(clip => clip.onended?.());
+  }
+  await speaking; await settle();
+  if (ending === 'ended') {
+    assert.equal(test.states[0], 'listening');
+    assert.equal(test.track.enabled, true, 'Final audio completion automatically reopens listening');
+  } else assert.equal(test.track.enabled, false, 'Paused or failed output cannot silently reopen input');
+  const endings = test.diagnostics.filter(d => d.kind === 'playback_end');
+  assert.equal(endings.length, 2);
+  assert.equal(endings[1].message, ending);
+  assert.equal(endings[1].chunk, 2);
+  assert.equal(endings[1].audioDurationMs, 3000);
+  assert.equal(endings[1].audioPositionMs, ending === 'ended' ? 3000 : 1200);
+  audio.onended();
+  assert.equal(test.diagnostics.filter(d => d.kind === 'playback_end').length, 2, 'Late ended event cannot rewrite interruption or error');
+  test.cleanup();
+}
+console.log('PASS: complete teaching beats stay together; natural, interrupted, and failed playback endings are recorded once.');
+
+// A later rejected drawing/provider stream must not truncate an already
+// validated beat. Failure is reported after audio, unless the learner takes
+// the floor first. Never flush unmatched trailing tags or partial speech.
+for (const ending of ['finish', 'pause', 'new_turn']) {
+  let output;
+  const response = new Response(new ReadableStream({ start(controller) { output = controller; } }), { headers: { 'x-tutor-request': 'synthetic-partial' } });
+  let requestCount = 0;
+  const test = await mount({ llmResponse: () => ++requestCount === 1 ? response : new Response(`data: ${JSON.stringify({choices:[{delta:{content:'A separate response.'}}]})}\n\ndata: [DONE]\n\n`), manualAudio: true });
+  const speaking = test.hook.sendUtterance('Show me this setup.');
+  const emit = data => output.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(data)}\n\n`));
+  emit({ bohSpeechBoundary: true, choices: [{ delta: { content: '[TEACH move=orient visual=diagram][DRAW {"op":"circle","id":"object","center":{"x":0.4,"y":0.5},"r":0.05}] Here is the object we will examine.\n' } }] });
+  await settle();
+  assert.equal(test.audio.length, 1, 'The first accepted beat still starts early');
+  const first = test.audio[0]; first.duration = 6; first.currentTime = 1.5;
+  emit({ choices: [{ delta: { content: '[DRAW {"op":"circle","id":"trailing","center":{"x":0.5,"y":0.4},"r":0.05}] Unfinished' } }] });
+  emit({ error: { message: 'Synthetic later beat failed.', code: 'invalid_draw' } }); output.close();
+  await settle();
+  assert.equal(first.paused, false, 'Generation error cannot stop accepted audio');
+  assert.equal(test.states[3], null, 'Wait for accepted audio before presenting the failure');
+  assert.equal(test.diagnostics.find(d => d.kind === 'generation_error').request, 'synthetic-partial');
+  assert.equal(test.diagnostics.find(d => d.kind === 'generation_error').message, 'invalid_draw');
+  assert.equal(test.marks.length, 1, 'Do not release trailing unpaired visuals');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/tts')).length, 1, 'Do not synthesize unfinished text');
+  let next;
+  if (ending === 'finish') { first.currentTime = 6; first.onended(); }
+  else if (ending === 'pause') test.hook.pauseVoice();
+  else { next = test.hook.sendUtterance('A different question.'); await settle(); }
+  await speaking; await settle();
+  assert.equal(test.diagnostics.find(d => d.kind === 'playback_end').message, ending === 'finish' ? 'ended' : 'interrupted');
+  if (ending === 'finish') assert.match(test.states[3], /Synthetic later beat failed/);
+  else assert.equal(test.states[3], null, 'A superseded generation cannot display its old failure');
+  if (next) {
+    assert.equal(test.audio[1].paused, false, 'Old failure cannot abort the new turn');
+    test.audio[1].onended(); await next;
+  }
+  test.cleanup();
+}
+console.log('PASS: late generation failure preserves accepted playback, drops incomplete output, reports failure, and respects pause/new turns.');
+
+// Typed turns use the same lesson/board/output pipeline without input hardware.
+{
+  const test = await mount({ autoStart: false, trial: true, llmText: '[TEACH move=consolidate visual=notes]\n[DRAW {"op":"text","id":"note-typed","at":{"x":0.5,"y":0.5},"text":"A useful idea"}]\nHere is the idea.' });
+  await test.hook.sendUtterance('Explain this with a diagram', true);
+  assert.equal(test.resourceCounts().mediaRequests, 0, 'Typing never requests microphone permission');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/stt')).length, 0, 'Typing bypasses transcription');
+  assert.equal(test.requests.filter(r => r.url.endsWith('/llm')).length, 1);
+  assert.ok(test.requests.some(r => r.url.endsWith('/tts')), 'Typed input retains narration');
+  assert.ok(test.marks.some(mark => mark.id === 'note-typed'), 'Typed input retains the board');
+  assert.equal(test.hook.captureSession().current.turns[0].text, 'Explain this with a diagram');
+  assert.equal(test.states[0], 'idle', 'Typing leaves input closed after response');
+  test.cleanup();
+}
+for (const phase of ['thinking', 'speaking']) {
+  const pending = deferred();
+  const test = await mount({ manualAudio: true, llmResponse: phase === 'thinking' ? pending.promise : undefined, llmText: 'Here is a complete response.' });
+  const turn = test.hook.sendUtterance('Explain this'); await settle();
+  const request = test.requests.find(r => r.url.endsWith('/llm'));
+  test.hook.setMicMuted(true);
+  assert.equal(request.signal.aborted, false, 'Mic mute must not abort inference');
+  if (phase === 'speaking') assert.equal(test.audio[0].paused, false, 'Mic mute must not stop playback');
+  if (phase === 'thinking') pending.resolve(new Response('data: [DONE]\n\n'));
+  else test.audio.forEach(clip => clip.onended());
+  await turn; await settle();
+  assert.equal(test.track.enabled, false, 'Mute remains in effect after response completion');
+  assert.equal(test.states[0], 'idle');
+  test.tick(true, 1000); for (let i=0; i<20; i++) test.tick(true,20);
+  assert.equal(test.recordings.length, 0, 'Muted input cannot capture background speech');
+  test.hook.setMicMuted(false);
+  assert.equal(test.track.enabled, true, 'Unmute returns to listening without restarting the lesson');
+  test.cleanup();
+}
+{
+  const test = await mount();
+  test.tick(true,1000); for(let i=0;i<20;i++)test.tick(true,20);
+  test.hook.setMicMuted(true); test.tick(false,4000); await settle();
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/stt')).length,0,'Mute discards an unfinished recording');
+  test.cleanup();
+}
+console.log('PASS: typed input shares tutor/board/narration without microphone permission; persistent mic mute preserves inference and playback.');
+
+{
+  const test = await mount({autoStart:false, trial:true});
+  await test.hook.sendUtterance('[1, 2, 3]', true);
+  assert.equal(test.requests.filter(r=>r.url.endsWith('/llm')).length, 1, 'Deliberately typed brackets are not STT noise markers');
+  assert.equal(test.resourceCounts().mediaRequests,0);
+  test.cleanup();
+}

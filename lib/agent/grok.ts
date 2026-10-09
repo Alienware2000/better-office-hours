@@ -1,9 +1,12 @@
+import { TRIAL_GUIDANCE, TRIAL_PROFILE } from './trial';
+import { tutorProvider, tutorModel, tutorOptions } from './provider';
 import { awaitingSummary, RECAP_FORMAT, RECAP_GUIDANCE } from './closing';
 import { validateRecap } from '@/lib/session/recap';
 import OpenAI from "openai";
 import { TEACHING_GUIDANCE, teachingTag } from "./teaching-intent";
 import { DIAGRAM_GUIDANCE } from './diagram-guidance';
-import { CONCEPT_RESPONSE_FORMAT, CONCEPT_FORMAT_GUIDANCE, conceptProgress, conceptResponse } from './concept-response';
+import { CONCEPT_RESPONSE_FORMAT, CONCEPT_FORMAT_GUIDANCE, conceptProgress, conceptResponse, lessonDrawings } from './concept-response';
+import { streamValidatedLesson } from './concept-stream';
 import { CONCEPT_ROUTING_FORMAT, conceptRoutingMessages, conceptRoute, parseConceptRoute } from './concept-routing';
 import { parseAgentTurn } from "./tags";
 import {
@@ -22,20 +25,14 @@ import type { ChatMessage } from "@/lib/agent/tags";
 export type GrokRequestContext = { page: LivePage | null; board: LiveBoard | null; student?: TurnContext };
 const snapshot = (): GrokRequestContext => ({ page: getLivePage(), board: getLiveBoard() });
 
-// Fast lane. grok-4.6 reasons before it answers, which put the first spoken
-// word 26s out. This non-reasoning model answers in about half a second and
-// still reads the pset page image, so the pointer keeps working.
-export const GROK_MODEL = "grok-4.20-0309-non-reasoning";
-
-// Reasoning lane, for turns where being wrong costs the student. Low effort
-// reduces the wait, but recent visual turns still took 24-33s. Structured
-// handoffs are silent; no placeholder speech hides that generation delay.
-export const GROK_DEEP_MODEL = "grok-4.6";
+// Legacy export names retained for existing evaluation tools.
+export const GROK_MODEL = tutorModel();
+export const GROK_DEEP_MODEL = tutorModel(true);
 
 // Teaching desks use narrated lessons for concepts and homework setups alike.
 // Topic names never select fixtures; the model decides what needs a picture.
 export function usesConceptLesson(deep = false, visualRepair = false, request = snapshot()): boolean {
-  return deep && !visualRepair && Boolean(request.page || request.board?.open);
+  return deep && !visualRepair && Boolean(tutorProvider() === 'opus' || request.page || request.board?.open);
 }
 
 export function usesConceptRouter(deep = false, visualRepair = false): boolean {
@@ -43,6 +40,11 @@ export function usesConceptRouter(deep = false, visualRepair = false): boolean {
 }
 
 function client() {
+  if (tutorProvider() === 'opus') {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error('The Opus tutor needs OPENROUTER_API_KEY');
+    return new OpenAI({ apiKey, baseURL: 'https://openrouter.ai/api/v1', maxRetries: TRIAL_PROFILE.maxRetries, timeout: TRIAL_PROFILE.requestTimeoutMs });
+  }
   const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) {
     throw new Error("XAI_API_KEY is not set");
@@ -55,7 +57,7 @@ Compose a clear small teaching figure, not a loose collection of words. Give it 
 Use LaTeX in DRAW text for equations, fractions, roots, vectors, and aligned mathematics; follow math_notation below. Plain Unicode remains supported for short quantities. Keep each equation compact and geometry labels at most six words. For notes, use a short topic heading (text id=topic, size s, y=0.12), then only the rows needed at this teaching step. Given/definition rows use IDs given-1, note-1, definition-1 and consistent left alignment; a justified relationship uses id=relation. There is no mandatory equation slot. New topic headings start a fresh scrollable page; preserve earlier work. Leave the lower third for student thinking and ink. Reuse IDs to revise your own work, use DRAW highlight id=... for focus, and remove stale tutor lines. Do not attribute tutor notes to the student or place shapes across existing notes. Coordinates are normalized 0 to 1 with y downward. Keep a generous margin.
 For motion use declarative [ANIM {...}] only, never ANIM_PROGRAM. Schema: {id,duration,shapes:[...]}, seconds under 8; kinds: axes {id,origin:{x,y},xLabel,yLabel}; arrow {id,label,keyframes:[{t,from:{x,y},to:{x,y},color,opacity}]}; dot {id,keyframes:[{t,at:{x,y},r,opacity}]}; path {id,points:[{x,y},...],keyframes:[{t,drawn,opacity}]}; text {id,text,keyframes:[{t,at:{x,y},opacity}]}; bar {id,keyframes:[{t,at:{x,y},w,h,opacity}]}. Every ANIM shape needs kind. ANIM kinds are exactly axes, arrow, dot, path, text, bar: NEVER line or circle. Use dot for a round moving object and path for a fixed line. All arrow keyframes must contain both from and to, all dot/text keyframes contain at, all path keyframes contain drawn. Write these required properties in EVERY frame, including holds; top-level positions or an opacity-only frame are invalid. Before emitting, check the scene against its constraints: fixed lengths stay fixed, attached parts move together, fixed supports stay fixed, arrows represent their named quantity. Prefer two or three coherent shapes over a complicated scene. Do not promise forces, speed changes, or effects that your geometry does not show. Static positions: text uses at:{x,y}, circle uses center:{x,y} and r, line/arrow use from:{x,y} and to:{x,y}. DRAW uses op equal to the shape name (arrow, axes, line, curve, circle, text), never op draw or a kind field. Keyframes have increasing t and optional ease linear, inOut, out. Points normalized 0..1, y downward. Arrow endpoints or dot at can use {follow:{pathId,offset:{x,y}}} to ride the path's drawn progress. Paths smoothly interpolate their declared points, bounded between successive samples; drawn is a normalized fraction from 0 to 1 of the point sequence, NEVER a point count or integer index. Zero is the first point, 0.5 halfway through the point sequence, and 1 the last point. Supply samples at equal physical time intervals for linear drawn timing, or keyframe drawn at the required sample times. A curved trajectory needs enough samples to show the curvature (usually 7 to 9). Use dot at Follow to stay exactly on that path; interpolating a dot through just start/apex/end makes two straight segments. Arrow colors are exactly ink, accent, muted, warn, never hex strings or named colors. Do not speak of a blue/red arrow when you emitted the ink/rust palette. Two-point paths stay straight. A playback hold is a pause for observation, not evidence that the physical object stops. Include a 0.65s initial hold and a final hold. Keep the spec compact, at most five shapes. [ANIM focus=id] signals one shape; [ANIM resume] continues after interruption. Use DRAW for a static diagram; ANIM when change over time is the idea.</board_narration>`;
 
-const MATH_GUIDANCE = String.raw`<math_notation>The board typesets LaTeX locally. Put LaTeX in the existing DRAW text field, with no dollar delimiters needed; JSON requires doubled backslashes. Example syntax only: [DRAW {"op":"text","id":"relation","at":{"x":0.5,"y":0.3},"text":"v^{2}=v_{0}^{2}+2a\\Delta y","size":"m"}]. Use \\frac{numerator}{denominator}, \\sqrt{...}, subscripts _{...}, exponents ^{...}, \\vec{...}, integrals, and \\begin{aligned} ... &= ... \\\\ ... &= ... \\end{aligned} for a short alignment (use actual ampersands, not HTML entities). For units use \\mathrm{m}, \\mathrm{s}^{2}, and \\, for a small space. Put each known given in its own given-* row instead of one comma-separated line. Topic headings and ordinary prose stay plain text. Keep expressions under 800 characters and at most three aligned rows. Base/AMS math is supported; no custom macros, HTML, links, packages, or external images. This typesetting support never changes the teaching move or permits an early equation, complete graded solution, or final answer. Speak in ordinary words, not LaTeX commands.</math_notation>`;
+const MATH_GUIDANCE = String.raw`<math_notation>The board typesets LaTeX locally. Put LaTeX in the existing DRAW text field, with no dollar delimiters needed; JSON requires doubled backslashes. Example syntax only: [DRAW {"op":"text","id":"relation","at":{"x":0.5,"y":0.3},"text":"v^{2}=v_{0}^{2}+2a\\Delta y","size":"m"}]. Use \\frac{numerator}{denominator}, \\sqrt{...}, subscripts _{...}, exponents ^{...}, \\vec{...}, integrals, and \\begin{aligned} ... &= ... \\\\ ... &= ... \\end{aligned} for a short alignment (use actual ampersands, not HTML entities). For matrices use \\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}; pmatrix is also supported. For an augmented matrix use \\left[\\begin{array}{cc|c}a&b&u\\\\c&d&v\\end{array}\\right], keeping the separator and all rows in one text item. These are syntax examples, not lesson content. Matrix row separators need the same JSON escaping as aligned rows, including the outer draw string. For units use \\mathrm{m}, \\mathrm{s}^{2}, and \\, for a small space. Put each known given in its own given-* row instead of one comma-separated line. Topic headings and ordinary prose stay plain text. Keep expressions under 800 characters and at most three aligned rows. Base/AMS math is supported; no custom macros, HTML, links, packages, or external images. This typesetting support never changes the teaching move or permits an early equation, complete graded solution, or final answer. Speak in ordinary words, not LaTeX commands.</math_notation>`;
 
 export function buildGrokMessages(
   history: ChatMessage[],
@@ -190,6 +192,7 @@ export async function* streamGrok(
   visualRepair = false,
   request = snapshot(),
 ): AsyncGenerator<string> {
+  const opusRequest = tutorProvider() === 'opus';
   const grok = client();
   const conceptTeaching = usesConceptLesson(deep, visualRepair, request);
   const conceptRouting = usesConceptRouter(deep, visualRepair);
@@ -201,26 +204,37 @@ export async function* streamGrok(
       tutorItems: board?.tutorItems?.map(item => ({ id: item.id, text: item.text, status: item.status })).slice(-12) ?? [] },
   }) : toApiMessages(history, event, deep, request);
   if (conceptTeaching) messages.push({ role: 'system', content: CONCEPT_FORMAT_GUIDANCE });
+  if (opusRequest && conceptTeaching) messages.push({ role: 'system', content: TRIAL_GUIDANCE });
   if (visualRepair) {
     const last = history.filter(message => message.role === 'assistant').at(-1)?.content ?? '';
     const intent = parseAgentTurn(last).teaching;
     messages.push({ role: 'system', content: `Silent visual recovery for this already chosen teaching move: ${teachingTag(intent)}. Keep that move and its disclosure boundary. Compose only the missing visual for the last explanation, without advancing the hint ladder or revealing what the student was asked to supply. Return [BOARD open] and at most five compact valid DRAW commands, no speech. Use a static conceptual sketch for diagram/animation, never another animation attempt. A sketch needs meaningful geometry and clear short labels, not a formula-only note. For notes use only already established givens, learner-supplied relationships, or the specifically justified hint. Never a computed graded answer, complete solution, invented given, or scripted fixture. Do not clear/remove existing work. Use ops text, line, arrow, curve, circle, axes. Put circle positions in center:{x,y}. If it cannot be illustrated without giving away the question, return nothing.` });
   }
-  const stream = await grok.chat.completions.create({
-    model: deep ? GROK_DEEP_MODEL : GROK_MODEL,
-    temperature: visualRepair ? 0.3 : deep ? 0.5 : 0.85,
-    // Reasoning tokens count against this, so a tight cap on the deep lane
-    // returns an empty message.
-    // Board turns need room for a few DRAW tags plus a short spoken line.
-    // 220 cut mid-tag and left the board empty.
-    max_tokens: conceptRouting ? 300 : deep ? 2400 : 1800,
+  if (opusRequest && visualRepair) messages.push({ role: 'system', content: 'For this silent repair only, override the JSON lesson envelope: return only [BOARD open][DRAW {...}] tags using any valid static drawing commands above, including text equations when the teaching move permits them. No speech or new teaching content. Preserve the existing teaching move and graded-work boundary.' });
+  const createStream = (extra: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = []) => grok.chat.completions.create({
+    model: tutorModel(deep),
+    ...tutorOptions(deep, visualRepair),
     stream: true,
-    messages,
-    ...(deep ? { reasoning_effort: "low" as const } : {}),
+    messages: [...messages, ...extra],
     ...(conceptTeaching ? { response_format: CONCEPT_RESPONSE_FORMAT } : {}),
     ...(conceptRouting ? { response_format: CONCEPT_ROUTING_FORMAT } : {}),
   }, { signal });
 
+  const lessonOptions = opusRequest ? { requireVisuals: true, currentAnimation: board?.animation?.spec,
+    currentDrawings: lessonDrawings(board),
+  } : {};
+  if (opusRequest && conceptTeaching) {
+    yield* streamValidatedLesson(async recovery => {
+      if (!recovery) return createStream();
+      console.info('Tutor visual recovery ' + JSON.stringify({ code: recovery.failure.code, beat: recovery.failure.beat, acceptedBeats: recovery.prefix.beats.length }));
+      return createStream([
+        { role: 'assistant', content: JSON.stringify(recovery.prefix) },
+        { role: 'system', content: `The previous JSON is the accepted lesson prefix, already delivered. A later beat was rejected (${recovery.failure.code}). Continue the SAME teaching step with only the missing continuation. Return the concept_lesson JSON with handoff=false, move=${recovery.prefix.move}, visual=${recovery.prefix.visual}, introduction="", one to ${recovery.remaining} remaining beats, and a complete natural ending or one useful question. Do not repeat the accepted prefix or change its drawing IDs. Its drawings are available for valid highlights. Check every command. All original graded-work and disclosure restrictions remain: for elicit/orient, show only established givens/objects/events and leave the requested relationship or outcome unseen. Do not introduce a formula that gives away a prediction. Numeric givens may use ordinary text units. A rejected drawing is not permission to speak its answer without drawing it. If you cannot continue within that boundary, ask one safe question about an existing object using a valid highlight. No acknowledgement, technical error narration, or invented student progress.` },
+      ]);
+    }, lessonOptions, signal);
+    return;
+  }
+  const stream = await createStream();
   let lesson = '';
   let emitted = '';
   for await (const part of stream) {
@@ -229,7 +243,7 @@ export async function* streamGrok(
     if (!conceptTeaching && !conceptRouting) { yield text; continue; }
     lesson += text;
     if (conceptRouting) continue;
-    const progress = conceptProgress(lesson);
+    const progress = conceptProgress(lesson, lessonOptions);
     if (progress.length > emitted.length) {
       if (!progress.startsWith(emitted)) throw new Error('The concept explanation changed while loading. Please try again.');
       yield progress.slice(emitted.length);
@@ -247,7 +261,8 @@ export async function* streamGrok(
       if (!awaitingSummary(history)) {
         yield '[SUMMARY_REQUEST]Before we wrap up, what is one idea you are taking away?';
       } else {
-        const completion = await grok.chat.completions.create({ model: GROK_DEEP_MODEL, reasoning_effort: 'low', temperature: 0.3, max_tokens: 900,
+        const completion = await client().chat.completions.create({ model: tutorModel(true), ...tutorOptions(true),
+          ...(tutorProvider() === 'grok' ? { temperature: 0.3, max_tokens: 900 } : {}),
           messages: [{ role: 'system', content: loadTutorPrompt('your course') + '\n' + buildContextBlock(request.student) + '\n' + RECAP_GUIDANCE }, ...history.filter(m => m.role !== 'system').slice(-24)], response_format: RECAP_FORMAT,
         }, { signal });
         const data = JSON.parse(completion.choices[0]?.message.content ?? '');
@@ -261,7 +276,7 @@ export async function* streamGrok(
     } else yield conceptRoute(lesson, !live && !board?.open);
   }
   if (conceptTeaching) {
-    const complete = conceptResponse(lesson);
+    const complete = conceptResponse(lesson, lessonOptions);
     if (!complete.startsWith(emitted)) throw new Error('The concept explanation changed while loading. Please try again.');
     yield complete.slice(emitted.length);
   }

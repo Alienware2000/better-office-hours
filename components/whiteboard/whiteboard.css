@@ -28,9 +28,9 @@
 .board-label { font-weight: 500; letter-spacing: .01em; paint-order: stroke; stroke: #fffcf6; stroke-width: .009; stroke-linejoin: round; pointer-events: none; }
 .board-label.is-diagram { stroke-width: .003; letter-spacing: 0; }
 .board-group .board-label.is-diagram { transition: x .18s ease, y .18s ease; }
-.board-glyph { animation: board-character 80ms step-end both; }
+/* Glyph visibility is driven by the shared group clock in BoardDrawing. */
 .board-math { pointer-events: none; }
-.board-math-glyph { animation: board-character 80ms step-end both; }
+
 .board-group.is-pulse .board-math { animation: board-text-focus 1.1s ease-in-out 2; }
 .board-group.is-pulse .board-label { animation: board-text-focus 1.1s ease-in-out 2; }
 .board-group.is-pulse .board-path, .board-group.is-pulse .board-head { animation: board-pulse 1.1s ease-in-out 2; }
@@ -57,7 +57,7 @@
 @keyframes board-draw { to { stroke-dashoffset: 0; } }
 @keyframes board-fade { to { opacity: 1; } }
 @keyframes board-fill-appear { from { fill-opacity: 0; } to { fill-opacity: 1; } }
-@keyframes board-character { from { opacity: 0; } to { opacity: 1; } }
+
 @keyframes board-text-focus { 50% { opacity: .55; } }
 @keyframes board-pulse { 50% { stroke-width: 4.2px; opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .board-fill.is-entering { animation: none; } .board-path.is-entering, .board-head.is-entering, .board-glyph, .board-math-glyph, .board-group.is-pulse .board-math, .board-group.is-pulse .board-label, .board-group.is-pulse .board-path, .board-group.is-pulse .board-head { animation: none; stroke-dashoffset: 0; opacity: 1; } .board-tutor-layer, .board-your-layer, .board-group .board-label.is-diagram { transition: none; } }

@@ -17,8 +17,10 @@ export const textWidth = (text: string, size: number, math = isMathText(text)) =
     measure.font = `500 100px ${math ? MATH_FONT : LABEL_FONT}`;
     return measure.measureText(text).width / 100 * size;
   }
-  // Server/test fallback. Spaces and superscripts are not full-width letters.
-  return [...text].reduce((sum, char) => sum + (/\s/.test(char) ? .27 : /[il.,:;!|₀-₉²³]/.test(char) ? .32 : /[MW@]/.test(char) ? .95 : /[=+−×]/.test(char) ? .75 : .57), 0) * size;
+  // Server/test fallback. Reserve 12% extra width for system-font variation.
+  // Browser inspection found the old estimate narrower than the rendered labels.
+  // Spaces and superscripts are not full-width letters.
+  return [...text].reduce((sum, char) => sum + (/\s/.test(char) ? .27 : /[il.,:;!|₀-₉²³]/.test(char) ? .32 : /[MW@]/.test(char) ? .95 : /[=+−×]/.test(char) ? .75 : .57), 0) * size * 1.12;
 };
 const width = textWidth;
 const intersects = (a: Box, b: Box) => a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;
@@ -34,14 +36,21 @@ export function writingBounds(mark: TextMark): Box {
 // Resolve writing once in board coordinates. The snapshot and rendered board
 // consume the same lines; existing writing never jumps when a new line arrives.
 export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { points: { x: number; y: number }[] }[], motion: ShapeGroup[] = []): ShapeGroup | null {
+  if (group.fixedLayout) return group;
   if (group.drawables.length !== 1 || group.drawables[0].kind !== 'text') return group;
-  const mark = group.drawables[0];
+  const original = group.drawables[0];
+  // TeX spacing sometimes leaks into ordinary symbol legends. Keep prose
+  // readable without changing actual mathematical commands or expressions.
+  const mark = !isMathText(original.text) ? { ...original, text: original.text.replace(/\\[,;:! ]/g, ' ').replace(/\s+/g, ' ').trim() } : original;
   const heading = group.id === 'topic' || group.id.startsWith('topic-');
   const math = !heading && isMathText(mark.text);
   const note = heading || /^(given|note|definition)-/.test(group.id);
-  if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color, false) ?? undefined }] };
+  if (!heading && isCompactMath(mark.text)) return { ...group, drawables: [{ ...mark, diagramLabel: true, fontSize: .038, math: true, mathDrawing: typesetMath(mark.text, mark.color) ?? undefined }] };
   if (!note && !math && width(mark.text, .038, false) <= .91 && groups.some(group => group.geometry?.length)) return group;
-  let fontSize = heading ? .057 : mark.size === 'm' ? .085 : .068;
+  // Supporting prose should stay subordinate to the mathematical object,
+  // whether or not the page also contains geometry.
+  const caption = note && !heading && !math;
+  let fontSize = heading ? .048 : caption ? .038 : math ? boardStyle.equation : mark.size === 'm' ? .085 : .068;
   const available = 1 - margin * 2;
   const fullFormula = math && hasLatex(mark.text) ? typesetMath(mark.text, mark.color) : null;
   const latex = Boolean(fullFormula);
@@ -51,7 +60,7 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   let line = '';
   // Keep a product such as 2 a Δy together. Only long expressions need a
   // continuation, preferably at a relation or additive operator.
-  const rows = note && !heading && !latex ? mark.text.split(/,\s*(?=[^,]+[=≈])/u) : [mark.text];
+  const rows = note && !heading && !caption && !latex ? mark.text.split(/,\s*(?=[^,]+[=≈])/u) : [mark.text];
   for (const row of latex ? [] : rows) {
     const tokens = latex ? [row] : math ? row.split(/\s+(?=[=+−]|-(?!\d))/) : row.split(/\s+/);
     for (const token of tokens) {
@@ -90,6 +99,9 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   }
   const half = Math.max(...lines.map(text => width(text, fontSize, math)), 0) / 2;
   const x = note ? margin + half : Math.max(margin + half, Math.min(1 - margin - half, mark.at.x));
+  // Try lateral space before continuing to a new page. Only new equation placement
+  // changes: notes keep their left alignment and prior writing stays resolved.
+  const columns = math && !note ? [...new Set([x, .5, margin + half, 1 - margin - half])] : [x];
   const formulas = lines.map(text => math ? typesetMath(text, mark.color) : null);
   const offsets = [0];
   for (let i = 1; i < lines.length; i++) offsets.push(offsets[i - 1] + Math.max(fontSize * 1.45, fontSize * ((formulas[i - 1]?.descent ?? .25) + (formulas[i]?.ascent ?? 1)) + gap));
@@ -101,9 +113,11 @@ export function layoutWriting(group: ShapeGroup, groups: ShapeGroup[], ink: { po
   for (let y = firstY + .025; y + height + descent <= 1 - margin; y += .025) candidates.push(y);
   for (let y = margin + ascent; y < firstY; y += .025) candidates.push(y);
   for (const y of candidates) {
-    const bounds = { left: x - half, right: x + half, top: y - ascent, bottom: y + height + descent };
-    if (bounds.bottom > 1 - margin || occupied.some(box => intersects(bounds, box))) continue;
-    return { ...group, drawables: lines.map((text, i) => ({ ...mark, key: `${mark.key}-line-${i}`, text, fontSize, heading, math, mathDrawing: formulas[i] ?? undefined, color: heading ? boardStyle.colors.muted : mark.color, textAnchor: note ? 'start' as const : 'middle' as const, at: { x: note ? margin : x, y: y + offsets[i] } })) };
+    for (const column of columns) {
+      const bounds = { left: column - half, right: column + half, top: y - ascent, bottom: y + height + descent };
+      if (bounds.bottom > 1 - margin || occupied.some(box => intersects(bounds, box))) continue;
+      return { ...group, drawables: lines.map((text, i) => ({ ...mark, key: `${mark.key}-line-${i}`, text, fontSize, heading, math, mathDrawing: formulas[i] ?? undefined, color: heading ? boardStyle.colors.muted : mark.color, textAnchor: note ? 'start' as const : 'middle' as const, at: { x: note ? margin : column, y: y + offsets[i] } })) };
+    }
   }
   // Keep the existing board intact when full. The tutor can remove/replace its
   // earlier groups; never erase student work or squeeze writing to make it fit.

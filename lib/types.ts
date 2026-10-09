@@ -94,9 +94,17 @@ export type StudentAnnotation = {
 };
 
 export type Pt = { x: number; y: number };
-export type Color = "ink" | "accent" | "muted" | "warn";
+export type Color = "ink" | "accent" | "muted" | "warn" | "red" | "orange" | "yellow" | "green" | "blue" | "violet";
+
+// A bounded semantic figure. The renderer owns spacing and caption placement.
+export type PanelCommand = {
+  op: 'panel'; id: string; slot: 0 | 1; title: string;
+  items: { label: string; shape: 'circle' | 'box' | 'band'; color?: Color; colors?: Color[]; gaps?: number[] }[];
+  connect?: boolean;
+};
 
 export type DrawCommand =
+  | PanelCommand
   | { op: "clear" }
   | { op: "axes"; id: string; origin: Pt; xLabel?: string; yLabel?: string }
   | {
@@ -113,6 +121,7 @@ export type DrawCommand =
       from: Pt;
       to: Pt;
       dashed?: boolean;
+      label?: string;
       color?: Color;
     }
   | {

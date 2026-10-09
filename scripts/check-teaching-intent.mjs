@@ -77,3 +77,8 @@ const rows=layoutWriting(interpretCommand({op:'text',id:'given-1',at:{x:.08,y:.2
 assert.deepEqual(rows.drawables.map(m=>m.text),['v₀ = 0','a = +3 m/s²','Δy = 600 m']);
 assert.ok(rows.drawables.every(m=>m.at.x===rows.drawables[0].at.x));
 console.log('PASS: live-model ASCII powers/subscripts normalize, and comma-separated givens become aligned rows.');
+
+// Plain and typeset numeric givens have the same disclosure classification.
+for (const text of [String.raw`v = 12\,\mathrm{m/s}`, String.raw`\theta = 25^\circ`, String.raw`\theta = 25^{\circ}`, String.raw`a = -9.81\,\mathrm{m}/\mathrm{s}^{2}`, String.raw`t = 3\quad\text{s}`]) assert.equal(isRelationship(text),false,text);
+for (const text of [String.raw`v_x = v\cos\theta`, String.raw`v = 12 + a`, String.raw`v = \mathrm{ma}`, String.raw`v = \text{answer}`, String.raw`v = 12\unknown`, String.raw`x = \frac{1}{2}at^2`, String.raw`a = 3\cdot g`]) assert.equal(isRelationship(text),true,text);
+console.log('PASS: typeset numeric givens are allowed, while symbolic relationships/unknown macros remain blocked.');

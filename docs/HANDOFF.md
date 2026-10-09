@@ -1,4 +1,6 @@
-# Active release handoff, September 11, 23:27 EDT
+# Historical release handoff, September 11, 23:27 EDT
+
+Current continuation brief: [POST_HACKATHON_HANDOFF.md](POST_HACKATHON_HANDOFF.md). On September 13 David requested local-only post-submission development. No pushes, PR changes, deployments, or production changes until explicitly reauthorized. The recording, deadline, and merge directions below are retained as history.
 
 Latest requested polish is deployed: clearer upload/concept entry guidance, repair-safe topic/document session titles, and a compact Canvas control in the session header. Runtime fc80ffa, release PR #13. Build/lint, session recovery, layout renders, and real routing probes pass. The public tab has PHYS 180 selected; uploads continued to 24 visible sources. Local :3102 stays the older fallback. Use the public app to see these changes.
 
