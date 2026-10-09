@@ -57,4 +57,18 @@ The [saved-session review](evaluations/2026-09-20-session-review.md) covers all 
 
 Update this register when a candidate is promoted or a decision changes. Keep detailed evidence in linked reports. Groundtrack remains unavailable; local docs are the current engineering memory. Credentials, private transcripts, uploads, and student exports never belong in committed evaluation records.
 
+## October 8 return to building
+
+David requests a main-integration plan and then a light README cleanup. Fresh origin/main is `3163d7ffea5ff820247403298546993295c70298`; development HEAD is `b8e9a25`. There are 66 local-only commits and one remote-only README commit replacing the video link with LinkedIn. Merge-tree simulation is conflict-free. Local main remains stale. Public demo returns HTTP 503 / DEPLOYMENT_PAUSED; keep that pause through publication planning.
+
+Recommended sequence:
+
+1. Prepare one reviewed accumulated integration against fresh origin/main. Include workflow/evaluation tooling, voice/input/UI reliability and general renderer fixes with their dependencies. Preserve the remote demo link. Keep Opus development-gated and document prototypes as studies. Merging their source does not promote them to product behavior.
+2. Review existing shared-contract additions (panels, literal colors, line labels) and all consumers. Keep PR #11 separate: its persistence/identity assumptions still need reconciliation. General prompt/layout changes also require review because they affect default Grok behavior.
+3. Clear existing lint errors; run isolated build and browser PDF/ink/save/reopen/interruption checks. Human listening and useful-response timing remain release evidence. No provider promotion or public reopening is implied.
+4. Present exact publication scope, validation and rollback revision before the main merge/push. Avoid blind cherry-picking of interdependent renderer/voice changes.
+5. After integration, lightly refresh README: product-focused introduction, hackathon as origin, current feature/limit descriptions, dev:local instructions, and retained hosted/LinkedIn demo links. Keep historical screenshots, but move build-process material below product usage.
+
+Fresh isolated checks at b8e9a25: all 18 candidate checks pass; next typegen followed by TypeScript passes. Full lint fails on five react-hooks/refs errors in PdfViewer.tsx and one no-assign-module-variable in check-integration.mjs. Both files are unchanged from main. No fresh build, provider, browser-recovery or acoustic test. TASK records the isolated evidence path. No push, PR, main merge, deployment or README edit occurred.
+
 September 20 interaction foundation: voice stays primary, typing opens explicitly, controls share a visual system, and state cues are explicit. See [UI foundation](UI_FOUNDATION.md) and [product checklist](PRODUCT_CHECKLIST.md). Earlier snapshots/data remain preserved; STATUS tracks running versions.

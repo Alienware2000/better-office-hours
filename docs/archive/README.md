@@ -33,3 +33,5 @@ The three archived files preserve their pre-workflow bytes. Search with `rg -n '
 - [September 20 STEM and Studdy study](tasks/2026-09-20-stem-study.md): broad STEM evaluation, comparative research and live-test handoff.
 
 - [September 20 live composition](tasks/2026-09-20-live-composition.md): diagram equation layout, isolated 3117 and typed lesson recovery checks.
+
+- [September 20 representation checkpoint](tasks/2026-09-20-representation.md): matrices and writing scale; teaching/latency review remains pending and is carried into the October 8 integration plan.

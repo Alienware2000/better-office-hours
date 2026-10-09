@@ -1,8 +1,10 @@
 # Current engineering notes
 
-Updated: 2026-09-20. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
+Updated: 2026-10-08. Keep this short and current. Search [archived notes](archive/README.md) for historical evidence; old OPEN/release directives are superseded.
 
 ## Workflow and environment
+
+- Fresh-clone TypeScript needs `next typegen` before `tsc` for LayoutProps. October 8 full lint found six pre-existing errors in unchanged PdfViewer/check-integration files; targeted lint history was not a full-repository pass. See DEVELOPMENT.
 
 - AGENTS.md is shared authority; CLAUDE.md and Cursor point there. See MEMORY_GUIDE, MEMORY_RECIPE, and WORKFLOW for human instructions. Scripts validate/assemble memory; agents write it.
 - Archive completed TASKs before replacing them. Caps: TASK 6,000, default context 12,000, full context 28,000 characters. Strict writes validate branch/base/fields/links. Compact detail into linked guides; keep the caps.

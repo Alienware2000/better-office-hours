@@ -1,34 +1,38 @@
 # Active task
 
-Updated: 2026-09-20
+Updated: 2026-10-08
 State: ready_for_review
 Branch: lane/post-hackathon-local
-Base: 84a925948fc1a0b8a39338082a019293add83658
+Base: b8e9a2579053e5182b0ec65631a14a898afb01f8
 
 ## Objective
 
-Improve representation choice after Gaussian-elimination feedback.
+Prepare a reviewed main-integration plan, then lightly refresh the README around the continuing product.
 
 ## Scope and constraints
 
-Local only; preserve live sessions, frozen files, graded boundaries and public pause. Groundtrack unavailable. No topic routing.
+David requested relevant changes on main, identified undecided work, and asked to plan first. This checkpoint prepares publication scope; no push, PR, main merge or deployment has occurred. Preserve frozen files, graded boundaries, student data and the public pause. Groundtrack remains unavailable.
 
 ## Progress
 
-Guidance now favors appropriate structured objects. Fixed MathJax array dividers, equation/note scale. Four-call comparison and actual-renderer browser review complete: [evidence](evaluations/2026-09-20-representation.md).
+Fetched origin/main at 3163d7ffea5ff820247403298546993295c70298. It has one remote-only README demo-link commit; HEAD b8e9a25 has 66 local-only commits. Merge-tree simulation is conflict-free. Local main is stale. Current integration plan is in DEVELOPMENT's October 8 section.
+
+Verified public demo HTTP 503 / DEPLOYMENT_PAUSED. Identified 3116 listener cwd as its retained .data snapshot, not current source. No runtime was restarted.
 
 ## Decisions
 
-One meaningful operation with its explanation. Preserve matrices, student ink and disclosure bounds. New guidance remains a candidate: timing and teaching results are mixed.
+Recommend accumulated integration with Grok as default and Opus remaining development-gated; save prototype/evaluation work without claiming it is integrated. Review existing panel/color/line-label shared-contract additions before merging. PR #11 remains unreconciled, outside this integration. Preserve remote LinkedIn demo link and hosted app URL during README cleanup; describe the hackathon as origin rather than current product scope.
+
+Prior representation work is not complete: general guidance, matrix divider rendering and writing scale are committed, but timing/teaching results remain mixed. Preserve one meaningful operation plus its explanation, matrices, student ink and disclosure bounds. See [evidence](evaluations/2026-09-20-representation.md) and [prior checkpoint](archive/tasks/2026-09-20-representation.md).
 
 ## Validation
 
-Focused renderer, streaming, guard, profile, TypeScript and lint checks pass. Full gate/acoustics not claimed. Audit on 3116/board-representation.html.
+Isolated credential-free clone of b8e9a25: all 18 offline candidate checks pass. Next route type generation then TypeScript pass. Full lint fails with five react-hooks/refs errors in PdfViewer.tsx and one no-assign-module-variable in scripts/check-integration.mjs; both files are unchanged from fetched main. No build, real-provider, browser recovery or acoustic check was performed this turn. Test clone: /var/folders/pv/g5wp8n9d0ks14g87hdyh6vyh0000gn/T/boh-main-review-ccfcbp54. Raw synthetic gate report stays in its ignored .data/evaluation/consolidation/.
 
 ## Next action
 
-Review sampled teaching and latency before app promotion. Restart deliberately only after the active session is finished and recovery is verified.
+Review the integration plan with David. Prepare the merge candidate from fresh origin/main, preserve its README change, resolve existing lint errors, review contract consumers, then run an isolated build and synthetic multi-turn PDF/ink/recovery checks. Present the concrete publication diff before merging/pushing. After integration, apply the light README cleanup. Model promotion and public reopening remain separate decisions.
 
 ## Blockers
 
-3117 still runs 19a3681; no hot reload. No broad STEM/learning claim; see evidence for remaining failures.
+Six existing lint errors, shared-contract review and browser/acoustic release evidence remain. Opus/model promotion is undecided but need not block merging development-gated code. Prior 3117 source 19a3681 is only a historical record, not freshly verified. No broad STEM reliability or learning-effectiveness claim.
